@@ -47,7 +47,7 @@ public class Page<T> {
 
 	@Override
 	public String toString() {
-		return OUtils.toJSON(this);
+		return OUtils.toJson(this);
 	}
 
 }

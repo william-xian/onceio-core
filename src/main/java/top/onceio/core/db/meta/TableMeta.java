@@ -153,7 +153,7 @@ public class TableMeta {
 				}
 			}
 			if (!missed.isEmpty()) {
-				LOGGER.warn(String.format("以下字段没有加载到Field %s", OUtils.toJSON(missed)));
+				LOGGER.warn(String.format("以下字段没有加载到Field %s", OUtils.toJson(missed)));
 			}
 		} catch (ClassNotFoundException e) {
 			OAssert.fatal("无法加载 %s", entityName);

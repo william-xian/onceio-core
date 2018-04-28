@@ -39,7 +39,7 @@ public class OI18n extends OEntity {
 	}
 
 	public String toString() {
-		return OUtils.toJSON(this);
+		return OUtils.toJson(this);
 	}
 
 	public static String msgId(String lang, String format) {

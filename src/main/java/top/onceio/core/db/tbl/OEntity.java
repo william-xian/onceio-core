@@ -3,10 +3,8 @@ package top.onceio.core.db.tbl;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import top.onceio.core.db.annotation.Col;
+import top.onceio.core.util.OUtils;
 
 /**
  * @author Administrator
@@ -61,10 +59,8 @@ public abstract class OEntity {
 		this.extra = extra;
 	}
 
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
-
 	@Override
 	public String toString() {
-		return GSON.toJson(this);
+		return OUtils.toJson(this);
 	}
 }

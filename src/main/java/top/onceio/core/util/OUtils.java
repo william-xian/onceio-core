@@ -7,14 +7,34 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ByteArraySerializer;
 
 public final class OUtils {
 
+	  public static ObjectMapper mapper = new ObjectMapper();
+	  public static ObjectMapper prettyMapper = new ObjectMapper();
+
+	  static {
+	    // Non-standard JSON but we allow C style comments in our JSON
+	    mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+
+	    prettyMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+	    prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+
+	    SimpleModule module = new SimpleModule();
+	    // custom types
+	    module.addSerializer(byte[].class, new ByteArraySerializer());
+
+	    mapper.registerModule(module);
+	    prettyMapper.registerModule(module);
+	  }
+
 	public static String encodeMD5(String str) {
 		try {
-			// 生成一个MD5加密计算摘要
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			// 计算md5函数
 			md.update(str.getBytes());
@@ -54,14 +74,28 @@ public final class OUtils {
 		return sb.toString();
 	}
 
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
-
-	public static String toJSON(Object obj) {
-		return GSON.toJson(obj);
+	public static String toJson(Object obj) throws RuntimeException{
+		 try {
+		      return mapper.writeValueAsString(obj);
+	    } catch (Exception e) {
+	      throw new RuntimeException("Failed to encode as JSON: " + e.getMessage());
+	    }
 	}
 
-	public static <T> T createFromJson(String json, Class<T> entityClass) {
-		return GSON.fromJson(json, entityClass);
+	public static String toPrettyJson(Object obj) throws RuntimeException {
+		try {
+			return prettyMapper.writeValueAsString(obj);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to encode as JSON: " + e.getMessage());
+		}
+	}
+
+	public static <T> T createFromJson(String json, Class<T> clazz) throws RuntimeException {
+		try {
+			return mapper.readValue(json, clazz);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to decode: " + e.getMessage());
+		}
 	}
 
 }

@@ -86,7 +86,7 @@ public class DDMeta {
 
 	@Override
 	public String toString() {
-		return OUtils.toJSON(this);
+		return OUtils.toJson(this);
 	}
 
 	@Override

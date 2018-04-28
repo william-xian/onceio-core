@@ -106,7 +106,7 @@ public class DaoHelper implements DDLDao, TransDao {
 					cndMeta.eq().setName(tbl.getSimpleName().toLowerCase());
 					TableMeta tblMeta = TableMeta.createBy(tbl);
 					OTableMeta ootm = this.fetch(OTableMeta.class, null, cndMeta);
-					save(ootm, tblMeta.getTable(), OUtils.toJSON(tblMeta));
+					save(ootm, tblMeta.getTable(), OUtils.toJson(tblMeta));
 				}
 			}
 			List<String> order = new ArrayList<>();

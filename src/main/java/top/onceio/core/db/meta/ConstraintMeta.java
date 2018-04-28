@@ -83,7 +83,7 @@ public class ConstraintMeta {
 			cName = String.format("nq_%s_%s", table, String.join("_", columns));
 			break;
 		default:
-			OAssert.fatal("不存在：%s", OUtils.toJSON(this));
+			OAssert.fatal("不存在：%s", OUtils.toJson(this));
 			break;
 		}
 		return cName;
@@ -107,7 +107,7 @@ public class ConstraintMeta {
 					String.join("_", columns));
 			break;
 		default:
-			OAssert.fatal("不存在：%s", OUtils.toJSON(this));
+			OAssert.fatal("不存在：%s", OUtils.toJson(this));
 			break;
 		}
 		return def;
