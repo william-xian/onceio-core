@@ -1,36 +1,26 @@
 package top.onceio.core.beans;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import net.sf.cglib.proxy.Enhancer;
-import top.onceio.OnceIO;
 import top.onceio.core.annotation.Config;
 import top.onceio.core.annotation.Def;
 import top.onceio.core.annotation.Definer;
@@ -66,6 +56,7 @@ import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.AutoApi;
 import top.onceio.core.util.AnnotationScanner;
 import top.onceio.core.util.IDGenerator;
+import top.onceio.core.util.JsonConfLoader;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
@@ -74,8 +65,6 @@ public class BeansEden {
 	private final static Logger LOGGER = Logger.getLogger(BeansEden.class);
 	private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
 	private ApiResover apiResover = new ApiResover();
-	ObjectNode conf = new ObjectNode(JsonNodeFactory.instance);
-	ObjectNode beans = new ObjectNode(JsonNodeFactory.instance);
 	private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
 			Using.class, Tbl.class, TblView.class, I18nMsg.class, I18nCfg.class, Aop.class);
 	private static BeansEden instance = null;
@@ -92,70 +81,7 @@ public class BeansEden {
 		return instance;
 	}
 
-	private void loadConf() {
-		try {
-			Enumeration<URL> iter = OnceIO.getClassLoader().getResources("conf");
-			while(iter.hasMoreElements()) {
-				URL url = iter.nextElement();
-				if(url.getPath().endsWith(".json")) {
-					InputStream in = url.openStream();
-					JsonNode jn = OUtils.mapper.reader().readTree(in);
-					in.close();
-					jn.fields().forEachRemaining(new Consumer<Entry<String,JsonNode>>(){
-						@Override
-						public void accept(Entry<String, JsonNode> arg) {
-							if("beans".equals(arg.getKey())) {
-								arg.getValue().fields().forEachRemaining(new Consumer<Entry<String,JsonNode>>(){
-									@Override
-									public void accept(Entry<String, JsonNode> bean) {
-										beans.set(bean.getKey(), bean.getValue());
-									}
-								});
-							}else {
-								conf.set(arg.getKey(), arg.getValue());
-							}
-						}
-					});
-				}
-			}
-			
-			beans.fields().forEachRemaining(new Consumer<Entry<String,JsonNode>>() {
-				public void accept(Entry<String, JsonNode> t) {
-					JsonNode clsFields = t.getValue();
-					String clsName = clsFields.get("type") != null?clsFields.get("type").textValue():t.getKey();
-					try {
-						Class<?> cls =  OnceIO.getClassLoader().loadClass(clsName);
-						Object bean = cls.newInstance();
-						if(cls.toString().equals(t.getKey())) {
-							store(cls,"",bean);
-						}else {
-							store(cls,t.getKey(),bean);	
-						}
-						clsFields.fields().forEachRemaining(new Consumer<Entry<String,JsonNode>>() {
-							@Override
-							public void accept(Entry<String, JsonNode> t) {
-								try {
-									Field field = cls.getField(t.getKey());
-									field.set(bean, OReflectUtil.toBaseType(t.getValue(),field.getType()));
-								} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							}
-							
-						});
-					
-					} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				
-			});
-		} catch (IOException e) {
-			LOGGER.warn(e.getMessage());
-		}
-	}
+	
 	
 	@SuppressWarnings("unchecked")
 	public List<Class<? extends OEntity>> matchTblTblView() {
@@ -199,7 +125,7 @@ public class BeansEden {
 		Config cnfAnn = field.getAnnotation(Config.class);
 		if (cnfAnn != null) {
 			Class<?> fieldType = field.getType();
-			String val = conf.get(cnfAnn.value()).textValue();
+			String val = conf.getConf().get(cnfAnn.value()).textValue();
 			if (val != null) {
 				try {
 					if (OReflectUtil.isBaseType(fieldType)) {
@@ -506,16 +432,20 @@ public class BeansEden {
 		return list;
 	}
 
-	public void resovle(String... packages) {
-		loadConf();
+	private JsonConfLoader conf = null;
+
+	public void resovle(String... packages) throws SQLException {
+		conf = JsonConfLoader.loadConf("conf");
+		
 		scanner.scanPackages(packages);
 		scanner.putClass(Tbl.class, OI18n.class);
 		scanner.putClass(AutoApi.class, OI18nHolder.class);
-
+		
+		nameToBean.putAll(conf.resovleBeans());
+		
 		resovleAop();
 
 		loadDefiner();
-
 		DataSource ds = load(DataSource.class, null);
 		OAssert.err(ds != null, "dataSource cannot be null");
 		IdGenerator idGenerator = load(IdGenerator.class, null);
@@ -550,20 +480,20 @@ public class BeansEden {
 	}
 
 	public <T> void store(Class<T> clazz, String beanName, Object bean) {
-		if (beanName == null) {
-			beanName = "";
-		}
 		OAssert.err(bean != null, "%s:%s can not be null!", clazz.getName(), beanName);
-		LOGGER.debug("bean name=" + clazz.getName() + ":" + beanName);
-		nameToBean.put(clazz.getName() + ":" + beanName, bean);
-		Def def = clazz.getAnnotation(Def.class);
-		if (def != null && def.nameByInterface()) {
-			for (Class<?> iter : clazz.getInterfaces()) {
-				nameToBean.put(iter.getName() + ":" + beanName, bean);
-				LOGGER.debug("beanName=" + iter.getName() + ":" + beanName);
+		if (beanName == null) {
+			Def def = clazz.getAnnotation(Def.class);
+			if (def != null && def.nameByInterface()) {
+				for (Class<?> iter : clazz.getInterfaces()) {
+					beanName = iter.getName();
+					break;
+				}
+			}else {
+				beanName = clazz.getName();		
 			}
 		}
-
+		nameToBean.put(beanName, bean);
+		LOGGER.debug("beanName=" + beanName);
 	}
 
 	public <T> T load(Class<T> clazz) {
@@ -572,10 +502,12 @@ public class BeansEden {
 
 	@SuppressWarnings("unchecked")
 	public <T> T load(Class<T> clazz, String beanName) {
+		Object v = null;
 		if (beanName == null) {
-			beanName = "";
+			v = nameToBean.get(clazz.getName());
+		}else {
+			v = nameToBean.get(beanName);
 		}
-		Object v = nameToBean.get(clazz.getName() + ":" + beanName);
 		if (v != null) {
 			return (T) v;
 		}
