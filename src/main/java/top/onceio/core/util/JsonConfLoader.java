@@ -4,7 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -35,6 +36,7 @@ public class JsonConfLoader {
 	public ObjectNode getBeans() {
 		return beans;
 	}
+	
 	public static JsonConfLoader loadConf(String dir) {
 		JsonConfLoader conf = new JsonConfLoader();
 		conf.load(dir);
@@ -90,36 +92,59 @@ public class JsonConfLoader {
 
 	public Map<String,Object> resovleBeans() {
 		Map<String,Object> name2Bean = new HashMap<>();		
+
+		/** 初始分配内存 */
 		beans.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
 			public void accept(Entry<String, JsonNode> t) {
 				JsonNode clsFields = t.getValue();
-				String clsName = clsFields.get("type") != null ? clsFields.get("type").textValue() : t.getKey();
-				OLog.debug("resovleBeans" + clsName);
+				JsonNode type = clsFields.get("@TYPE");
+				String clsName = (type != null) ? type.textValue() : t.getKey();
 				try {
 					Class<?> cls = OnceIO.getClassLoader().loadClass(clsName);
 					Object bean = cls.newInstance();
 					name2Bean.put(t.getKey(), bean);
-					clsFields.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
-						@Override
-						public void accept(Entry<String, JsonNode> t) {
-							try {
-								Field field = cls.getField(t.getKey());
-								field.set(bean, OReflectUtil.toBaseType(t.getValue(), field.getType()));
-							} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException
-									| SecurityException e) {
-								LOGGER.warn(e.getMessage());
-							}
-						}
-
-					});
-					OLog.debug(cls+":"+t.getKey()+"->"+bean);
-
 				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
 					LOGGER.warn(e.getMessage());
 				}
 			}
+		});
+		beans.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
+			public void accept(Entry<String, JsonNode> t) {
+				JsonNode clsFields = t.getValue();
+				Object bean = name2Bean.get(t.getKey());
+				Class<?> cls = bean.getClass();
+				clsFields.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
+					@Override
+					public void accept(Entry<String, JsonNode> t) {
+						try {
+							Method method = OReflectUtil.getSetMethod(cls, t.getKey());
+							if (method != null) {
+								if (t.getValue().isTextual()) {
+									String val = t.getValue().asText();
+									if (val.startsWith("@")) {
+										method.invoke(bean, name2Bean.get(val.substring(1)));
+									} else {
+										method.invoke(bean,
+												OReflectUtil.toBaseType(t.getValue(), method.getParameterTypes()[0]));
+									}
+								} else {
+									method.invoke(bean,
+											OReflectUtil.toBaseType(t.getValue(), method.getParameterTypes()[0]));
+								}
+							} else {
+								OLog.warn("not exist : " + t.getKey());
+							}
+						} catch (IllegalArgumentException | IllegalAccessException | SecurityException
+								| InvocationTargetException e) {
+							e.printStackTrace();
+						}
+					}
 
+				});
+				OLog.debug(t.getKey() + " -> " + bean);
+			}
 		});
 		return name2Bean;
 	}
+	
 }

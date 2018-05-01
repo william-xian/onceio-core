@@ -21,7 +21,6 @@ public final class OUtils {
 	  static {
 	    // Non-standard JSON but we allow C style comments in our JSON
 	    mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-
 	    prettyMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 	    prettyMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 

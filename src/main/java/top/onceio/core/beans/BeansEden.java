@@ -558,11 +558,11 @@ public class BeansEden {
 					String name = field.get(null).toString();
 					String key = "msg/" + group.value() + "_" + OUtils.encodeMD5(name);
 					Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-					cnd.eq().setKey(key);
+					cnd.eq().setOid(key);
 					OI18n i18n = dao.fetch(null, cnd);
 					if (i18n == null) {
 						i18n = new OI18n();
-						i18n.setKey(key);
+						i18n.setOid(key);
 						i18n.setName(name);
 						i18ns.add(i18n);
 					}
@@ -591,12 +591,12 @@ public class BeansEden {
 					String key = "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldname;
 					String name = cons.value();
 					Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-					cnd.eq().setKey(key);
+					cnd.eq().setOid(key);
 					OI18n i18n = dao.fetch(null, cnd);
 
 					if (i18n == null) {
 						i18n = new OI18n();
-						i18n.setKey(key);
+						i18n.setOid(key);
 						i18n.setName(name);
 						i18n.setVal(val);
 						LOGGER.debug("add: " + i18n);

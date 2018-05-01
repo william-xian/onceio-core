@@ -1,12 +1,15 @@
 package top.onceio.core.util;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -174,5 +177,24 @@ public class OReflectUtil {
 			return true;
 		}
 		return false;
+	}
+	
+	private static Map<Class<?>,Map<String,Method>> clsSetter = new HashMap<>();
+	
+	public static Method getSetMethod(Class<?> cls,String fieldName) {
+		Map<String,Method> setter = clsSetter.get(cls);
+		if(setter == null) {
+			setter = new HashMap<>();
+			clsSetter.put(cls, setter);
+			for(Method m:cls.getMethods()) {
+				if(m.getName().startsWith("set") && m.getParameterCount() == 1) {
+					setter.put(m.getName(), m);
+				}
+			}
+		}
+		int mask = ~32;
+		char c = (char)(fieldName.charAt(0) & mask);
+		String methodName = "set"+c+fieldName.substring(1);
+		return setter.get(methodName);
 	}
 }

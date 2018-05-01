@@ -8,18 +8,18 @@ import top.onceio.core.util.OUtils;
 @Tbl
 public class OI18n extends OEntity {
 	@Col(size = 64, nullable = false)
-	private String key;
+	private String oid;
 	@Col(size = 255, nullable = false)
 	private String name;
 	@Col(size = 32, nullable = true)
 	private String val;
 
-	public String getKey() {
-		return key;
+	public String getOid() {
+		return oid;
 	}
 
-	public void setKey(String key) {
-		this.key = key;
+	public void setOid(String oid) {
+		this.oid = oid;
 	}
 
 	public String getName() {

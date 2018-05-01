@@ -12,6 +12,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import top.onceio.OnceIO;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Constraint;
@@ -28,11 +30,15 @@ public class TableMeta {
 	String extend;
 	String entityName;
 	ConstraintMeta primaryKey;
+	@JsonIgnore
 	transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
+	@JsonIgnore
 	transient Map<String, ColumnMeta> nameToColumnMeta = new HashMap<>();
+	@JsonIgnore
 	transient DDEngine engine;
+	@JsonIgnore
 	transient Class<?> entity;
 
 	public String getTable() {

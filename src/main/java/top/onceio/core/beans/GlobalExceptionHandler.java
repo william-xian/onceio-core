@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
 		if (lang != null && !lang.equals(Locale.getDefault().getLanguage())) {
 			String key = "msg/" + lang + "_" + OUtils.encodeMD5(failed.getFormat());
 			Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-			cnd.eq().setKey(key);
+			cnd.eq().setOid(key);
 			OI18n i18n = dao.fetch(null, cnd);
 			if (i18n != null) {
 				defaultFromat = i18n.getName();

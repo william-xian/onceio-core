@@ -2,6 +2,8 @@ package top.onceio.core.db.meta;
 
 import java.lang.reflect.Field;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class ColumnMeta {
 	String name;
 	String type;
@@ -15,7 +17,9 @@ public class ColumnMeta {
 	 * 正则表达式 或@JSON,@Email等特定教研
 	 */
 	String pattern;
+	@JsonIgnore
 	transient Field field;
+	@JsonIgnore
 	transient Class<?> javaBaseType;
 
 	public String getName() {
