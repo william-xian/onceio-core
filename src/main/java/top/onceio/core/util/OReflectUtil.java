@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class OReflectUtil {
 
 	public static Class<?> searchGenType(Class<?> forefather, Class<?> entity, Type fieldType) {
@@ -101,34 +99,6 @@ public class OReflectUtil {
 			return (T) BigDecimal.valueOf(Double.valueOf(val));
 		} else if (type.equals(Date.class)) {
 			return (T) Date.valueOf(val);
-		}
-		return null;
-	}
-
-	@SuppressWarnings("unchecked")
-	public static <T> T toBaseType(JsonNode val, Class<T> type) {
-		if (val == null) {
-			return null;
-		} else if (type.equals(String.class)) {
-			return (T) val.asText();
-		} else if (type.equals(int.class) || type.equals(Integer.class)) {
-			return (T) Integer.valueOf(val.asInt());
-		} else if (type.equals(long.class) || type.equals(Long.class)) {
-			return (T) Long.valueOf(val.asLong());
-		} else if (type.equals(boolean.class) || type.equals(Boolean.class)) {
-			return (T) Boolean.valueOf(val.asBoolean());
-		} else if (type.equals(byte.class) || type.equals(Byte.class)) {
-			return (T) Byte.valueOf(val.asToken().asByteArray()[0]);
-		} else if (type.equals(short.class) || type.equals(Short.class)) {
-			return (T) Short.valueOf((short)val.asInt());
-		} else if (type.equals(double.class) || type.equals(Double.class)) {
-			return (T) Double.valueOf(val.asDouble());
-		} else if (type.equals(float.class) || type.equals(Float.class)) {
-			return (T) Float.valueOf(val.floatValue());
-		} else if (type.equals(BigDecimal.class)) {
-			return (T) BigDecimal.valueOf(val.asDouble());
-		} else if (type.equals(Date.class)) {
-			return (T) new Date(val.asLong());
 		}
 		return null;
 	}

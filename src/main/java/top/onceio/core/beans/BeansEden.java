@@ -125,7 +125,7 @@ public class BeansEden {
 		Config cnfAnn = field.getAnnotation(Config.class);
 		if (cnfAnn != null) {
 			Class<?> fieldType = field.getType();
-			String val = conf.getConf().get(cnfAnn.value()).textValue();
+			String val = conf.getConf().get(cnfAnn.value()).getAsString();
 			if (val != null) {
 				try {
 					if (OReflectUtil.isBaseType(fieldType)) {

@@ -1,9 +1,8 @@
 package top.onceio.core.util;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -16,9 +15,9 @@ import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 
 import top.onceio.OnceIO;
 
@@ -26,14 +25,14 @@ public class JsonConfLoader {
 
 	private final static Logger LOGGER = Logger.getLogger(JsonConfLoader.class);
 
-	ObjectNode conf = new ObjectNode(JsonNodeFactory.instance);
-	ObjectNode beans = new ObjectNode(JsonNodeFactory.instance);
+	private JsonObject conf = new JsonObject();
+	private JsonObject beans = new JsonObject();
 
-	public ObjectNode getConf() {
+	public JsonObject getConf() {
 		return conf;
 	}
 
-	public ObjectNode getBeans() {
+	public JsonObject getBeans() {
 		return beans;
 	}
 	
@@ -52,23 +51,21 @@ public class JsonConfLoader {
 					Files.walk(file.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
 						File cnf = path.toFile();
 						if(cnf.getName().endsWith(".json")) {
-							InputStream in;
 							try {
-								in = new FileInputStream(cnf);
-								JsonNode jn = OUtils.mapper.reader().readTree(in);
-								in.close();
-								jn.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
+								JsonReader reader = OUtils.gson.newJsonReader(new FileReader(cnf));
+								JsonObject jn = OUtils.gson.fromJson(reader, JsonObject.class);
+								jn.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
 									@Override
-									public void accept(Entry<String, JsonNode> arg) {
+									public void accept(Entry<String, JsonElement> arg) {
 										if ("beans".equals(arg.getKey())) {
-											arg.getValue().fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
+											arg.getValue().getAsJsonObject().entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
 												@Override
-												public void accept(Entry<String, JsonNode> bean) {
-													beans.set(bean.getKey(), bean.getValue());
+												public void accept(Entry<String, JsonElement> bean) {
+													beans.add(bean.getKey(), bean.getValue());
 												}
 											});
 										} else {
-											conf.set(arg.getKey(), arg.getValue());
+											conf.add(arg.getKey(), arg.getValue());
 										}
 									}
 								});
@@ -94,11 +91,11 @@ public class JsonConfLoader {
 		Map<String,Object> name2Bean = new HashMap<>();		
 
 		/** 初始分配内存 */
-		beans.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
-			public void accept(Entry<String, JsonNode> t) {
-				JsonNode clsFields = t.getValue();
-				JsonNode type = clsFields.get("@TYPE");
-				String clsName = (type != null) ? type.textValue() : t.getKey();
+		beans.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
+			public void accept(Entry<String, JsonElement> t) {
+				JsonObject clsFields = t.getValue().getAsJsonObject();
+				JsonElement type = clsFields.get("@TYPE");
+				String clsName = (type != null) ? type.getAsString() : t.getKey();
 				try {
 					Class<?> cls = OnceIO.getClassLoader().loadClass(clsName);
 					Object bean = cls.newInstance();
@@ -108,28 +105,31 @@ public class JsonConfLoader {
 				}
 			}
 		});
-		beans.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
-			public void accept(Entry<String, JsonNode> t) {
-				JsonNode clsFields = t.getValue();
+		beans.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
+			public void accept(Entry<String, JsonElement> t) {
+				JsonObject clsFields = t.getValue().getAsJsonObject();
 				Object bean = name2Bean.get(t.getKey());
 				Class<?> cls = bean.getClass();
-				clsFields.fields().forEachRemaining(new Consumer<Entry<String, JsonNode>>() {
+				clsFields.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
 					@Override
-					public void accept(Entry<String, JsonNode> t) {
+					public void accept(Entry<String, JsonElement> t) {
+						if(t.getKey().equals("@TYPE")) {
+							return;
+						}
 						try {
 							Method method = OReflectUtil.getSetMethod(cls, t.getKey());
 							if (method != null) {
-								if (t.getValue().isTextual()) {
-									String val = t.getValue().asText();
-									if (val.startsWith("@")) {
-										method.invoke(bean, name2Bean.get(val.substring(1)));
+								String strV = t.getValue().getAsString();
+								if (strV != null) {
+									if (strV.startsWith("@")) {
+										method.invoke(bean, name2Bean.get(strV.substring(1)));
 									} else {
 										method.invoke(bean,
-												OReflectUtil.toBaseType(t.getValue(), method.getParameterTypes()[0]));
+												OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
 									}
 								} else {
 									method.invoke(bean,
-											OReflectUtil.toBaseType(t.getValue(), method.getParameterTypes()[0]));
+											OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
 								}
 							} else {
 								OLog.warn("not exist : " + t.getKey());
