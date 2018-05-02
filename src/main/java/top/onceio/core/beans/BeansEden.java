@@ -440,11 +440,8 @@ public class BeansEden {
 		scanner.scanPackages(packages);
 		scanner.putClass(Tbl.class, OI18n.class);
 		scanner.putClass(AutoApi.class, OI18nHolder.class);
-		
 		nameToBean.putAll(conf.resovleBeans());
-		
 		resovleAop();
-
 		loadDefiner();
 		DataSource ds = load(DataSource.class, null);
 		OAssert.err(ds != null, "dataSource cannot be null");
@@ -481,19 +478,19 @@ public class BeansEden {
 
 	public <T> void store(Class<T> clazz, String beanName, Object bean) {
 		OAssert.err(bean != null, "%s:%s can not be null!", clazz.getName(), beanName);
-		if (beanName == null) {
+		if (beanName == null || beanName.equals("")) {
 			Def def = clazz.getAnnotation(Def.class);
 			if (def != null && def.nameByInterface()) {
 				for (Class<?> iter : clazz.getInterfaces()) {
 					beanName = iter.getName();
+					nameToBean.put(beanName, bean);
 					break;
 				}
-			}else {
-				beanName = clazz.getName();		
 			}
+			beanName = clazz.getName();	
 		}
 		nameToBean.put(beanName, bean);
-		LOGGER.debug("beanName=" + beanName);
+		LOGGER.debug("store beanName=" + beanName);
 	}
 
 	public <T> T load(Class<T> clazz) {
@@ -503,7 +500,7 @@ public class BeansEden {
 	@SuppressWarnings("unchecked")
 	public <T> T load(Class<T> clazz, String beanName) {
 		Object v = null;
-		if (beanName == null) {
+		if (beanName == null || beanName.equals("")) {
 			v = nameToBean.get(clazz.getName());
 		}else {
 			v = nameToBean.get(beanName);
@@ -515,9 +512,6 @@ public class BeansEden {
 	}
 
 	public <T> void erase(Class<T> clazz, String beanName) {
-		if (beanName == null) {
-			beanName = "";
-		}
 		Object bean = load(clazz, beanName);
 		if (bean != null) {
 			for (Method method : clazz.getMethods()) {
