@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>top.onceio</groupId>
 	<artifactId>onceio-core</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<name>onceio-core</name>
 	<description>onceio is an easy to using and learnning ORM framework.</description>
 	<url>http://www.onceio.top/</url>
