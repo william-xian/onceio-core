@@ -1,12 +1,14 @@
 package top.onceio.core.db.dao.tpl;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import top.onceio.core.util.OReflectUtil;
 
 public class UpdateTpl<T> extends Tpl {
 	private StringBuffer sql = new StringBuffer();
@@ -15,8 +17,22 @@ public class UpdateTpl<T> extends Tpl {
 	private Long id;
 	private List<Object> args = new ArrayList<>();
 
-	@SuppressWarnings("unchecked")
+	public UpdateTpl() {
+		Type t = UpdateTpl.class.getTypeParameters()[0];
+		@SuppressWarnings("unchecked")
+		Class<T> tplClass = (Class<T>) OReflectUtil.searchGenType(UpdateTpl.class, this.getClass(), t);
+		init(tplClass);
+	}
 	public UpdateTpl(Class<T> tplClass) {
+		init(tplClass);
+	}
+	
+	public UpdateTpl(Class<T> tplClass,String tpl) {
+		init(tplClass);
+	}
+
+	@SuppressWarnings("unchecked")	
+	protected void init(Class<T> tplClass) {
 		UpdateSetterProxy cglibProxy = new UpdateSetterProxy();
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(tplClass);

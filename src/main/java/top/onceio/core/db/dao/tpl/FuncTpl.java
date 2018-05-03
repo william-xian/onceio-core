@@ -1,20 +1,31 @@
 package top.onceio.core.db.dao.tpl;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import top.onceio.core.util.OReflectUtil;
 
 public abstract class FuncTpl<E> extends Tpl {
 	protected E tpl;
 	protected List<String> funcs = new ArrayList<>();
 	protected List<String> argNames = new ArrayList<>();
 
-	@SuppressWarnings("unchecked")
+	public FuncTpl() {
+		Type t = FuncTpl.class.getTypeParameters()[0];
+		@SuppressWarnings("unchecked")
+		Class<E> tplClass = (Class<E>) OReflectUtil.searchGenType(FuncTpl.class, this.getClass(), t);
+		init(tplClass);
+	}
 	public FuncTpl(Class<E> tplClass) {
+		init(tplClass);
+	}
+	@SuppressWarnings("unchecked")
+	protected void init(Class<E> tplClass) {
 		FuncSetterProxy cglibProxy = new FuncSetterProxy();
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(tplClass);

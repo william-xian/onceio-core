@@ -1,6 +1,7 @@
 package top.onceio.core.db.dao;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -21,6 +22,7 @@ import top.onceio.core.db.dao.tpl.Tpl;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.DDEngine;
 import top.onceio.core.db.meta.TableMeta;
+import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 public class Cnd<E> extends Tpl {
@@ -32,17 +34,23 @@ public class Cnd<E> extends Tpl {
 	private HavingTpl<E> having;
 	private GroupTpl<E> group;
 	private OrderTpl<E> order;
-	private List<Object> args = new ArrayList<>();
+	private List<Object> args;
 	private String opt = null;
 	private Object[] inVals;
 	private String logic = null;
-	private List<String> extLogics = new ArrayList<>();
-	private List<Cnd<E>> extCnds = new ArrayList<>();
-	private StringBuffer selfSql = new StringBuffer();
+	private List<String> extLogics;
+	private List<Cnd<E>> extCnds;
+	private StringBuffer selfSql;
 	private Class<E> tplClass;
 	private E tpl;
 	private boolean usingRm = false;
 
+	@SuppressWarnings("unchecked")
+	public Cnd() {
+		Type t = DaoHolder.class.getTypeParameters()[0];
+		tplClass = (Class<E>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
+		init();
+	}
 	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass) {
 		this.tplClass = tplClass;
@@ -51,8 +59,33 @@ public class Cnd<E> extends Tpl {
 		enhancer.setSuperclass(tplClass);
 		enhancer.setCallback(cglibProxy);
 		tpl = (E) enhancer.create();
+		init();
 	}
-
+	//TODO 条件表达式未设计
+	@SuppressWarnings("unchecked")
+	public Cnd(Class<E> tplClass,String cnd) {
+		this.tplClass = tplClass;
+		CndSetterProxy cglibProxy = new CndSetterProxy();
+		Enhancer enhancer = new Enhancer();
+		enhancer.setSuperclass(tplClass);
+		enhancer.setCallback(cglibProxy);
+		tpl = (E) enhancer.create();
+		init();
+	}
+	public void init() {
+		if(args == null) {
+			args = new ArrayList<>();
+		}
+		if(selfSql == null) {
+			selfSql = new StringBuffer();
+		}
+		if(extLogics == null) {
+			extLogics = new ArrayList<>();
+		}
+		if(extCnds == null) {
+			extCnds = new ArrayList<>();
+		}
+	}
 	public Integer getPagesize() {
 		return pagesize;
 	}
