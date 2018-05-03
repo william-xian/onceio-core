@@ -5,6 +5,7 @@
 	<artifactId>onceio-core</artifactId>
 	<version>0.0.2</version>
 	<name>onceio-core</name>
+	<packaging>jar</packaging>
 	<description>onceio is an easy to using and learnning ORM framework.</description>
 	<url>http://www.onceio.top/</url>
 	<developers>
@@ -14,9 +15,6 @@
 		</developer>
 	</developers>
 	
-	<properties>
-		<onceio.ver>0.0.1</onceio.ver>
-	</properties>
 	<licenses>
 		<license>
 			<name>The Apache Software License, Version 2.0</name>
