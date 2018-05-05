@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import top.onceio.core.mvc.annocations.Attr;
+import top.onceio.core.mvc.annocations.Cookie;
+import top.onceio.core.mvc.annocations.Header;
 import top.onceio.core.mvc.annocations.Param;
 
 public class ApiPair {
@@ -18,6 +20,8 @@ public class ApiPair {
 	private Map<String, Class<?>> nameType;
 	private Map<Integer, String> paramNameArgIndex;
 	private Map<Integer, String> attrNameArgIndex;
+	private Map<Integer, String> cookieNameArgIndex;
+	private Map<Integer, String> headerNameArgIndex;
 	private Map<Class<?>,Integer> typeIndex;
 
 	public ApiMethod getApiMethod() {
@@ -92,6 +96,22 @@ public class ApiPair {
 		this.typeIndex = typeIndex;
 	}
 
+	public Map<Integer, String> getCookieNameArgIndex() {
+		return cookieNameArgIndex;
+	}
+
+	public void setCookieNameArgIndex(Map<Integer, String> cookieNameArgIndex) {
+		this.cookieNameArgIndex = cookieNameArgIndex;
+	}
+
+	public Map<Integer, String> getHeaderNameArgIndex() {
+		return headerNameArgIndex;
+	}
+
+	public void setHeaderNameArgIndex(Map<Integer, String> headerNameArgIndex) {
+		this.headerNameArgIndex = headerNameArgIndex;
+	}
+
 	public ApiPair(ApiMethod apiMethod, String api, Object bean, Method method) {
 		super();
 		this.apiMethod = apiMethod;
@@ -113,17 +133,28 @@ public class ApiPair {
 			nameType = new HashMap<>(method.getParameterCount());
 			paramNameArgIndex = new HashMap<>(method.getParameterCount());
 			attrNameArgIndex = new HashMap<>(method.getParameterCount());
+			cookieNameArgIndex = new HashMap<>(method.getParameterCount());
+			headerNameArgIndex = new HashMap<>(method.getParameterCount());
 			typeIndex = new HashMap<>(method.getParameterCount());
 			Parameter[] params = method.getParameters();
 			for (int i = 0; i < params.length; i++) {
 				Parameter param = method.getParameters()[i];
 				Param paramAnn = param.getAnnotation(Param.class);
 				Attr attrAnn = param.getAnnotation(Attr.class);
+				Cookie cookieAnn = param.getAnnotation(Cookie.class);
+				Header headerAnn = param.getAnnotation(Header.class);
 				if (paramAnn != null) {
 					paramNameArgIndex.put(i, paramAnn.value());
 					nameType.put(paramAnn.value(), param.getType());
 				} else if (attrAnn != null) {
 					attrNameArgIndex.put(i, attrAnn.value());
+					nameType.put(attrAnn.value(), param.getType());
+				}else if (cookieAnn != null) {
+					cookieNameArgIndex.put(i, cookieAnn.value());
+					nameType.put(cookieAnn.value(), param.getType());
+				}else if (headerAnn != null) {
+					headerNameArgIndex.put(i, headerAnn.value());
+					nameType.put(headerAnn.value(), param.getType());
 				} else {
 					typeIndex.put(param.getType(), i);
 				}
