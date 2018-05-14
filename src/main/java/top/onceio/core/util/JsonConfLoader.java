@@ -36,9 +36,11 @@ public class JsonConfLoader {
 		return beans;
 	}
 	
-	public static JsonConfLoader loadConf(String dir) {
+	public static JsonConfLoader loadConf(String... dirs) {
 		JsonConfLoader conf = new JsonConfLoader();
-		conf.load(dir);
+		for(String dir:dirs) {
+			conf.load(dir);	
+		}
 		return conf;
 	}
 	
