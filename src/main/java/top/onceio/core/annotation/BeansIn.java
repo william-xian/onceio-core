@@ -11,4 +11,5 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface BeansIn {
 	String[] value() default {};
+	String[] conf() default { "conf"};
 }

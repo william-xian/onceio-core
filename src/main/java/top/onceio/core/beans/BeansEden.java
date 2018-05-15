@@ -433,9 +433,8 @@ public class BeansEden {
 
 	private JsonConfLoader conf = null;
 
-	public void resovle(String... packages) {
-		conf = JsonConfLoader.loadConf("conf");
-		
+	public void resovle(String[] confDir,String[] packages) {
+		conf = JsonConfLoader.loadConf(confDir);
 		scanner.scanPackages(packages);
 		scanner.putClass(Tbl.class, OI18n.class);
 		scanner.putClass(AutoApi.class, OI18nHolder.class);
