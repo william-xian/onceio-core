@@ -79,8 +79,6 @@ public class BeansEden {
 		}
 		return instance;
 	}
-
-	
 	
 	@SuppressWarnings("unchecked")
 	public List<Class<? extends OEntity>> matchTblTblView() {
@@ -186,11 +184,7 @@ public class BeansEden {
 		Set<Class<?>> definers = scanner.getClasses(Def.class);
 		for (Class<?> defClazz : definers) {
 			try {
-				AopProxy cglibProxy = new AopProxy();
-				Enhancer enhancer = new Enhancer();
-				enhancer.setSuperclass(defClazz);
-				enhancer.setCallback(cglibProxy);
-				Object bean = enhancer.create();
+				Object bean = defClazz.newInstance();
 
 				Def defAnn = defClazz.getAnnotation(Def.class);
 				String beanName = defAnn.value();
@@ -433,14 +427,7 @@ public class BeansEden {
 
 	private JsonConfLoader conf = null;
 
-	public void resovle(String[] confDir,String[] packages) {
-		conf = JsonConfLoader.loadConf(confDir);
-		scanner.scanPackages(packages);
-		scanner.putClass(Tbl.class, OI18n.class);
-		scanner.putClass(AutoApi.class, OI18nHolder.class);
-		nameToBean.putAll(conf.resovleBeans());
-		resovleAop();
-		loadDefiner();
+	private void loadDefaultBeans() {
 		DataSource ds = load(DataSource.class, null);
 		OAssert.err(ds != null, "dataSource cannot be null");
 		IdGenerator idGenerator = load(IdGenerator.class, null);
@@ -462,6 +449,20 @@ public class BeansEden {
 				daoHelper.init(jdbcHelper, idGenerator, matchTblTblView());
 			}
 		}
+	}
+	
+	public void resovle(String[] confDir,String[] packages) {
+		conf = JsonConfLoader.loadConf(confDir);
+		scanner.scanPackages(packages);
+		scanner.putClass(Tbl.class, OI18n.class);
+		scanner.putClass(AutoApi.class, OI18nHolder.class);
+		nameToBean.putAll(conf.resovleBeans());
+		resovleAop();
+		
+		loadDefiner();
+		
+		loadDefaultBeans();
+		
 		loadDefined();
 
 		loadApiAutoApi();
