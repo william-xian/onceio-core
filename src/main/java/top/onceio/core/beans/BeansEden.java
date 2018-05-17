@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -78,6 +79,14 @@ public class BeansEden {
 			}
 		}
 		return instance;
+	}
+	
+	public void addAnnotation(Class<?>... annotations) {
+		scanner.getFilter().addAll(Arrays.asList(annotations));
+	}
+	
+	public Set<Class<?>> getClassByAnnotation(Class<?> annotation) {
+		return scanner.getClasses(annotation);
 	}
 	
 	@SuppressWarnings("unchecked")
