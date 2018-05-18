@@ -1,4 +1,4 @@
-package top.onceio.core.db.dao;
+package top.onceio.core.db.dao.tpl;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -8,20 +8,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-import top.onceio.core.db.dao.tpl.GroupTpl;
-import top.onceio.core.db.dao.tpl.HavingTpl;
-import top.onceio.core.db.dao.tpl.OrderTpl;
-import top.onceio.core.db.dao.tpl.SelectTpl;
-import top.onceio.core.db.dao.tpl.Tpl;
+import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.DDEngine;
 import top.onceio.core.db.meta.TableMeta;
+import top.onceio.core.util.OLog;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
@@ -61,7 +60,12 @@ public class Cnd<E> extends Tpl {
 		tpl = (E) enhancer.create();
 		init();
 	}
-	//TODO 条件表达式未设计
+	//TODO 条件表达式未设计c
+	/**
+	 * 
+	 * @param tplClass
+	 * @param cnd 其格式为cnd=cnd=c1&cnd=c2&page=&pagesize=&orderby=
+	 */
 	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass,String cnd) {
 		this.tplClass = tplClass;
@@ -71,6 +75,7 @@ public class Cnd<E> extends Tpl {
 		enhancer.setCallback(cglibProxy);
 		tpl = (E) enhancer.create();
 		init();
+		initCnd(cnd);
 	}
 	public void init() {
 		if(args == null) {
@@ -86,6 +91,127 @@ public class Cnd<E> extends Tpl {
 			extCnds = new ArrayList<>();
 		}
 	}
+
+	public void initCnd(String cnd) {
+		Map<String,List<String>> param = OUtils.parseURLParam(cnd);
+		List<String> vals = param.get("page");
+		if(vals != null && !vals.isEmpty()) {
+			String sPage = 	vals.get(0);
+			try {
+				this.setPage(Integer.parseInt(sPage));
+			}catch(Exception e) {
+			}
+		}
+		vals = param.get("pagesize");
+		if(vals != null && !vals.isEmpty()) {
+			String sVal = 	vals.get(0);
+			try {
+				this.setPagesize(Integer.parseInt(sVal));
+			}catch(Exception e) {
+			}
+		}
+		TableMeta tm = TableMeta.tableCache.get(tplClass);
+		if(tm != null) {
+			vals = param.get("orderby");
+			if(vals != null && !vals.isEmpty()) {
+				for(String sOrder:vals) {
+					String[] cos = sOrder.split(",");
+					for(String co:cos) {
+						String[] c_o = co.split(" ");
+						if(c_o.length > 0) {
+							ColumnMeta cm = tm.getColumnMetaByName(c_o[0]);
+							if(cm != null) {
+								if(c_o.length == 2 && (c_o[1].equalsIgnoreCase("ASC") || c_o[1].equalsIgnoreCase("DESC") || c_o[1].equals(""))) {
+									this.order.order.add(c_o[0] + " " + c_o[1]);
+								}else {
+									this.order.order.add(c_o[0]);
+								}
+							}
+						}
+					}
+				}
+			}
+			vals = param.get("cnd");
+			resovle(tm,vals);
+		}else {
+			OLog.error("表%s不纯在", tplClass);
+		}
+	}
+	
+	private static Pattern LOGIC = Pattern.compile("_and_|_or_|_not_");
+	private static Pattern CMP = Pattern.compile(">=|<=|!=|~\\*|>|<|=|_in_|_like_");
+	private void resovle(TableMeta tm, List<String> vals) {
+		Cnd<E> preCnd = null;
+		boolean usingSelf = true;
+		if(vals != null && !vals.isEmpty()) {
+			for(String valArr:vals) {
+				for(String val:valArr.split(";")) {
+					Cnd<E> curCnd = null;
+					if(usingSelf) {
+						curCnd = this;
+						usingSelf =false;
+					}else {
+						curCnd = new Cnd<>(tplClass);
+					}
+
+					Matcher lMatcher = LOGIC.matcher(val);
+					int sp = 0;
+					String lopt = null;
+					while(lMatcher.find()) {
+						String exp = val.substring(sp,lMatcher.start());
+						sp = lMatcher.end();
+						initCnd(curCnd,tm,exp,lopt);
+						lopt = val.substring(lMatcher.start(),lMatcher.end());
+					}
+					String exp = val.substring(sp);
+					if(!exp.isEmpty()) {
+						initCnd(curCnd,tm,exp,lopt);	
+					}
+					
+					if(preCnd != null) {
+						preCnd.and(curCnd);
+					}else {
+						preCnd = curCnd;
+					}
+				}
+			}
+		}
+	}
+	//TODO
+	private Cnd<E> initCnd(Cnd<E> cnd,TableMeta tm,String exp,String lopt) {
+		Matcher cMatcher= CMP.matcher(exp);
+		if(cMatcher.find()) {
+			String fieldName= exp.substring(0,cMatcher.start());
+			ColumnMeta cm = tm.getColumnMetaByName(fieldName);
+			if(cm != null) {
+				if(lopt != null) {
+					cnd.selfSql.append(lopt.replace("_", " ").toUpperCase());
+				}
+				String cOpt = exp.substring(cMatcher.start(),cMatcher.end());
+				String cVal = exp.substring(cMatcher.end());
+				if(cVal!= null && !cVal.isEmpty()) {
+					if(cm.getName().equals("rm")) {
+						cnd.usingRm=true;
+					}
+					if(cOpt.equals("_in_")){
+						String[] items = cVal.split(",");
+						for(String item:items) {
+							cnd.args.add(OReflectUtil.strToBaseType(cm.getJavaBaseType(), item));	
+						}
+						cnd.selfSql.append(cm.getName()+" in ("+OUtils.genStub("?", ",", items.length) + ")");
+					}else {
+						cnd.args.add(OReflectUtil.strToBaseType(cm.getJavaBaseType(), cVal));	
+						cnd.selfSql.append(cm.getName()+" " + cOpt.replaceAll("_", "").toUpperCase() +" ?");
+					}
+				}else {
+					cnd.args.add(null);
+					cnd.selfSql.append(cm.getName()+" " + cOpt.replaceAll("_", "").toUpperCase() +" ?");
+				}
+			}
+		}
+		return cnd;
+	}
+	
 	public Integer getPagesize() {
 		return pagesize;
 	}
@@ -456,5 +582,5 @@ public class Cnd<E> extends Tpl {
 			return o;
 		}
 	}
-
+	
 }

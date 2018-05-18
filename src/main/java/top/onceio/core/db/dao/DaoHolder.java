@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import top.onceio.core.annotation.Using;
 import top.onceio.core.beans.ApiMethod;
 import top.onceio.core.db.dao.impl.DaoHelper;
+import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.dao.tpl.SelectTpl;
 import top.onceio.core.db.dao.tpl.UpdateTpl;
 import top.onceio.core.db.tbl.OEntity;
@@ -70,7 +71,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 		return daoHelper.updateByTpl(tbl, tpl);
 	}
 
-	@Api(method = ApiMethod.PATCH)
+	@Api(method = { ApiMethod.GET, ApiMethod.POST })
 	@Override
 	public int updateByTplCnd(@Param("tpl") UpdateTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
 		return daoHelper.updateByTplCnd(tbl, tpl, cnd);
@@ -115,7 +116,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 		return daoHelper.delete(tbl, cnd);
 	}
 
-	@Api(method = ApiMethod.RECOVERY)
+	@Api(method = { ApiMethod.GET, ApiMethod.POST })
 	@Override
 	public T fetch(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
 		return daoHelper.fetch(tbl, tpl, cnd);

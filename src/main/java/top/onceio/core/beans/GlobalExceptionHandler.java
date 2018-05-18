@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import top.onceio.core.db.dao.Cnd;
 import top.onceio.core.db.dao.Dao;
+import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.tbl.OI18n;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OUtils;

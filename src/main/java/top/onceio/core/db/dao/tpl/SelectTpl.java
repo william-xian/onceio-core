@@ -14,9 +14,18 @@ public class SelectTpl<E> extends FuncTpl<E> {
 	public SelectTpl(Class<E> tplClass) {
 		super(tplClass);
 	}
-	//TODO
 	public SelectTpl(Class<E> tplClass,String tpl) {
 		super(tplClass);
+		if(funcs == null) {
+			funcs = new ArrayList<>();
+		}
+		if(argNames == null) {
+			argNames = new ArrayList<>();
+		}
+		for(String t:tpl.split(",")) {
+			funcs.add("");
+			argNames.add(t);
+		}
 	}
 
 	public E using() {

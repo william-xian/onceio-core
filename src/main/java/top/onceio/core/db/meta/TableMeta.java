@@ -336,6 +336,8 @@ public class TableMeta {
 		return sqls;
 	}
 
+	public static final Map<Class<?>,TableMeta> tableCache = new HashMap<>();
+	
 	public static TableMeta createBy(Class<?> entity) {
 		TableMeta tm = new TableMeta();
 		tm.table = entity.getSimpleName().toLowerCase();
@@ -455,6 +457,7 @@ public class TableMeta {
 				return null;
 			}
 		}
+		tableCache.put(entity, tm);
 		return tm;
 	}
 

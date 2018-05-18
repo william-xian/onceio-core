@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -11,16 +12,18 @@ import net.sf.cglib.proxy.MethodProxy;
 import top.onceio.core.util.OReflectUtil;
 
 public class UpdateTpl<T> extends Tpl {
+	protected static Pattern OPT = Pattern.compile("\\+|-|\\*|/|&|\\||~|#|<<|>>");
 	private StringBuffer sql = new StringBuffer();
 	private T tpl;
 	private String strOpt;
 	private Long id;
 	private List<Object> args = new ArrayList<>();
+	private Class<T> tplClass;
 
+	@SuppressWarnings("unchecked")
 	public UpdateTpl() {
 		Type t = UpdateTpl.class.getTypeParameters()[0];
-		@SuppressWarnings("unchecked")
-		Class<T> tplClass = (Class<T>) OReflectUtil.searchGenType(UpdateTpl.class, this.getClass(), t);
+		tplClass = (Class<T>) OReflectUtil.searchGenType(UpdateTpl.class, this.getClass(), t);
 		init(tplClass);
 	}
 	public UpdateTpl(Class<T> tplClass) {
@@ -29,10 +32,19 @@ public class UpdateTpl<T> extends Tpl {
 	
 	public UpdateTpl(Class<T> tplClass,String tpl) {
 		init(tplClass);
+		initTpl(tpl);
 	}
-
+	
+	protected void initTpl(String tpl) {
+		String[] fileds = tpl.split(",");
+		for(String field : fileds) {
+			sql.append(field+",");
+		}
+	}
+	
 	@SuppressWarnings("unchecked")	
 	protected void init(Class<T> tplClass) {
+		this.tplClass = tplClass;
 		UpdateSetterProxy cglibProxy = new UpdateSetterProxy();
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(tplClass);
@@ -100,7 +112,11 @@ public class UpdateTpl<T> extends Tpl {
 	}
 
 	public String getSetTpl() {
-		return sql.substring(0, sql.length() - 1);
+		if(sql.length() > 0 && sql.charAt(sql.length()-1) == ',') {
+			return sql.substring(0, sql.length() - 1);
+		}else {
+			return sql.toString();
+		}
 	}
 
 	public List<Object> getArgs() {

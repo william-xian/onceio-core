@@ -3,6 +3,7 @@ package top.onceio.core.db.dao;
 import java.util.List;
 import java.util.function.Consumer;
 
+import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.dao.tpl.SelectTpl;
 import top.onceio.core.db.dao.tpl.UpdateTpl;
 

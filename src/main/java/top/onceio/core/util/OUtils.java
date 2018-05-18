@@ -2,6 +2,9 @@ package top.onceio.core.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -56,6 +59,32 @@ public final class OUtils {
 		return sb.toString();
 	}
 
+	public static Map<String, List<String>> parseURLParam(String uri) {
+		Map<String, List<String>> map = new HashMap<>();
+		if (uri != null) {
+			int sp = uri.indexOf('.');
+			if (sp >= 0) {
+				uri = uri.substring(sp + 1);
+			}
+			String[] fields = uri.split("&");
+			for (String f : fields) {
+				sp = f.indexOf('=');
+				if (sp > 0) {
+					String key = f.substring(0,sp);
+					String val = f.substring(sp+1);
+					List<String> vals = map.get(key);
+					if(vals == null) {
+						vals = new ArrayList<>();
+						map.put(key, vals);
+					}
+					vals.add(val);
+					map.put(key, vals);
+				}
+			}
+		}
+		return map;
+	}
+	
 	public static String toJson(Object obj) {
 	      return gson.toJson(obj);
 	}

@@ -15,11 +15,11 @@ import org.apache.log4j.Logger;
 
 import top.onceio.core.OConfig;
 import top.onceio.core.db.annotation.ConstraintType;
-import top.onceio.core.db.dao.Cnd;
 import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.dao.Page;
 import top.onceio.core.db.dao.TransDao;
+import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.dao.tpl.SelectTpl;
 import top.onceio.core.db.dao.tpl.UpdateTpl;
 import top.onceio.core.db.jdbc.JdbcHelper;
@@ -431,6 +431,9 @@ public class DaoHelper implements DDLDao, TransDao {
 		String cndSql = cnd.whereSql(sqlArgs);
 		if (cndSql.isEmpty()) {
 			OAssert.warnning("查询条件不能为空");
+		}
+		if(tpl.getSetTpl().isEmpty()) {
+			OAssert.err("更新内容不能为空");
 		}
 		vals.addAll(sqlArgs);
 		String sql = String.format("UPDATE %s SET %s WHERE (%s) AND rm=false;", tm.getTable(), tpl.getSetTpl(), cndSql);

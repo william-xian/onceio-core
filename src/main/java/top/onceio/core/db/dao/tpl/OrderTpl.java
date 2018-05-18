@@ -28,7 +28,7 @@ public class OrderTpl<E> extends Tpl {
 	public static final float ORDER_BY_DESC_FLOAT = 1f;
 	public static final BigDecimal ORDER_BY_ASC_DECIMAL = new BigDecimal(0);
 	public static final BigDecimal ORDER_BY_DESC_DECIMAL = new BigDecimal(1);
-	private List<String> order = new ArrayList<>();
+	List<String> order = new ArrayList<>();
 	private String orderMethod = "ASC";
 	private E tpl;
 
