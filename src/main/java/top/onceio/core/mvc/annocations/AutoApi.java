@@ -19,4 +19,5 @@ import top.onceio.core.db.tbl.OEntity;
 @Inherited
 public @interface AutoApi {
 	Class<? extends OEntity> value();
+	String brief() default "";
 }

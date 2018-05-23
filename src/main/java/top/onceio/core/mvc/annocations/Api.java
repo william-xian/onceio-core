@@ -13,6 +13,7 @@ import top.onceio.core.beans.ApiMethod;
 @Inherited
 public @interface Api {
 	String value() default "";
-
+	
+	String brief() default "";
 	ApiMethod[] method() default { ApiMethod.GET };
 }
