@@ -68,7 +68,7 @@ public class BeansEden {
 	private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
 			Using.class, Tbl.class, TblView.class, I18nMsg.class, I18nCfg.class, Aop.class);
 	private static BeansEden instance = null;
-	
+
 	private BeansEden() {
 	}
 
@@ -80,15 +80,15 @@ public class BeansEden {
 		}
 		return instance;
 	}
-	
+
 	public void addAnnotation(Class<?>... annotations) {
 		scanner.getFilter().addAll(Arrays.asList(annotations));
 	}
-	
+
 	public Set<Class<?>> getClassByAnnotation(Class<?> annotation) {
 		return scanner.getClasses(annotation);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<Class<? extends OEntity>> matchTblTblView() {
 		List<Class<? extends OEntity>> entities = new LinkedList<>();
@@ -282,7 +282,13 @@ public class BeansEden {
 	}
 
 	private void resoveApi(Class<?> clazz, Api fatherApi, Api methodApi, Object bean, Method method) {
-		String api = fatherApi.value() + methodApi.value();
+		String api = null;
+		if(fatherApi.value().startsWith("/"))
+		{
+			api = fatherApi.value() + methodApi.value();
+		}else {
+			api = "/" + fatherApi.value() + methodApi.value();	
+		}
 		ApiMethod[] apiMethods = methodApi.method();
 		if (apiMethods.length == 0) {
 			apiMethods = fatherApi.method();
@@ -295,11 +301,10 @@ public class BeansEden {
 		}
 	}
 
-	private void resoveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method,
-			String methodName) {
-		String api = autoApi.value().getSimpleName().toLowerCase();
-		if (methodName != null) {
-			api = api + "/" + methodName;
+	private void resoveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method, String methodName) {
+		String api = "/"+autoApi.value().getSimpleName().toLowerCase();
+		if (methodName != null && !methodName.equals("") && !methodName.equals("/")) {
+			api = api + methodName;
 		}
 		for (ApiMethod apiMethod : methodApi.method()) {
 			apiResover.push(apiMethod, api, bean, method);
@@ -329,10 +334,9 @@ public class BeansEden {
 					if (!methodApi.value().equals("")) {
 						resoveAutoApi(clazz, autoApi, methodApi, bean, method, methodApi.value());
 					} else {
-						resoveAutoApi(clazz, autoApi, methodApi, bean, method, method.getName());
+						resoveAutoApi(clazz, autoApi, methodApi, bean, method, "/"+method.getName());
 					}
 				}
-
 				resovleMethodAop(clazz, method);
 			}
 			if (autoApi != null) {
@@ -341,8 +345,11 @@ public class BeansEden {
 						Api methodApi = method.getAnnotation(Api.class);
 						if (methodApi != null
 								&& !ignoreMethods.contains(method.getName() + method.getParameterTypes().hashCode())) {
-							// TODO
-							resoveAutoApi(clazz, autoApi, methodApi, bean, method, method.getName());
+							if (!methodApi.value().equals("")) {
+								resoveAutoApi(clazz, autoApi, methodApi, bean, method, methodApi.value());
+							} else {
+								resoveAutoApi(clazz, autoApi, methodApi, bean, method, "/"+method.getName());
+							}
 						}
 					}
 				}
@@ -358,7 +365,7 @@ public class BeansEden {
 		for (Class<?> clazz : scanner.getClasses(Aop.class)) {
 			Aop aop = clazz.getAnnotation(Aop.class);
 			String[] patterns = aop.pattern();
-			if(patterns.length == 0) {
+			if (patterns.length == 0) {
 				patterns = aop.value();
 			}
 			for (String pattern : patterns) {
@@ -382,16 +389,16 @@ public class BeansEden {
 			}
 		}
 		Cacheable cacheable = method.getAnnotation(Cacheable.class);
-		if(cacheable != null) {
+		if (cacheable != null) {
 			aopClazz.add(CacheableProxy.class);
 		}
-		
+
 		CachePut cachePut = method.getAnnotation(CachePut.class);
-		if(cachePut != null) {
+		if (cachePut != null) {
 			aopClazz.add(CachePutProxy.class);
 		}
 		CacheEvict cacheEvict = method.getAnnotation(CacheEvict.class);
-		if(cacheEvict != null) {
+		if (cacheEvict != null) {
 			aopClazz.add(CacheEvictProxy.class);
 		}
 		Transactional tran = method.getAnnotation(Transactional.class);
@@ -453,25 +460,25 @@ public class BeansEden {
 		if (daoHelper == null) {
 			daoHelper = createDaoHelper(jdbcHelper, idGenerator, matchTblTblView());
 			store(DaoHelper.class, null, daoHelper);
-		}else {
-			if(daoHelper.getEntities() == null) {
+		} else {
+			if (daoHelper.getEntities() == null) {
 				daoHelper.init(jdbcHelper, idGenerator, matchTblTblView());
 			}
 		}
 	}
-	
-	public void resovle(String[] confDir,String[] packages) {
+
+	public void resovle(String[] confDir, String[] packages) {
 		conf = JsonConfLoader.loadConf(confDir);
 		scanner.scanPackages(packages);
 		scanner.putClass(Tbl.class, OI18n.class);
 		scanner.putClass(AutoApi.class, OI18nHolder.class);
 		nameToBean.putAll(conf.resovleBeans());
 		resovleAop();
-		
+
 		loadDefiner();
-		
+
 		loadDefaultBeans();
-		
+
 		loadDefined();
 
 		loadApiAutoApi();
@@ -495,7 +502,7 @@ public class BeansEden {
 					break;
 				}
 			}
-			beanName = clazz.getName();	
+			beanName = clazz.getName();
 		}
 		nameToBean.put(beanName, bean);
 		LOGGER.debug("store beanName=" + beanName);
@@ -510,7 +517,7 @@ public class BeansEden {
 		Object v = null;
 		if (beanName == null || beanName.equals("")) {
 			v = nameToBean.get(clazz.getName());
-		}else {
+		} else {
 			v = nameToBean.get(beanName);
 		}
 		if (v != null) {
