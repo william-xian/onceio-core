@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class OReflectUtil {
 
@@ -166,5 +167,23 @@ public class OReflectUtil {
 		char c = (char)(fieldName.charAt(0) & mask);
 		String methodName = "set"+c+fieldName.substring(1);
 		return setter.get(methodName);
+	}
+	
+	/**
+	 * 回溯到类Object，依次迭代衍生过程的类
+	 * @param c
+	 * @param consumer
+	 */
+	public static void tracebackSuperclass(Class<?> clazz,Class<?> superclass,Consumer<Class<?>> consumer) {
+		if(!clazz.isAssignableFrom(superclass)) {
+			OAssert.err("%s is not assignable from %s", clazz.getName(),superclass.getName());
+		}
+		List<Class<?>> classes = new ArrayList<>();
+		for (Class<?> cls = clazz; cls != superclass; cls = cls.getSuperclass()) {
+			classes.add(0, cls);
+		}
+		for (Class<?> cls : classes) {
+			consumer.accept(cls);
+		}
 	}
 }

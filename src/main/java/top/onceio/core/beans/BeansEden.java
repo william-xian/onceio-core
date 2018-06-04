@@ -228,12 +228,7 @@ public class BeansEden {
 		Iterator<Object> beans = new HashSet<>(nameToBean.values()).iterator();
 		while (beans.hasNext()) {
 			Object bean = beans.next();
-			Class<?> beanClass = bean.getClass();
-			List<Class<?>> classes = new ArrayList<>();
-			for (Class<?> clazz = beanClass; clazz != Object.class; clazz = clazz.getSuperclass()) {
-				classes.add(0, clazz);
-			}
-			for (Class<?> clazz : classes) {
+			OReflectUtil.tracebackSuperclass(bean.getClass(), Object.class, clazz -> {
 				for (Field field : clazz.getDeclaredFields()) {
 					loadConfig(clazz, bean, field);
 					Using usingAnn = field.getAnnotation(Using.class);
@@ -252,7 +247,7 @@ public class BeansEden {
 						}
 					}
 				}
-			}
+			});
 		}
 	}
 
