@@ -22,9 +22,11 @@ public class SelectTpl<E> extends FuncTpl<E> {
 		if(argNames == null) {
 			argNames = new ArrayList<>();
 		}
-		for(String t:tpl.split(",")) {
-			funcs.add("");
-			argNames.add(t);
+		if(tpl != null && !tpl.equals("")) {
+			for(String t:tpl.split(",")) {
+				funcs.add("");
+				argNames.add(t);
+			}	
 		}
 	}
 

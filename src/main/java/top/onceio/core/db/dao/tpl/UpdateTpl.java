@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OReflectUtil;
 
 public class UpdateTpl<T> extends Tpl {
@@ -36,6 +37,7 @@ public class UpdateTpl<T> extends Tpl {
 	}
 	
 	protected void initTpl(String tpl) {
+		OAssert.err(tpl != null, "tpl cannot be null");
 		String[] fileds = tpl.split(",");
 		for(String field : fileds) {
 			sql.append(field+",");
