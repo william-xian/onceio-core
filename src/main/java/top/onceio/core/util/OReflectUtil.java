@@ -175,7 +175,7 @@ public class OReflectUtil {
 	 * @param consumer
 	 */
 	public static void tracebackSuperclass(Class<?> clazz,Class<?> superclass,Consumer<Class<?>> consumer) {
-		if(!clazz.isAssignableFrom(superclass)) {
+		if(!superclass.isAssignableFrom(clazz)) {
 			OAssert.err("%s is not assignable from %s", clazz.getName(),superclass.getName());
 		}
 		List<Class<?>> classes = new ArrayList<>();
