@@ -114,7 +114,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 		return daoHelper.delete(tbl, cnd);
 	}
 
-	@Api(method = { ApiMethod.GET, ApiMethod.POST })
+	@Api(value="/first",method = {ApiMethod.GET})
 	@Override
 	public T fetch(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
 		return daoHelper.fetch(tbl, tpl, cnd);
@@ -147,7 +147,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 	public long count() {
 		return daoHelper.count(tbl);
 	}
-	@Api(method = { ApiMethod.GET})
+	@Api(value="/count", method = { ApiMethod.GET})
 	@Override
 	public long count(Cnd<T> cnd) {
 		return daoHelper.count(tbl, cnd);
