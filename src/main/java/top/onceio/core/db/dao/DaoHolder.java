@@ -149,7 +149,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 	}
 	@Api(value="/count", method = { ApiMethod.GET})
 	@Override
-	public long count(Cnd<T> cnd) {
+	public long count(@Param("cnd") Cnd<T> cnd) {
 		return daoHelper.count(tbl, cnd);
 	}
 
