@@ -135,6 +135,7 @@ public class BeansEden {
 			if (val != null) {
 				try {
 					if (OReflectUtil.isBaseType(fieldType)) {
+						field.setAccessible(true);
 						field.set(bean, OReflectUtil.strToBaseType(fieldType, val));
 					} else {
 						LOGGER.error(String.format("属性不支持该类型：%s", fieldType.getName()));
