@@ -16,7 +16,6 @@ import org.apache.log4j.Logger;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.DDEngine;
 import top.onceio.core.db.meta.TableMeta;
@@ -44,10 +43,11 @@ public class Cnd<E> extends Tpl {
 	private E tpl;
 	private boolean usingRm = false;
 
+	/* TODO  bug*/
 	@SuppressWarnings("unchecked")
 	public Cnd() {
-		Type t = DaoHolder.class.getTypeParameters()[0];
-		tplClass = (Class<E>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
+		Type t = Cnd.class.getTypeParameters()[0];
+		tplClass = (Class<E>) OReflectUtil.searchGenType(Cnd.class, this.getClass(), t);
 		init();
 	}
 	@SuppressWarnings("unchecked")
