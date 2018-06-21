@@ -7,14 +7,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 被标注的字段回被添加到i18n表中，id=c/类名_字段名
- * 
- * @author Administrator
- *
+ * 被标注的字段会被添加到i18n表中
+ * oid : msg/lang_MD5（字段值）
+ * name : 翻译的文字
  */
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface I18nMsg {
-	String value() default "";
+	String value() default ""; /** lang */
 }
