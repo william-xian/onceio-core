@@ -1,7 +1,6 @@
 package top.onceio.core.db.dao.tpl;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,13 +42,6 @@ public class Cnd<E> extends Tpl {
 	private E tpl;
 	private boolean usingRm = false;
 
-	/* TODO  bug*/
-	@SuppressWarnings("unchecked")
-	public Cnd() {
-		Type t = Cnd.class.getTypeParameters()[0];
-		tplClass = (Class<E>) OReflectUtil.searchGenType(Cnd.class, this.getClass(), t);
-		init();
-	}
 	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass) {
 		this.tplClass = tplClass;

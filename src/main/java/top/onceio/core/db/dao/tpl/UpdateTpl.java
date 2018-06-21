@@ -1,7 +1,6 @@
 package top.onceio.core.db.dao.tpl;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -10,7 +9,6 @@ import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import top.onceio.core.util.OAssert;
-import top.onceio.core.util.OReflectUtil;
 
 public class UpdateTpl<T> extends Tpl {
 	protected static Pattern OPT = Pattern.compile("\\+|-|\\*|/|&|\\||~|#|<<|>>");
@@ -21,12 +19,6 @@ public class UpdateTpl<T> extends Tpl {
 	private List<Object> args = new ArrayList<>();
 	private Class<T> tplClass;
 
-	@SuppressWarnings("unchecked")
-	public UpdateTpl() {
-		Type t = UpdateTpl.class.getTypeParameters()[0];
-		tplClass = (Class<T>) OReflectUtil.searchGenType(UpdateTpl.class, this.getClass(), t);
-		init(tplClass);
-	}
 	public UpdateTpl(Class<T> tplClass) {
 		init(tplClass);
 	}
@@ -49,7 +41,7 @@ public class UpdateTpl<T> extends Tpl {
 		this.tplClass = tplClass;
 		UpdateSetterProxy cglibProxy = new UpdateSetterProxy();
 		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(tplClass);
+		enhancer.setSuperclass(this.tplClass);
 		enhancer.setCallback(cglibProxy);
 		tpl = (T) enhancer.create();
 	}

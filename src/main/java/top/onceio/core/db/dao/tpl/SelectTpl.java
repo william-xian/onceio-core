@@ -8,9 +8,6 @@ import java.util.Map;
  * 遇到需要使用distinct时，请使用group by性能更好
  */
 public class SelectTpl<E> extends FuncTpl<E> {
-	public SelectTpl() {
-		super();
-	}
 	public SelectTpl(Class<E> tplClass) {
 		super(tplClass);
 	}
