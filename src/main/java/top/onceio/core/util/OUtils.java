@@ -15,7 +15,7 @@ import com.google.gson.GsonBuilder;
 
 public final class OUtils {
 
-	public final static Gson gson = new GsonBuilder().serializeNulls().create();
+	public final static Gson gson = new GsonBuilder().create();
 	private final static Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
 	
 	public static String encodeMD5(String str) {
