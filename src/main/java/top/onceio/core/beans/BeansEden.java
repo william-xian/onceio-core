@@ -594,7 +594,12 @@ public class BeansEden {
 					String fieldname = field.getName();
 					String val = field.get(null).toString();
 					String key = "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldname;
-					String name = cons.value();
+					String name = null;
+					if(cons != null) {
+						name = cons.value();			
+					} else {
+						name = fieldname;
+					}
 					Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
 					cnd.eq().setOid(key);
 					OI18n i18n = dao.fetch(null, cnd);
