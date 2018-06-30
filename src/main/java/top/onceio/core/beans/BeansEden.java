@@ -20,6 +20,8 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
+import com.google.gson.JsonElement;
+
 import net.sf.cglib.proxy.Enhancer;
 import top.onceio.core.annotation.Config;
 import top.onceio.core.annotation.Def;
@@ -131,8 +133,9 @@ public class BeansEden {
 		Config cnfAnn = field.getAnnotation(Config.class);
 		if (cnfAnn != null) {
 			Class<?> fieldType = field.getType();
-			String val = conf.getConf().get(cnfAnn.value()).getAsString();
-			if (val != null) {
+			JsonElement je = conf.getConf().get(cnfAnn.value());
+			if (je != null) {
+				String val = je.getAsString();
 				try {
 					if (OReflectUtil.isBaseType(fieldType)) {
 						field.setAccessible(true);
