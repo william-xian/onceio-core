@@ -18,6 +18,7 @@ import top.onceio.core.db.annotation.Constraint;
 import top.onceio.core.db.annotation.ConstraintType;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.annotation.TblView;
+import top.onceio.core.exception.VolidateFailed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
@@ -548,4 +549,32 @@ public class TableMeta {
 		return true;
 	}
 
+
+	public void validate(Object obj, boolean ignoreNull) {
+		for (ColumnMeta cm : this.getColumnMetas()) {
+			if (cm.getName().equals("id") || cm.getName().equals("rm")) {
+				continue;
+			}
+			Object val = null;
+			try {
+				val = cm.getField().get(obj);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+			}
+			if (!cm.isNullable() && val == null && !ignoreNull) {
+				VolidateFailed vf = VolidateFailed.createError("%s cannot be null", cm.getName());
+				vf.put(cm.getName(), "cannot be null");
+				vf.throwSelf();
+			} else if (val != null) {
+				if (!cm.getPattern().equals("")) {
+					if (val.toString().matches(cm.getPattern())) {
+						VolidateFailed vf = VolidateFailed.createError("%s does not matches %s", cm.getName(),
+								cm.getPattern());
+						vf.put(cm.getName(), cm.getPattern());
+						vf.throwSelf();
+					}
+				}
+			}
+		}
+
+	}
 }

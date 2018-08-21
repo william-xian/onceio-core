@@ -29,7 +29,6 @@ import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.tbl.OEntity;
 import top.onceio.core.db.tbl.OTableMeta;
 import top.onceio.core.exception.Failed;
-import top.onceio.core.exception.VolidateFailed;
 import top.onceio.core.util.IDGenerator;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OUtils;
@@ -296,7 +295,7 @@ public class DaoHelper implements DDLDao, TransDao {
 		Class<?> tbl = entity.getClass();
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
 		OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
-		validate(tm, entity, false);
+		tm.validate(entity, false);
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
 		if (idNameVal.getIdAt(0) == null) {
 			Long id = idGenerator.next(tbl);
@@ -311,36 +310,6 @@ public class DaoHelper implements DDLDao, TransDao {
 		jdbcHelper.update(sql, vals.toArray());
 		return entity;
 	}
-
-	private void validate(TableMeta tm, Object obj, boolean ignoreNull) {
-		for (ColumnMeta cm : tm.getColumnMetas()) {
-			if (cm.getName().equals("id") || cm.getName().equals("rm")) {
-				continue;
-			}
-			Object val = null;
-			try {
-				val = cm.getField().get(obj);
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				LOGGER.info(e.getMessage());
-			}
-			if (!cm.isNullable() && val == null && !ignoreNull) {
-				VolidateFailed vf = VolidateFailed.createError("%s cannot be null", cm.getName());
-				vf.put(cm.getName(), "cannot be null");
-				vf.throwSelf();
-			} else if (val != null) {
-				if (!cm.getPattern().equals("")) {
-					if (val.toString().matches(cm.getPattern())) {
-						VolidateFailed vf = VolidateFailed.createError("%s does not matches %s", cm.getName(),
-								cm.getPattern());
-						vf.put(cm.getName(), cm.getPattern());
-						vf.throwSelf();
-					}
-				}
-			}
-		}
-
-	}
-
 	public <E extends OEntity> int batchInsert(List<E> entities) {
 		if (entities == null || entities.isEmpty()) {
 			return 0;
@@ -350,7 +319,7 @@ public class DaoHelper implements DDLDao, TransDao {
 		OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
 
 		for (E entity : entities) {
-			validate(tm, entity, false);
+			tm.validate(entity, false);
 			if (entity.getId() == null) {
 				Long id = idGenerator.next(tbl);
 				entity.setId(id);
@@ -381,7 +350,7 @@ public class DaoHelper implements DDLDao, TransDao {
 		OAssert.warnning(entity != null, "不可以插入null");
 		Class<?> tbl = entity.getClass();
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
-		validate(tm, entity, ignoreNull);
+		tm.validate(entity, ignoreNull);
 		OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
 		Object id = idNameVal.getIdAt(0);
