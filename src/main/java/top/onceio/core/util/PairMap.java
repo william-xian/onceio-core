@@ -46,4 +46,9 @@ public class PairMap<A, B> {
 		}
 		return a;
 	}
+
+	public void clear() {
+		a2b.clear();
+		b2a.clear();
+	}
 }
