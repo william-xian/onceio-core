@@ -541,6 +541,8 @@ public class DaoHelper implements DDLDao, TransDao {
 				}
 			});
 			page.setData(data);
+		}else {
+			page.setData(new ArrayList<>(0));
 		}
 		return page;
 	}
