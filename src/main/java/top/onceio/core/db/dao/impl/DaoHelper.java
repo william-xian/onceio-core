@@ -333,6 +333,7 @@ public class DaoHelper implements DDLDao, TransDao {
 		List<List<Object>> valsList = idNameVal.getIdValsList();
 
 		String stub = OUtils.genStub("?", ",", names.size());
+		//TODO
 		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(), String.join(",", names), stub);
 		List<Object[]> vals = new ArrayList<>(valsList.size());
 		for (int i = 0; i < valsList.size(); i++) {
