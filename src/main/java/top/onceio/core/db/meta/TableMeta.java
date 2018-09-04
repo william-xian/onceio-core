@@ -238,8 +238,11 @@ public class TableMeta {
 			if (primaryKey != null) {
 				sqls.add(primaryKey.addSql());
 			}
-			/** 添加复合约束 */
+			/** 添加字段约束 */
 			sqls.addAll(ConstraintMeta.addConstraintSql(fieldConstraint));
+
+			/** 添加复合约束 */
+			sqls.addAll(ConstraintMeta.addConstraintSql(constraints));
 		}
 		return sqls;
 	}
@@ -320,6 +323,27 @@ public class TableMeta {
 				dropUniqueConstraint.add(tuple);
 			}
 		}
+		
+		oldConstraintSet.clear();
+		currentSet.clear();
+		
+		for (ConstraintMeta tuple : constraints) {
+			oldConstraintSet.add(String.join(",", tuple.columns));
+		}
+		List<ConstraintMeta> addCustomizedConstraint = new ArrayList<>();
+		for (ConstraintMeta tuple : other.constraints) {
+			currentSet.add(String.join(",", tuple.columns));
+			if (!oldConstraintSet.contains(String.join(",", tuple.columns))) {
+				addCustomizedConstraint.add(tuple);
+			}
+		}
+		List<ConstraintMeta> dropCustomizedConstraint = new ArrayList<>();
+		for (ConstraintMeta tuple : constraints) {
+			if (!currentSet.contains(String.join(",", tuple.columns))) {
+				dropCustomizedConstraint.add(tuple);
+			}
+		}
+		
 		if (primaryKey != null && !primaryKey.equals(other.primaryKey)) {
 			sqls.add(primaryKey.dropSql());
 		}
@@ -334,6 +358,8 @@ public class TableMeta {
 		sqls.addAll(ConstraintMeta.addConstraintSql(addForeignKeys));
 		sqls.addAll(ConstraintMeta.dropConstraintSql(dropUniqueConstraint));
 		sqls.addAll(ConstraintMeta.addConstraintSql(addUniqueConstraint));
+		sqls.addAll(ConstraintMeta.dropConstraintSql(dropCustomizedConstraint));
+		sqls.addAll(ConstraintMeta.addConstraintSql(addCustomizedConstraint));
 		return sqls;
 	}
 

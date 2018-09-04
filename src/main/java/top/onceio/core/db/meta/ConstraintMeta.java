@@ -100,11 +100,11 @@ public class ConstraintMeta {
 			def = String.format("FOREIGN KEY (%s) REFERENCES %s(%s)", String.join(",", columns), refTable, "id");
 			break;
 		case UNIQUE:
-			def = String.format("UNIQUE (%s)", String.join("_", columns));
+			def = String.format("UNIQUE (%s)", String.join(",", columns));
 			break;
 		case INDEX:
-			def = String.format("ON %s%s (%s)", table, using != null ? (" USING " + using) : "",
-					String.join("_", columns));
+			String usingStruct = using != null ? (" USING " + using) : "";
+			def = String.format("ON %s%s (%s)", table, usingStruct, String.join(",", columns));
 			break;
 		default:
 			OAssert.fatal("不存在：%s", OUtils.toJson(this));
