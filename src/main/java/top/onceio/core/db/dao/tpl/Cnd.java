@@ -455,7 +455,6 @@ public class Cnd<E> extends Tpl {
 			String mainPath = tm.getEntity().getSuperclass().getSimpleName().toLowerCase();
 			String joinTables = dde.genericJoinSqlByParams(mainPath, params, null);
 			sqlSelect.append(String.format(" FROM %s", joinTables));
-			System.err.println(sqlSelect);
 		}
 		return sqlSelect;
 	}
@@ -554,12 +553,17 @@ public class Cnd<E> extends Tpl {
 					if (logic != null) {
 						strLogic = logic.toString() + " ";
 					}
-					if (opt.equals("IN") && inVals != null && inVals.length > 1) {
-						String stub = OUtils.genStub("?", ",", inVals.length);
-						selfSql.append(String.format("%s%s %s (%s)", strLogic, fieldName, opt, stub));
-						for (Object v : inVals) {
-							args.add(v);
+					if (opt.equals("IN")) {
+						if(inVals != null && inVals.length > 0) {
+							String stub = OUtils.genStub("?", ",", inVals.length);
+							selfSql.append(String.format("%s%s %s (%s)", strLogic, fieldName, opt, stub));
+							for (Object v : inVals) {
+								args.add(v);
+							}	
+						} else {
+							selfSql.append(String.format("%s1 = 0", strLogic ));
 						}
+						
 					} else if (opt.equals("IS NULL")) {
 						selfSql.append(String.format("%s%s IS NULL", strLogic, fieldName));
 					} else if (opt.equals("IS NOT NULL")) {
