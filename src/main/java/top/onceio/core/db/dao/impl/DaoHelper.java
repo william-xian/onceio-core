@@ -457,7 +457,7 @@ public class DaoHelper implements DDLDao, TransDao {
 		if (id == null)
 			return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
-		String sql = String.format("DELETE FROM %s WHERE id=? AND rm=true", tm.getTable());
+		String sql = String.format("DELETE FROM %s WHERE id=?", tm.getTable());
 		return jdbcHelper.update(sql, new Object[] { id });
 	}
 
@@ -466,7 +466,7 @@ public class DaoHelper implements DDLDao, TransDao {
 			return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
 		String stub = OUtils.genStub("?", ",", ids.size());
-		String sql = String.format("DELETE FROM %s WHERE (rm=true) AND id IN (%s) ", tm.getTable(), stub);
+		String sql = String.format("DELETE FROM %s WHERE id IN (%s) ", tm.getTable(), stub);
 		return jdbcHelper.update(sql, ids.toArray());
 	}
 
@@ -475,7 +475,6 @@ public class DaoHelper implements DDLDao, TransDao {
 			return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
 		List<Object> sqlArgs = new ArrayList<>();
-		cnd.and().eq().setRm(true);
 		String whereCnd = cnd.whereSql(sqlArgs);
 		String sql = String.format("DELETE FROM %s WHERE %s;", tm.getTable(), whereCnd);
 		return jdbcHelper.update(sql, sqlArgs.toArray());
