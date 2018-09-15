@@ -60,6 +60,17 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 	}
 
 	@Api(value = "/{id}", method = ApiMethod.PUT)
+	public T save(@Param T entity) {
+		T e = this.get(entity.getId());
+		if(e == null) {
+			return daoHelper.insert(entity);
+		}else {
+			daoHelper.updateIgnoreNull(entity);	
+			return this.get(entity.getId());
+		}
+	}
+
+	@Api(value = "/", method = ApiMethod.PATCH)
 	@Override
 	public int updateIgnoreNull(@Param T entity) {
 		return daoHelper.updateIgnoreNull(entity);
@@ -70,7 +81,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 		return daoHelper.updateByTpl(tbl, tpl);
 	}
 
-	@Api(value="/", method = ApiMethod.PATCH)
+	@Api(value="/by", method = ApiMethod.PATCH)
 	@Override
 	public int updateByTplCnd(@Param("tpl") UpdateTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
 		return daoHelper.updateByTplCnd(tbl, tpl, cnd);
@@ -87,7 +98,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 		return daoHelper.removeByIds(tbl, ids);
 	}
 
-	@Api(value="/byCnd",method = ApiMethod.DELETE)
+	@Api(value="/by",method = ApiMethod.DELETE)
 	@Override
 	public int remove(@Param("cnd") Cnd<T> cnd) {
 		return daoHelper.remove(tbl, cnd);
