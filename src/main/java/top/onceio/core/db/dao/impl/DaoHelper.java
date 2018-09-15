@@ -279,7 +279,7 @@ public class DaoHelper implements DDLDao, TransDao {
 	}
 
 	public <E extends OEntity> E get(Class<E> tbl, Long id) {
-		Cnd<E> cnd = new Cnd<E>(tbl);
+		Cnd<E> cnd = new Cnd<E>(tbl, true);
 		cnd.setPage(1);
 		cnd.setPagesize(1);
 		cnd.eq().setId(id);

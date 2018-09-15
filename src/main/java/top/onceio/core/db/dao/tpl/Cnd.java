@@ -41,16 +41,12 @@ public class Cnd<E> extends Tpl {
 	private Class<E> tplClass;
 	private E tpl;
 	private boolean usingRm = false;
-
-	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass) {
-		this.tplClass = tplClass;
-		CndSetterProxy cglibProxy = new CndSetterProxy();
-		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(tplClass);
-		enhancer.setCallback(cglibProxy);
-		tpl = (E) enhancer.create();
-		init();
+		init(tplClass);
+	}
+	public Cnd(Class<E> tplClass,boolean ignoreRm) {
+		init(tplClass);
+		this.usingRm = !ignoreRm;
 	}
 	//TODO 条件表达式未设计c
 	/**
@@ -58,18 +54,18 @@ public class Cnd<E> extends Tpl {
 	 * @param tplClass
 	 * @param cnd 其格式为cnd=cnd=c1&cnd=c2&page=&pagesize=&orderby=
 	 */
-	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass,String cnd) {
+		init(tplClass);
+		initCnd(cnd);
+	}
+	@SuppressWarnings("unchecked")
+	public void init(Class<E> tplClass) {
 		this.tplClass = tplClass;
 		CndSetterProxy cglibProxy = new CndSetterProxy();
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(tplClass);
 		enhancer.setCallback(cglibProxy);
 		tpl = (E) enhancer.create();
-		init();
-		initCnd(cnd);
-	}
-	public void init() {
 		if(args == null) {
 			args = new ArrayList<>();
 		}

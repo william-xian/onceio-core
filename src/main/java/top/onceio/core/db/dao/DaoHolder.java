@@ -38,7 +38,6 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 	@Api(value = "/{id}", method = ApiMethod.GET)
 	@Override
 	public T get(@Param("id") Long id) {
-		daoHelper.get(tbl, id);
 		return daoHelper.get(tbl, id);
 	}
 
