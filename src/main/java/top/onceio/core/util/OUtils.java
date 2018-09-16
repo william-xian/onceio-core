@@ -12,10 +12,11 @@ import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.LongSerializationPolicy;
 
 public final class OUtils {
 
-	public final static Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+	public final static Gson gson = new GsonBuilder().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().create();
 	private final static Gson prettyGson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 	
 	public static String encodeMD5(String str) {
