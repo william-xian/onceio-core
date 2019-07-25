@@ -114,33 +114,43 @@ public class JsonConfLoader {
 				loadJar(url);
 			} else {
 				File file = new File(url.getFile());
-				if (file.exists()) {
-					try {
-						Files.walk(file.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
-							File cnf = path.toFile();
-							if (cnf.getName().endsWith(".json")) {
-								FileInputStream fis = null;
-								try {
-									fis = new FileInputStream(cnf);
-									loadJson(fis);
-								} catch (FileNotFoundException e) {
-									LOGGER.warn(e.getMessage());
-								} finally {
-									if (fis != null) {
-										try {
-											fis.close();
-										} catch (IOException e) {
-											LOGGER.warn(e.getMessage());
-										}
-									}
-								}
-							}
-						});
-					} catch (IOException e) {
-						LOGGER.warn(e.getMessage());
-					}
+				if (file.exists() && file.isDirectory()) {
+					loadDir(file);
 				}
 			}
+		} else {
+			File file = new File(dir);
+			if(file.exists() && file.isDirectory()) {
+				loadDir(file);
+			}
+		}
+
+	}
+
+	private void loadDir(File dir) {
+		try {
+			Files.walk(dir.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
+				File cnf = path.toFile();
+				if (cnf.getName().endsWith(".json")) {
+					FileInputStream fis = null;
+					try {
+						fis = new FileInputStream(cnf);
+						loadJson(fis);
+					} catch (FileNotFoundException e) {
+						LOGGER.warn(e.getMessage());
+					} finally {
+						if (fis != null) {
+							try {
+								fis.close();
+							} catch (IOException e) {
+								LOGGER.warn(e.getMessage());
+							}
+						}
+					}
+				}
+			});
+		} catch (IOException e) {
+			LOGGER.warn(e.getMessage());
 		}
 	}
 

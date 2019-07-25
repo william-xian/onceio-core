@@ -30,7 +30,7 @@ public class TableMeta {
 	String entityName;
 	ConstraintMeta primaryKey;
 	transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
-	List<ConstraintMeta> constraints;
+	List<ConstraintMeta> constraints = new ArrayList<>();
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
 	transient Map<String, ColumnMeta> nameToColumnMeta = new HashMap<>();
 	transient DDEngine engine;
