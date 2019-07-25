@@ -84,4 +84,8 @@ public class Failed extends RuntimeException {
 		throw new Failed(ERROR, format, args, data);
 	}
 
+	@Override
+	public String toString() {
+		return "Failed : " + String.format(format,args);
+	}
 }

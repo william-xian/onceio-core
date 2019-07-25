@@ -14,7 +14,7 @@ public enum DBType {
     /**
      * Postgresql
      */
-    PSQL,
+    POSTGRESQL,
     /**
      * Oracle
      */
@@ -62,7 +62,7 @@ public enum DBType {
 
     public static DBType fromName(String productName) {
     	if(productName.equals("PostgreSQL")) {
-    		return DBType.PSQL;
+    		return DBType.POSTGRESQL;
     	}
     	return DBType.OTHER;
     }
