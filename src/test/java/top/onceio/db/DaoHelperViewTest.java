@@ -81,12 +81,13 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		daoHelper.deleteByIds(UserInfo.class, ids);
 	}
 	
-	//@Test
+	@Test
 	public void findView() {
 		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
 		cnd.setPagesize(25);
 		SelectTpl<GoodsOrderView> tplOrder = new SelectTpl<>(GoodsOrderView.class);
-		tplOrder.usingRowNum();
+		tplOrder.using().setUsername(Tpl.USING_S);
+		cnd.orderBy().desc().setUsername(Tpl.USING_S);
 		Page<GoodsOrderView> page = daoHelper.findByTpl(GoodsOrderView.class,tplOrder,cnd);
 		System.out.println(page);
 		Assert.assertEquals(new Long(25), page.getTotal());
@@ -114,8 +115,8 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
 		SelectTpl<GoodsOrderView> tpl = new SelectTpl<>(GoodsOrderView.class);
 		tpl.max().setId(Tpl.USING_LONG);
-		tpl.using().setUserName(Tpl.USING_S);
-		cnd.groupBy().use().setUserName(Tpl.USING_S);
+		tpl.using().setUsername(Tpl.USING_S);
+		cnd.groupBy().use().setUsername(Tpl.USING_S);
 		cnd.having().max().setId(Tpl.USING_LONG);
 		cnd.having().gt(2L);
 		Page<GoodsOrderView> page = daoHelper.findByTpl(GoodsOrderView.class,tpl,cnd);

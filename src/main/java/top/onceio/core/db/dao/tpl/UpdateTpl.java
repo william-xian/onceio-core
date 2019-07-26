@@ -105,7 +105,7 @@ public class UpdateTpl<T> extends Tpl {
 		return tpl;
 	}
 
-	public String getSetTpl() {
+	String getSetTpl() {
 		if(sql.length() > 0 && sql.charAt(sql.length()-1) == ',') {
 			return sql.substring(0, sql.length() - 1);
 		}else {
@@ -113,7 +113,7 @@ public class UpdateTpl<T> extends Tpl {
 		}
 	}
 
-	public List<Object> getArgs() {
+	List<Object> getArgs() {
 		return args;
 	}
 

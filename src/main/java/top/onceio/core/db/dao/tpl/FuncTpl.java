@@ -54,8 +54,13 @@ public abstract class FuncTpl<E> extends Tpl {
 		funcs.add("DISTINCT");
 		return tpl;
 	}
-	
-	public List<String> getArgNames() {
+
+	public E func(String func) {
+		funcs.add(func);
+		return tpl;
+	}
+
+	List<String> getArgNames() {
 		return argNames;
 	}
 

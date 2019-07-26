@@ -1,4 +1,4 @@
-package top.onceio.core.db.dao.impl;
+package top.onceio.core.db.dao.tpl;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -19,9 +19,6 @@ import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.dao.Page;
 import top.onceio.core.db.dao.TransDao;
-import top.onceio.core.db.dao.tpl.Cnd;
-import top.onceio.core.db.dao.tpl.SelectTpl;
-import top.onceio.core.db.dao.tpl.UpdateTpl;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.ConstraintMeta;
@@ -475,6 +472,7 @@ public class DaoHelper implements DDLDao, TransDao {
 			return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
 		List<Object> sqlArgs = new ArrayList<>();
+		cnd.and().eq().setRm(true);
 		String whereCnd = cnd.whereSql(sqlArgs);
 		String sql = String.format("DELETE FROM %s WHERE %s;", tm.getTable(), whereCnd);
 		return jdbcHelper.update(sql, sqlArgs.toArray());

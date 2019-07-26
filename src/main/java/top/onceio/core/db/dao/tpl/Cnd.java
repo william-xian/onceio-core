@@ -59,7 +59,7 @@ public class Cnd<E> extends Tpl {
 		initCnd(cnd);
 	}
 	@SuppressWarnings("unchecked")
-	public void init(Class<E> tplClass) {
+	void init(Class<E> tplClass) {
 		this.tplClass = tplClass;
 		CndSetterProxy cglibProxy = new CndSetterProxy();
 		Enhancer enhancer = new Enhancer();
@@ -275,7 +275,7 @@ public class Cnd<E> extends Tpl {
 	/**
 	 * 对于需要查找null值字段，传递vals为null值，
 	 */
-	public E in(Object[] vals) {
+	public E in(Object... vals) {
 		opt = "IN";
 		inVals = vals;
 		return tpl;
@@ -330,7 +330,7 @@ public class Cnd<E> extends Tpl {
 		return this;
 	}
 
-	public String whereSql(List<Object> sqlArgs) {
+	String whereSql(List<Object> sqlArgs) {
 		StringBuffer self = new StringBuffer();
 		if (selfSql.length() > 0) {
 			self.append("(" + selfSql);
@@ -377,7 +377,7 @@ public class Cnd<E> extends Tpl {
 		return self.toString();
 	}
 
-	public String afterWhere(TableMeta tm, List<Object> sqlArgs) {
+	String afterWhere(TableMeta tm, List<Object> sqlArgs) {
 		StringBuffer afterWhere = new StringBuffer();
 		Map<String, String> tokens = null;
 		
@@ -421,7 +421,7 @@ public class Cnd<E> extends Tpl {
 		return afterWhere.toString();
 	}
 
-	public StringBuffer selectSql(TableMeta tm, SelectTpl<E> tpl) {
+	StringBuffer selectSql(TableMeta tm, SelectTpl<E> tpl) {
 		StringBuffer sqlSelect = new StringBuffer();
 		sqlSelect.append("SELECT ");
 		if (tm.getEngine() == null) {
@@ -455,7 +455,7 @@ public class Cnd<E> extends Tpl {
 		return sqlSelect;
 	}
 
-	public StringBuffer wholeSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
+	StringBuffer wholeSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
 		StringBuffer sql = new StringBuffer();
 		sql.append(selectSql(tm, tpl));
 		sql.append(afterWhere(tm, sqlArgs));
@@ -463,14 +463,14 @@ public class Cnd<E> extends Tpl {
 	}
 
 	// TODO 根据上一条数据 和order语句计算相临的两页数据
-	public String pageSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
+	String pageSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
 		StringBuffer s = wholeSql(tm, tpl, sqlArgs);
 		s.append(" LIMIT ? OFFSET ?");
 		sqlArgs.addAll(Arrays.asList(getPagesize(), (getPage() - 1) * getPagesize()));
 		return s.toString();
 	}
 
-	public String countSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
+	String countSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
 		String group = group();
 		if (tm.getEngine() == null) {
 			if (group != null && !group.isEmpty()) {
@@ -494,7 +494,7 @@ public class Cnd<E> extends Tpl {
 		return having;
 	}
 
-	public String getHaving(List<Object> sqlArgs) {
+	String getHaving(List<Object> sqlArgs) {
 		if (having != null) {
 			return having.sql(sqlArgs);
 		} else {

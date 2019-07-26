@@ -37,7 +37,7 @@ public class DDEngine {
 	/**
 	 * 添加推导关系和结果集 <b>此处的关系是一一对应的</b>
 	 * 
-	 * @param result
+	 * @param resultSet
 	 *            A {id aid,name AName,bid}; A.bid-B {name BName,CId};
 	 *            A.bid-B.cid-C {name CName}
 	 * @return
@@ -204,7 +204,7 @@ public class DDEngine {
 	/**
 	 * 根据主表和相关参数 推导出依赖的相关表
 	 * 
-	 * @param mainEntity
+	 * @param mainPath
 	 * @param params
 	 * @return
 	 */

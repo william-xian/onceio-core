@@ -51,7 +51,7 @@ public class OrderTpl<E> extends Tpl {
 		return tpl;
 	}
 
-	public String getOrder() {
+	String getOrder() {
 		return String.join(",", order);
 	}
 

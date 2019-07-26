@@ -48,7 +48,7 @@ import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.annotation.TblView;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
-import top.onceio.core.db.dao.impl.DaoHelper;
+import top.onceio.core.db.dao.tpl.DaoHelper;
 import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.tbl.OEntity;

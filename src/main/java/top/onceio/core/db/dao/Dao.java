@@ -26,7 +26,7 @@ public interface Dao<T> {
 	/**
 	 * 批量插入数据
 	 * <b>如果entity的id为null，会自动回填id</b>
-	 * @param entity
+	 * @param entities
 	 * @return
 	 */
 	int batchInsert(List<T> entities);

@@ -2,22 +2,11 @@ package top.onceio.db;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jdk.internal.util.xml.impl.Input;
 import org.junit.Test;
-import org.postgresql.ds.PGSimpleDataSource;
-import org.postgresql.jdbc2.optional.SimpleDataSource;
 import top.onceio.core.beans.BeansEden;
-import top.onceio.core.db.dao.impl.DaoHelper;
+import top.onceio.core.db.dao.tpl.DaoHelper;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.tbl.OI18n;
-import top.onceio.core.util.JsonConfLoader;
-
-import javax.sql.DataSource;
-import java.io.*;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.util.logging.Logger;
 
 public class DaoBaseTest {
 	protected static JdbcHelper jdbcHelper = new JdbcHelper();

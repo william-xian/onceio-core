@@ -6,15 +6,17 @@ import top.onceio.core.db.annotation.TblView;
 
 @TblView
 public class GoodsOrderView extends GoodsOrder{
+	//@Col
+	//private Long rowNum;
 	@Col(refBy="userId-UserInfo.name")
-	private String userName;
+	private String username;
 	@Col(refBy="goodsId-Goods.name")
 	private String goodsName;
-	public String getUserName() {
-		return userName;
+	public String getUsername() {
+		return username;
 	}
-	public void setUserName(String userName) {
-		this.userName = userName;
+	public void setUsername(String username) {
+		this.username = username;
 	}
 	public String getGoodsName() {
 		return goodsName;

@@ -27,7 +27,7 @@ public class GroupTpl<E> extends Tpl {
 		return tpl;
 	}
 
-	public String getGroup() {
+	String getGroup() {
 		return String.join(",", group);
 	}
 

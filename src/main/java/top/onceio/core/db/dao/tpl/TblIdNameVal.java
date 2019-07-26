@@ -1,4 +1,4 @@
-package top.onceio.core.db.dao.impl;
+package top.onceio.core.db.dao.tpl;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -93,7 +93,7 @@ public class HavingTpl<E> extends FuncTpl<E> {
 		return this;
 	}
 
-	public String sql(List<Object> sqlArgs) {
+	String sql(List<Object> sqlArgs) {
 		StringBuffer sb = new StringBuffer();
 		for (int i = 0; i < funcs.size(); i++) {
 			String func = funcs.get(i);

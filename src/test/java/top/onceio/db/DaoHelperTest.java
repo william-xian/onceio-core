@@ -256,6 +256,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		Assert.assertEquals(page.getTotal(), new Long(4));
 		
 		SelectTpl<UserInfo> max = new SelectTpl<UserInfo>(UserInfo.class);
+
 		max.max().setGenre(SelectTpl.USING_INT);
 		UserInfo ucMax = daoHelper.fetch(UserInfo.class,max,null);
 		Assert.assertEquals(ucMax.getGenre(), new Integer(3));

@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 
 import top.onceio.core.annotation.Using;
 import top.onceio.core.beans.ApiMethod;
-import top.onceio.core.db.dao.impl.DaoHelper;
+import top.onceio.core.db.dao.tpl.DaoHelper;
 import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.dao.tpl.SelectTpl;
 import top.onceio.core.db.dao.tpl.UpdateTpl;
