@@ -10,14 +10,15 @@ import top.onceio.core.db.tbl.OEntity;
 
 /**
  * 类的所有公共方法都会成为RESTful API
- * 
+ *
  * @author william-xian
  */
 
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface AutoApi {
-	Class<? extends OEntity> value();
-	String brief() default "";
+    Class<? extends OEntity> value();
+
+    String brief() default "";
 }

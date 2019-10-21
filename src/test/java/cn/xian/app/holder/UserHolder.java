@@ -11,11 +11,11 @@ import top.onceio.core.mvc.annocations.Param;
 @AutoApi(UserInfo.class)
 @Cacheable
 public class UserHolder extends DaoHolder<UserInfo> {
-	@Cacheable
-	@Api
-	public UserInfo fetchByName(@Param("name") String name) {
-		Cnd<UserInfo> cnd = new Cnd<>(UserInfo.class);
-		cnd.eq().setName(name);
-		return super.fetch(null,cnd);
-	}
+    @Cacheable
+    @Api
+    public UserInfo fetchByName(@Param("name") String name) {
+        Cnd<UserInfo> cnd = new Cnd<>(UserInfo.class);
+        cnd.eq().setName(name);
+        return super.fetch(null, cnd);
+    }
 }

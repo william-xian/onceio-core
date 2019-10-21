@@ -12,9 +12,9 @@ import java.lang.annotation.Target;
  * i18n.val = 字段的值
  * i18n.name = I18nCfgBrief.value() | I18nMsg.value()
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface I18nCfg {
-	String value() default ""; //language
+    String value() default ""; //language
 }

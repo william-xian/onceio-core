@@ -3,13 +3,13 @@ package top.onceio.core.db.dao;
 import java.sql.Savepoint;
 
 public interface TransDao {
-	void beginTransaction(int level, boolean readOnly);
+    void beginTransaction(int level, boolean readOnly);
 
-	Savepoint setSavepoint();
+    Savepoint setSavepoint();
 
-	void rollback();
+    void rollback();
 
-	void rollback(Savepoint sp);
+    void rollback(Savepoint sp);
 
-	void commit();
+    void commit();
 }

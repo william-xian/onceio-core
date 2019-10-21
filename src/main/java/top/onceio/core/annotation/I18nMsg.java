@@ -11,9 +11,9 @@ import java.lang.annotation.Target;
  * oid : msg/lang_MD5（字段值）
  * name : 翻译的文字
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface I18nMsg {
-	String value() default ""; /** lang */
+    String value() default ""; /** lang */
 }

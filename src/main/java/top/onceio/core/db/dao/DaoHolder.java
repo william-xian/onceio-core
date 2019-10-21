@@ -16,151 +16,152 @@ import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
 public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
-	@Using
-	protected DaoHelper daoHelper;
+    @Using
+    protected DaoHelper daoHelper;
 
-	private Class<T> tbl;
+    private Class<T> tbl;
 
-	@SuppressWarnings("unchecked")
-	public DaoHolder() {
-		Type t = DaoHolder.class.getTypeParameters()[0];
-		tbl = (Class<T>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
-	}
+    @SuppressWarnings("unchecked")
+    public DaoHolder() {
+        Type t = DaoHolder.class.getTypeParameters()[0];
+        tbl = (Class<T>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
+    }
 
-	public DaoHelper getDaoHelper() {
-		return daoHelper;
-	}
+    public DaoHelper getDaoHelper() {
+        return daoHelper;
+    }
 
-	public void setDaoHelper(DaoHelper daoHelper) {
-		this.daoHelper = daoHelper;
-	}
+    public void setDaoHelper(DaoHelper daoHelper) {
+        this.daoHelper = daoHelper;
+    }
 
-	@Api(value = "/{id}", method = ApiMethod.GET)
-	@Override
-	public T get(@Param("id") Long id) {
-		return daoHelper.get(tbl, id);
-	}
+    @Api(value = "/{id}", method = ApiMethod.GET)
+    @Override
+    public T get(@Param("id") Long id) {
+        return daoHelper.get(tbl, id);
+    }
 
-	@Api(value = "/", method = ApiMethod.POST)
-	@Override
-	public T insert(@Param T entity) {
-		return daoHelper.insert(entity);
-	}
+    @Api(value = "/", method = ApiMethod.POST)
+    @Override
+    public T insert(@Param T entity) {
+        return daoHelper.insert(entity);
+    }
 
-	@Api(value = "/batch", method = ApiMethod.POST)
-	@Override
-	public int batchInsert(@Param List<T> entities) {
-		return daoHelper.batchInsert(entities);
-	}
+    @Api(value = "/batch", method = ApiMethod.POST)
+    @Override
+    public int batchInsert(@Param List<T> entities) {
+        return daoHelper.batchInsert(entities);
+    }
 
-	@Override
-	public int update(@Param T entity) {
-		return daoHelper.update(entity);
-	}
+    @Override
+    public int update(@Param T entity) {
+        return daoHelper.update(entity);
+    }
 
-	@Api(value = "/{id}", method = ApiMethod.PUT)
-	public T save(@Param T entity) {
-		T e = this.get(entity.getId());
-		if(e == null) {
-			return daoHelper.insert(entity);
-		}else {
-			daoHelper.updateIgnoreNull(entity);	
-			return this.get(entity.getId());
-		}
-	}
+    @Api(value = "/{id}", method = ApiMethod.PUT)
+    public T save(@Param T entity) {
+        T e = this.get(entity.getId());
+        if (e == null) {
+            return daoHelper.insert(entity);
+        } else {
+            daoHelper.updateIgnoreNull(entity);
+            return this.get(entity.getId());
+        }
+    }
 
-	@Api(value = "/", method = ApiMethod.PATCH)
-	@Override
-	public int updateIgnoreNull(@Param T entity) {
-		return daoHelper.updateIgnoreNull(entity);
-	}
+    @Api(value = "/", method = ApiMethod.PATCH)
+    @Override
+    public int updateIgnoreNull(@Param T entity) {
+        return daoHelper.updateIgnoreNull(entity);
+    }
 
-	@Override
-	public int updateByTpl(UpdateTpl<T> tpl) {
-		return daoHelper.updateByTpl(tbl, tpl);
-	}
+    @Override
+    public int updateByTpl(UpdateTpl<T> tpl) {
+        return daoHelper.updateByTpl(tbl, tpl);
+    }
 
-	@Api(value="/by", method = ApiMethod.PATCH)
-	@Override
-	public int updateByTplCnd(@Param("tpl") UpdateTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-		return daoHelper.updateByTplCnd(tbl, tpl, cnd);
-	}
+    @Api(value = "/by", method = ApiMethod.PATCH)
+    @Override
+    public int updateByTplCnd(@Param("tpl") UpdateTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
+        return daoHelper.updateByTplCnd(tbl, tpl, cnd);
+    }
 
-	@Override
-	public int removeById(@Param("id") Long id) {
-		return daoHelper.removeById(tbl, id);
-	}
+    @Override
+    public int removeById(@Param("id") Long id) {
+        return daoHelper.removeById(tbl, id);
+    }
 
-	@Api(value="/{ids}",method = ApiMethod.DELETE)
-	@Override
-	public int removeByIds(@Param("ids") List<Long> ids) {
-		return daoHelper.removeByIds(tbl, ids);
-	}
+    @Api(value = "/{ids}", method = ApiMethod.DELETE)
+    @Override
+    public int removeByIds(@Param("ids") List<Long> ids) {
+        return daoHelper.removeByIds(tbl, ids);
+    }
 
-	@Api(value="/by",method = ApiMethod.DELETE)
-	@Override
-	public int remove(@Param("cnd") Cnd<T> cnd) {
-		return daoHelper.remove(tbl, cnd);
-	}
+    @Api(value = "/by", method = ApiMethod.DELETE)
+    @Override
+    public int remove(@Param("cnd") Cnd<T> cnd) {
+        return daoHelper.remove(tbl, cnd);
+    }
 
-	@Api(value="/recovery",method = ApiMethod.PUT)
-	@Override
-	public int recovery(@Param("cnd") Cnd<T> cnd) {
-		return daoHelper.recovery(tbl, cnd);
-	}
+    @Api(value = "/recovery", method = ApiMethod.PUT)
+    @Override
+    public int recovery(@Param("cnd") Cnd<T> cnd) {
+        return daoHelper.recovery(tbl, cnd);
+    }
 
-	@Override
-	public int deleteById(Long id) {
-		return daoHelper.deleteById(tbl, id);
-	}
+    @Override
+    public int deleteById(Long id) {
+        return daoHelper.deleteById(tbl, id);
+    }
 
-	@Override
-	public int deleteByIds(List<Long> ids) {
-		return daoHelper.deleteByIds(tbl, ids);
-	}
+    @Override
+    public int deleteByIds(List<Long> ids) {
+        return daoHelper.deleteByIds(tbl, ids);
+    }
 
-	@Override
-	public int delete(Cnd<T> cnd) {
-		return daoHelper.delete(tbl, cnd);
-	}
+    @Override
+    public int delete(Cnd<T> cnd) {
+        return daoHelper.delete(tbl, cnd);
+    }
 
-	@Api(value="/first",method = {ApiMethod.GET})
-	@Override
-	public T fetch(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-		return daoHelper.fetch(tbl, tpl, cnd);
-	}
+    @Api(value = "/first", method = {ApiMethod.GET})
+    @Override
+    public T fetch(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
+        return daoHelper.fetch(tbl, tpl, cnd);
+    }
 
-	@Api(value="/byIds",method = { ApiMethod.GET})
-	@Override
-	public List<T> findByIds(@Param("ids") List<Long> ids) {
-		return daoHelper.findByIds(tbl, ids);
-	}
+    @Api(value = "/byIds", method = {ApiMethod.GET})
+    @Override
+    public List<T> findByIds(@Param("ids") List<Long> ids) {
+        return daoHelper.findByIds(tbl, ids);
+    }
 
 
-	@Override
-	public Page<T> find(Cnd<T> cnd) {
-		return daoHelper.find(tbl, cnd);
-	}
+    @Override
+    public Page<T> find(Cnd<T> cnd) {
+        return daoHelper.find(tbl, cnd);
+    }
 
-	@Api(value="/",method = { ApiMethod.GET})
-	@Override
-	public Page<T> findTpl(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-		return daoHelper.findByTpl(tbl, tpl, cnd);
-	}
+    @Api(value = "/", method = {ApiMethod.GET})
+    @Override
+    public Page<T> findTpl(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
+        return daoHelper.findByTpl(tbl, tpl, cnd);
+    }
 
-	@Override
-	public void download(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd, Consumer<T> consumer) {
-		daoHelper.download(tbl, tpl, cnd, consumer);
-	}
+    @Override
+    public void download(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd, Consumer<T> consumer) {
+        daoHelper.download(tbl, tpl, cnd, consumer);
+    }
 
-	@Override
-	public long count() {
-		return daoHelper.count(tbl);
-	}
-	@Api(value="/count", method = { ApiMethod.GET})
-	@Override
-	public long count(@Param("cnd") Cnd<T> cnd) {
-		return daoHelper.count(tbl, cnd);
-	}
+    @Override
+    public long count() {
+        return daoHelper.count(tbl);
+    }
+
+    @Api(value = "/count", method = {ApiMethod.GET})
+    @Override
+    public long count(@Param("cnd") Cnd<T> cnd) {
+        return daoHelper.count(tbl, cnd);
+    }
 
 }

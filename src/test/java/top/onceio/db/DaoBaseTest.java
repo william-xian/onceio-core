@@ -9,21 +9,21 @@ import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.tbl.OI18n;
 
 public class DaoBaseTest {
-	protected static JdbcHelper jdbcHelper = new JdbcHelper();
+    protected static JdbcHelper jdbcHelper = new JdbcHelper();
 
-	protected static DaoHelper daoHelper = new DaoHelper();
-	
-	public static void initDao() {
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		BeansEden.get().resovle(new String[] {"src/test/java/conf/"},new String[] {"cn.xian.app"});
-		jdbcHelper = BeansEden.get().load(JdbcHelper.class);
-		daoHelper = BeansEden.get().load(DaoHelper.class);
-	}
-	
-	@Test
-	public void createTbl() {
-		initDao();
-		System.out.println(OI18n.class);
-	}
-	
+    protected static DaoHelper daoHelper = new DaoHelper();
+
+    public static void initDao() {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        BeansEden.get().resovle(new String[]{"src/test/java/conf/"}, new String[]{"cn.xian.app"});
+        jdbcHelper = BeansEden.get().load(JdbcHelper.class);
+        daoHelper = BeansEden.get().load(DaoHelper.class);
+    }
+
+    @Test
+    public void createTbl() {
+        initDao();
+        System.out.println(OI18n.class);
+    }
+
 }

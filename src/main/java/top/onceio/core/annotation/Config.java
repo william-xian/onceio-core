@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
 /**
  * 从onceio.properties读取属性
  */
-@Target({ ElementType.FIELD })
+@Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Config {
-	String value();
+    String value();
 }

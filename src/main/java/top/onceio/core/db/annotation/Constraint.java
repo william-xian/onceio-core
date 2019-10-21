@@ -8,9 +8,9 @@ import java.lang.annotation.Target;
 @Target({})
 @Retention(RUNTIME)
 public @interface Constraint {
-	String using() default "BTREE";
+    String using() default "BTREE";
 
-	ConstraintType type() default ConstraintType.UNIQUE;
+    ConstraintType type() default ConstraintType.UNIQUE;
 
-	String[] colNames() default {};
+    String[] colNames() default {};
 }

@@ -8,9 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * 定义Bean对象，本身不是Bean
- *
  */
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Definer {

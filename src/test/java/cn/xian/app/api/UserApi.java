@@ -11,27 +11,27 @@ import top.onceio.core.mvc.annocations.Param;
 
 @Api("/user")
 public class UserApi {
-	
-	@Using
-	private UserLogic userService;
-	
-	@Api("/signup/{username}")
-	public UserInfo signup(@Param("username") String username, @Param("passwd") String passwd) {
-		return userService.signup(username, passwd);
-	}
-	
-	@Api("/signin/{username}")
-	public boolean signin(@Param("username") String username, @Param("passwd") String passwd) {
-		return userService.signin(username, passwd);
-	}
-	
-	@Api("/find")
-	public Page<UserInfo> find(@Param() UserInfo uc) {
-		return userService.find(uc);
-	}
-	
-	@Api("/transfer")
-	public Map<String,Object> transfer(@Param("from") Long from, @Param("to") Long to,@Param("v")Integer v) {
-		return userService.transfer(from, to, v);
-	}
+
+    @Using
+    private UserLogic userService;
+
+    @Api("/signup/{username}")
+    public UserInfo signup(@Param("username") String username, @Param("passwd") String passwd) {
+        return userService.signup(username, passwd);
+    }
+
+    @Api("/signin/{username}")
+    public boolean signin(@Param("username") String username, @Param("passwd") String passwd) {
+        return userService.signin(username, passwd);
+    }
+
+    @Api("/find")
+    public Page<UserInfo> find(@Param() UserInfo uc) {
+        return userService.find(uc);
+    }
+
+    @Api("/transfer")
+    public Map<String, Object> transfer(@Param("from") Long from, @Param("to") Long to, @Param("v") Integer v) {
+        return userService.transfer(from, to, v);
+    }
 }

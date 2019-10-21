@@ -14,19 +14,19 @@ import top.onceio.core.util.OUtils;
 @AutoApi(OI18n.class)
 @Cacheable
 public class OI18nHolder extends DaoHolder<OI18n> {
-	
-	@Api("/translate")
-	public String translate(@Param("msg")String msg, @Param("lang")String lang) throws Exception {
-		if (lang != null && !lang.equals(Locale.getDefault().getLanguage())) {
-			String key = "msg/" + lang + "_" + OUtils.encodeMD5(msg);
-			Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-			cnd.eq().setOid(key);
-			OI18n i18n = fetch(null, cnd);
-			if (i18n != null) {
-				msg = i18n.getName();
-			}
-		}
-		return msg;
-	}
+
+    @Api("/translate")
+    public String translate(@Param("msg") String msg, @Param("lang") String lang) throws Exception {
+        if (lang != null && !lang.equals(Locale.getDefault().getLanguage())) {
+            String key = "msg/" + lang + "_" + OUtils.encodeMD5(msg);
+            Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
+            cnd.eq().setOid(key);
+            OI18n i18n = fetch(null, cnd);
+            if (i18n != null) {
+                msg = i18n.getName();
+            }
+        }
+        return msg;
+    }
 
 }

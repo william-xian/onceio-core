@@ -8,26 +8,30 @@ import org.junit.Test;
 import top.onceio.core.util.OReflectUtil;
 
 public class OReflectUtilTest {
-	class Zero {
-		
-	}
-	class A<T1> extends Zero {
-		T1 id;
-	}
-	class B extends A<Long> {
-		
-	}	
-	class C<E,ID2> extends A<ID2> {
-		E e;
-	}
-	class D extends C<Long,String> {
-		
-	}
+    class Zero {
 
-	@Test
-	public void searchGenType() throws NoSuchFieldException, SecurityException {
-		A<Integer> a = new A<>();
-		Type fieldType = a.getClass().getDeclaredField("id").getGenericType();
-		Assert.assertEquals(String.class.getTypeName(), OReflectUtil.searchGenType(A.class,D.class,fieldType).getTypeName());
-	}
+    }
+
+    class A<T1> extends Zero {
+        T1 id;
+    }
+
+    class B extends A<Long> {
+
+    }
+
+    class C<E, ID2> extends A<ID2> {
+        E e;
+    }
+
+    class D extends C<Long, String> {
+
+    }
+
+    @Test
+    public void searchGenType() throws NoSuchFieldException, SecurityException {
+        A<Integer> a = new A<>();
+        Type fieldType = a.getClass().getDeclaredField("id").getGenericType();
+        Assert.assertEquals(String.class.getTypeName(), OReflectUtil.searchGenType(A.class, D.class, fieldType).getTypeName());
+    }
 }

@@ -8,8 +8,8 @@ import top.onceio.core.cache.impl.FIFOMemoryCache;
 @Definer
 public class BeansDefiner {
 
-	@Def
-	public Cache createFIFOMemoryCache(){
-		return new FIFOMemoryCache(1000);
-	}
+    @Def
+    public Cache createFIFOMemoryCache() {
+        return new FIFOMemoryCache(1000);
+    }
 }

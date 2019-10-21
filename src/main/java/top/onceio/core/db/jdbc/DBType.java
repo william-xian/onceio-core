@@ -2,8 +2,8 @@ package top.onceio.core.db.jdbc;
 
 /**
  * 列出了支持的数据库类型
- * 
- * @author 
+ *
+ * @author
  */
 public enum DBType {
 
@@ -36,19 +36,19 @@ public enum DBType {
      */
     SQLITE,
     /**
-     * 
+     *
      */
     HSQL,
     /**
-     * 
+     *
      */
     DERBY,
     /**
-     * 
+     *
      */
     GBASE,
     /**
-     * 
+     *
      */
     SYBASE,
     /**
@@ -61,9 +61,9 @@ public enum DBType {
     OTHER;
 
     public static DBType fromName(String productName) {
-    	if(productName.equals("PostgreSQL")) {
-    		return DBType.POSTGRESQL;
-    	}
-    	return DBType.OTHER;
+        if (productName.equals("PostgreSQL")) {
+            return DBType.POSTGRESQL;
+        }
+        return DBType.OTHER;
     }
 }

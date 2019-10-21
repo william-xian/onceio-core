@@ -8,160 +8,182 @@ import top.onceio.core.db.dao.tpl.SelectTpl;
 import top.onceio.core.db.dao.tpl.UpdateTpl;
 
 public interface Dao<T> {
-	/**
-	 * 根据id获取对象
-	 * <b>即使数据已经被逻辑删除依然能够获取到。</b>
-	 * @param id
-	 * @return
-	 */
-	T get(Long id);
+    /**
+     * 根据id获取对象
+     * <b>即使数据已经被逻辑删除依然能够获取到。</b>
+     *
+     * @param id
+     * @return
+     */
+    T get(Long id);
 
-	/**
-	 * 插入数据
-	 * <b>如果entity的id为null，会自动回填id</b>
-	 * @param entity
-	 * @return 插入数据的数目
-	 */
-	T insert(T entity);
-	/**
-	 * 批量插入数据
-	 * <b>如果entity的id为null，会自动回填id</b>
-	 * @param entities
-	 * @return
-	 */
-	int batchInsert(List<T> entities);
+    /**
+     * 插入数据
+     * <b>如果entity的id为null，会自动回填id</b>
+     *
+     * @param entity
+     * @return 插入数据的数目
+     */
+    T insert(T entity);
 
-	/**
-	 * 更新数据
-	 * <b>entity的id不可为null</b>
-	 * @param entity
-	 * @return 更新的数目
-	 */
-	int update(T entity);
+    /**
+     * 批量插入数据
+     * <b>如果entity的id为null，会自动回填id</b>
+     *
+     * @param entities
+     * @return
+     */
+    int batchInsert(List<T> entities);
 
-	/**
-	 * 将非null数据更新到数据哭
-	 * <b>entity的id不可为null</b>
-	 * @param entity
-	 * @return 更新的数目
-	 */
-	int updateIgnoreNull(T entity);
+    /**
+     * 更新数据
+     * <b>entity的id不可为null</b>
+     *
+     * @param entity
+     * @return 更新的数目
+     */
+    int update(T entity);
 
-	/**
-	 * 根据tpl中的id，特殊的更新数据，如count++等自操作更新等等。
-	 * @param tpl 更新模板
-	 * @return 更新的数目
-	 */
-	int updateByTpl(UpdateTpl<T> tpl);
+    /**
+     * 将非null数据更新到数据哭
+     * <b>entity的id不可为null</b>
+     *
+     * @param entity
+     * @return 更新的数目
+     */
+    int updateIgnoreNull(T entity);
 
-	/**
-	 * 根据筛选条件，批量更新数据
-	 * @param tpl 更新模板
-	 * @param cnd 筛选条件，null值代表不限制
-	 * @return 更新的数目
-	 */
-	int updateByTplCnd(UpdateTpl<T> tpl, Cnd<T> cnd);
+    /**
+     * 根据tpl中的id，特殊的更新数据，如count++等自操作更新等等。
+     *
+     * @param tpl 更新模板
+     * @return 更新的数目
+     */
+    int updateByTpl(UpdateTpl<T> tpl);
 
-	/**
-	 * 逻辑删除数据
-	 * @param id
-	 * @return 影响的数据条数
-	 */
-	int removeById(Long id);
+    /**
+     * 根据筛选条件，批量更新数据
+     *
+     * @param tpl 更新模板
+     * @param cnd 筛选条件，null值代表不限制
+     * @return 更新的数目
+     */
+    int updateByTplCnd(UpdateTpl<T> tpl, Cnd<T> cnd);
 
-	/**
-	 * 批量逻辑删除数据
-	 * @param ids
-	 * @return 影响的数据条数
-	 */
-	int removeByIds(List<Long> ids);
+    /**
+     * 逻辑删除数据
+     *
+     * @param id
+     * @return 影响的数据条数
+     */
+    int removeById(Long id);
 
-	/**
-	 * 根据条件逻辑删除数据
-	 * @param cnd
-	 * @return 影响的数据条数
-	 */
-	int remove(Cnd<T> cnd);
+    /**
+     * 批量逻辑删除数据
+     *
+     * @param ids
+     * @return 影响的数据条数
+     */
+    int removeByIds(List<Long> ids);
 
-	/**
-	 * 根据条件回复已经被逻辑删除的数据
-	 * @param cnd
-	 * @return 影响的数据条数
-	 */
-	int recovery(Cnd<T> cnd);
+    /**
+     * 根据条件逻辑删除数据
+     *
+     * @param cnd
+     * @return 影响的数据条数
+     */
+    int remove(Cnd<T> cnd);
 
-	/**
-	 * 根据主键物理删除数据
-	 * @param id
-	 * @return 删除的条数
-	 */
-	int deleteById(Long id);
+    /**
+     * 根据条件回复已经被逻辑删除的数据
+     *
+     * @param cnd
+     * @return 影响的数据条数
+     */
+    int recovery(Cnd<T> cnd);
 
-	/**
-	 * 根据主键物理删除数据
-	 * @param ids
-	 * @return 删除的条数
-	 */
-	int deleteByIds(List<Long> ids);
+    /**
+     * 根据主键物理删除数据
+     *
+     * @param id
+     * @return 删除的条数
+     */
+    int deleteById(Long id);
 
-	/**
-	 * 根据条件物理删除数据
-	 * @param cnd <b>null值代表不删除</b>
-	 * @return  删除的条数
-	 */
-	int delete(Cnd<T> cnd);
+    /**
+     * 根据主键物理删除数据
+     *
+     * @param ids
+     * @return 删除的条数
+     */
+    int deleteByIds(List<Long> ids);
 
-	/**
-	 * 返回匹配到第一条符合条件的数据
-	 * <b>（默认是没有被删除的数据）</b>,如果获取
-	 * @param tpl null值代表所有字段
-	 * @param cnd null值代表不限定条件
-	 * @return 返回第一条数据
-	 */
-	T fetch(SelectTpl<T> tpl, Cnd<T> cnd);
+    /**
+     * 根据条件物理删除数据
+     *
+     * @param cnd <b>null值代表不删除</b>
+     * @return 删除的条数
+     */
+    int delete(Cnd<T> cnd);
 
-	/**
-	 * 返回没有被逻辑删除的，给定ids范围内的数据
-	 * @param ids 
-	 * @return
-	 */
-	List<T> findByIds(List<Long> ids);
+    /**
+     * 返回匹配到第一条符合条件的数据
+     * <b>（默认是没有被删除的数据）</b>,如果获取
+     *
+     * @param tpl null值代表所有字段
+     * @param cnd null值代表不限定条件
+     * @return 返回第一条数据
+     */
+    T fetch(SelectTpl<T> tpl, Cnd<T> cnd);
 
-	/**
-	 * 根据条件筛选数据
-	 * <b>注意： 分页页码从0开始，并且总分页数只有再页号非正数时才会返回，如果是第1页想获取中数据数，则page传入-1即可</b>
-	 * @param cnd null值代表不限制
-	 * @return 返回分页数据
-	 */
-	Page<T> find(Cnd<T> cnd);
+    /**
+     * 返回没有被逻辑删除的，给定ids范围内的数据
+     *
+     * @param ids
+     * @return
+     */
+    List<T> findByIds(List<Long> ids);
 
-	/**
-	 * 根据条件筛选tpl选中到的字段数据
-	 * <b>注意： 分页页码从0开始，并且总分页数只有再页号非正数时才会返回，如果是第1页想获取中数据数，则page传入-1即可</b>
-	 * @param tpl null值代表不限制
-	 * @param cnd null值代表不限制
-	 * @return 返回分页数据
-	 */
-	Page<T> findTpl(SelectTpl<T> tpl, Cnd<T> cnd);
+    /**
+     * 根据条件筛选数据
+     * <b>注意： 分页页码从0开始，并且总分页数只有再页号非正数时才会返回，如果是第1页想获取中数据数，则page传入-1即可</b>
+     *
+     * @param cnd null值代表不限制
+     * @return 返回分页数据
+     */
+    Page<T> find(Cnd<T> cnd);
 
-	/**
-	 * 根据筛选条件，将数据依次传给consumer处理
-	 * @param tpl 
-	 * @param cnd 
-	 * @param consumer 回调处理
-	 */
-	void download(SelectTpl<T> tpl, Cnd<T> cnd, Consumer<T> consumer);
+    /**
+     * 根据条件筛选tpl选中到的字段数据
+     * <b>注意： 分页页码从0开始，并且总分页数只有再页号非正数时才会返回，如果是第1页想获取中数据数，则page传入-1即可</b>
+     *
+     * @param tpl null值代表不限制
+     * @param cnd null值代表不限制
+     * @return 返回分页数据
+     */
+    Page<T> findTpl(SelectTpl<T> tpl, Cnd<T> cnd);
 
-	/**
-	 * 所有数据
-	 * @return
-	 */
-	long count();
+    /**
+     * 根据筛选条件，将数据依次传给consumer处理
+     *
+     * @param tpl
+     * @param cnd
+     * @param consumer 回调处理
+     */
+    void download(SelectTpl<T> tpl, Cnd<T> cnd, Consumer<T> consumer);
 
-	/**
-	 * 根据筛选条件查询数据个数
-	 * @param cnd
-	 * @return 筛选到的数据个数
-	 */
-	long count(Cnd<T> cnd);
+    /**
+     * 所有数据
+     *
+     * @return
+     */
+    long count();
+
+    /**
+     * 根据筛选条件查询数据个数
+     *
+     * @param cnd
+     * @return 筛选到的数据个数
+     */
+    long count(Cnd<T> cnd);
 }

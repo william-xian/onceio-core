@@ -43,7 +43,7 @@ public class SelectTpl<E> extends FuncTpl<E> {
             } else {
                 if (argName.startsWith("as ") || argName.startsWith(" ")) {
                     String col = argName.replaceAll(".* (.*)]", "$1");
-                    cols.add("_"+col);
+                    cols.add("_" + col);
                 } else {
                     cols.add(String.format("%s_%s", func, argName));
                 }

@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
 /**
  * 配置字段的描述信息
  */
-@Target({ ElementType.FIELD })
+@Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface I18nCfgBrief {
-	String value() default "";
+    String value() default "";
 }
