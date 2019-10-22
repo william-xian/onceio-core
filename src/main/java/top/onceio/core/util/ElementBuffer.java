@@ -49,7 +49,7 @@ public class ElementBuffer<E> {
             buffer.addAll(arrayList);
         } catch (Exception e) {
             e.printStackTrace();
-            //TODO
+            OLog.error(e.getMessage());
         } finally {
             writeLock.unlock();
         }
@@ -61,8 +61,7 @@ public class ElementBuffer<E> {
             consumer.accept(buffer);
             buffer.clear();
         } catch (Exception e) {
-            e.printStackTrace();
-            //TODO
+            OLog.error(e.getMessage());
         } finally {
             readLock.unlock();
         }

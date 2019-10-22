@@ -471,6 +471,7 @@ public class BeansEden {
         scanner.putClass(Tbl.class, OI18n.class);
         scanner.putClass(AutoApi.class, OI18nHolder.class);
         nameToBean.putAll(conf.resolveBeans());
+
         resolveAop();
 
         loadDefiner();
@@ -546,7 +547,7 @@ public class BeansEden {
         }
     }
 
-    public void init() {
+    private void init() {
         analysisI18nMsg();
         analysisConst();
     }

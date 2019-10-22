@@ -15,7 +15,7 @@ public class DaoBaseTest {
 
     public static void initDao() {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        BeansEden.get().resovle(new String[]{"src/test/java/conf/"}, new String[]{"cn.xian.app"});
+        BeansEden.get().resolve(new String[]{"src/test/java/conf/"}, new String[]{"cn.xian.app"});
         jdbcHelper = BeansEden.get().load(JdbcHelper.class);
         daoHelper = BeansEden.get().load(DaoHelper.class);
     }

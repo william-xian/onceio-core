@@ -109,6 +109,15 @@ public class JsonConfLoader {
 
     public void load(String dir) {
         URL url = OnceIO.getClassLoader().getResource(dir);
+        try {
+            Enumeration<URL> files = OnceIO.getClassLoader().getResources(dir);
+            while (files.hasMoreElements()) {
+                URL u = files.nextElement();
+                System.out.println(u.toString());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (url != null) {
             if (url.getPath().contains(".jar!")) {
                 loadJar(url);

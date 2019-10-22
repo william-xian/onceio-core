@@ -1,6 +1,7 @@
 package cn.xian.app;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.support.json.JSONUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import top.onceio.OnceIO;
@@ -14,5 +15,7 @@ import java.sql.Connection;
 public class Launcher {
 
     public static void main(String[] args) {
+        BeansEden.get().resolve(new String[]{"conf"}, new String[]{"cn.xian.app"});
+        System.out.println(JSONUtils.toJSONString(BeansEden.get().load(DataSource.class)));
     }
 }
