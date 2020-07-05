@@ -386,11 +386,6 @@ public class Cnd<E> extends Tpl {
         StringBuffer afterWhere = new StringBuffer();
         Map<String, String> tokens = null;
 
-        if (tm.getEngine() != null) {
-            DDEngine dde = tm.getEngine();
-            tokens = dde.getColumnToOrigin();
-        }
-
         String whereCnd = whereSql(sqlArgs);
         if (!whereCnd.equals("")) {
             if (tokens == null) {
@@ -429,34 +424,15 @@ public class Cnd<E> extends Tpl {
     StringBuffer selectSql(TableMeta tm, SelectTpl<E> tpl) {
         StringBuffer sqlSelect = new StringBuffer();
         sqlSelect.append("SELECT ");
-        if (tm.getEngine() == null) {
-            if (tpl != null && tpl.sql() != null && !tpl.sql().isEmpty()) {
-                sqlSelect.append(tpl.sql());
-            } else {
-                for (ColumnMeta cm : tm.getColumnMetas()) {
-                    sqlSelect.append(cm.getName() + ",");
-                }
-                sqlSelect.delete(sqlSelect.length() - 1, sqlSelect.length());
-            }
-            sqlSelect.append(String.format(" FROM %s", tm.getTable()));
+        if (tpl != null && tpl.sql() != null && !tpl.sql().isEmpty()) {
+            sqlSelect.append(tpl.sql());
         } else {
-            DDEngine dde = tm.getEngine();
-            Set<String> params = new HashSet<>();
-            Map<String, String> colToOrigin = dde.getColumnToOrigin();
-            if (tpl != null) {
-                params.addAll(tpl.getArgNames());
-                sqlSelect.append(tpl.sql(colToOrigin));
-            } else {
-                for (ColumnMeta cm : tm.getColumnMetas()) {
-                    params.add(cm.getName());
-                    sqlSelect.append(String.format("%s %s,", colToOrigin.get(cm.getName()), cm.getName()));
-                }
-                sqlSelect.delete(sqlSelect.length() - 1, sqlSelect.length());
+            for (ColumnMeta cm : tm.getColumnMetas()) {
+                sqlSelect.append(cm.getName() + ",");
             }
-            String mainPath = tm.getEntity().getSuperclass().getSimpleName().toLowerCase();
-            String joinTables = dde.genericJoinSqlByParams(mainPath, params, null);
-            sqlSelect.append(String.format(" FROM %s", joinTables));
+            sqlSelect.delete(sqlSelect.length() - 1, sqlSelect.length());
         }
+        sqlSelect.append(String.format(" FROM %s", tm.getTable()));
         return sqlSelect;
     }
 
@@ -477,18 +453,11 @@ public class Cnd<E> extends Tpl {
 
     String countSql(TableMeta tm, SelectTpl<E> tpl, List<Object> sqlArgs) {
         String group = group();
-        if (tm.getEngine() == null) {
-            if (group != null && !group.isEmpty()) {
-                return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(),
-                        afterWhere(tm, sqlArgs));
-            } else {
-                return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(tm, sqlArgs));
-            }
-        } else {
-            StringBuffer select = selectSql(tm, tpl);
-            int fromIndex = select.indexOf("FROM");
-            return String.format("SELECT COUNT(1) FROM (SELECT 1 %s %s) t", select.substring(fromIndex),
+        if ((group != null && !group.isEmpty())||(having != null && !having.funcs.isEmpty())||(order != null && !order.order.isEmpty())) {
+            return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(),
                     afterWhere(tm, sqlArgs));
+        } else {
+            return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(tm, sqlArgs));
         }
     }
 

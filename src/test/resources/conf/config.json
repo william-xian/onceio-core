@@ -4,7 +4,7 @@
     "javax.sql.DataSource": {
       "@TYPE": "com.alibaba.druid.pool.DruidDataSource",
       "driver": "org.postgresql.Driver",
-      "url": "jdbc:postgresql://www.onceio.top:5432/testdb",
+      "url": "jdbc:postgresql://www.onceio.top:5432/testdb2",
       "username": "postgres",
       "password": "testdb.pwd",
       "initialSize": "5",

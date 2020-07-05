@@ -6,6 +6,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.concurrent.Callable;
 
 @Target({METHOD, FIELD})
 @Retention(RUNTIME)
@@ -56,7 +57,7 @@ public @interface Col {
     boolean useFK() default true;
 
     /**
-     * 引用的ID可能来源某个 表。 注意枚举中的表都会被连接
+     * 引用的ID可能来源某个表。 注意枚举中的表都会被连接
      */
     Class<?>[] refEnum() default {};
 

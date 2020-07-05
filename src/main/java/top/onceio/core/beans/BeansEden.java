@@ -65,6 +65,7 @@ import top.onceio.core.util.OUtils;
 
 public class BeansEden {
     private final static Logger LOGGER = Logger.getLogger(BeansEden.class);
+    private final static String CLASS_FROM_CG_LIB = "$$EnhancerByCGLIB$$";
     private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
     private ApiResover apiResover = new ApiResover();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
@@ -314,7 +315,7 @@ public class BeansEden {
         while (beans.hasNext()) {
             Object bean = beans.next();
             Class<?> clazz = bean.getClass();
-            if (clazz.getName().contains("$$EnhancerByCGLIB$$")) {
+            if (clazz.getName().contains(CLASS_FROM_CG_LIB)) {
                 clazz = clazz.getSuperclass();
             }
             Api fatherApi = clazz.getAnnotation(Api.class);

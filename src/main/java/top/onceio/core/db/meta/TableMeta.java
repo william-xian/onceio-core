@@ -29,11 +29,11 @@ public class TableMeta {
     String extend;
     String entityName;
     ConstraintMeta primaryKey;
+    String viewDef;
     transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
     List<ConstraintMeta> constraints = new ArrayList<>();
     List<ColumnMeta> columnMetas = new ArrayList<>(0);
     transient Map<String, ColumnMeta> nameToColumnMeta = new HashMap<>();
-    transient DDEngine engine;
     transient Class<?> entity;
 
     public String getTable() {
@@ -63,6 +63,14 @@ public class TableMeta {
 
     public List<ColumnMeta> getColumnMetas() {
         return columnMetas;
+    }
+
+    public String getViewDef() {
+        return viewDef;
+    }
+
+    public void setViewDef(String viewDef) {
+        this.viewDef = viewDef;
     }
 
     public ConstraintMeta getPrimaryKey() {
@@ -116,14 +124,6 @@ public class TableMeta {
         for (ColumnMeta cm : columnMetas) {
             this.nameToColumnMeta.put(cm.name, cm);
         }
-    }
-
-    public DDEngine getEngine() {
-        return engine;
-    }
-
-    public Class<?> getEntity() {
-        return entity;
     }
 
     public void freshNameToField() {
@@ -228,7 +228,7 @@ public class TableMeta {
      */
     public List<String> createTableSql() {
         List<String> sqls = new ArrayList<>();
-        if (engine == null) {
+        if (viewDef == null) {
             StringBuffer tbl = new StringBuffer();
             tbl.append(String.format("CREATE TABLE %s (", table));
             for (ColumnMeta cm : columnMetas) {
@@ -245,6 +245,13 @@ public class TableMeta {
 
             /** 添加复合约束 */
             sqls.addAll(ConstraintMeta.addConstraintSql(constraints));
+        } else {
+            StringBuffer tbl = new StringBuffer();
+            sqls.add(String.format("DROP VIEW IF EXISTS %s;", table));
+            tbl.append(String.format("CREATE VIEW %s AS (", table));
+            tbl.append(viewDef);
+            tbl.append(");");
+            sqls.add(tbl.toString());
         }
         return sqls;
     }
@@ -259,6 +266,27 @@ public class TableMeta {
         if (!table.equals(other.table)) {
             return null;
         }
+        if (viewDef == null) {
+            return upgradeTableTo(other);
+        }else {
+            List<String> sqls = new ArrayList<>();
+            sqls.add(String.format("DROP VIEW IF EXISTS %s;", table));
+            StringBuffer tbl = new StringBuffer();
+            tbl.append(String.format("CREATE OR REPLACE VIEW %s AS (", table));
+            tbl.append(viewDef);
+            tbl.append(");");
+            sqls.add(tbl.toString());
+
+            return sqls;
+        }
+    }
+    /**
+     * 升级数据库，返回需要执行的sql
+     *
+     * @param other
+     * @return
+     */
+    public List<String> upgradeTableTo(TableMeta other) {
         List<String> sqls = new ArrayList<>();
         List<ColumnMeta> otherColumn = other.columnMetas;
         List<ColumnMeta> newColumns = new ArrayList<>();
@@ -445,46 +473,9 @@ public class TableMeta {
         tm.setPrimaryKey("id");
         tm.freshNameToField();
         tm.freshConstraintMetaTable();
-        if (tblView != null && classes.size() >= 3) {
-            if (classes.size() >= 3) {
-                String mainClazz = classes.get(1).getSimpleName().toLowerCase();
-                DDEngine dde = new DDEngine();
-                tm.engine = dde;
-                Map<String, List<String>> pathToColumns = new HashMap<>();
-                for (ColumnMeta cm : tm.getColumnMetas()) {
-                    Col col = cm.getField().getAnnotation(Col.class);
-                    String pathName = col.refBy();
-                    int sp = pathName.lastIndexOf('.');
-                    String path = null;
-                    String name = null;
-                    if (sp >= 0) {
-                        path = mainClazz + "." + pathName.substring(0, sp);
-                        name = pathName.substring(sp + 1);
-                    } else if (pathName.equals("")) {
-                        path = mainClazz;
-                        name = "";
-                    } else {
-                        OAssert.warnning("不合法的引用", path);
-                    }
-                    List<String> vals = pathToColumns.get(path);
-                    if (vals == null) {
-                        vals = new ArrayList<>();
-                        pathToColumns.put(path, vals);
-                    }
-                    if (path.equals("")) {
-                        vals.add(cm.getName());
-                    } else {
-                        vals.add(name + " " + cm.getName());
-                    }
-                }
-                for (String path : pathToColumns.keySet()) {
-                    dde.append(String.format("%s{%s}", path, String.join(",", pathToColumns.get(path))));
-                }
-                dde.build();
-            } else {
-                OAssert.warnning("Tbl必须继承一个Tbl", tm.getEntityName());
-                return null;
-            }
+        if (tblView != null) {
+            tm.setTable(classes.get(classes.size() - 1).getSimpleName().toLowerCase());
+            tm.setViewDef(tblView.def());
         }
         tableCache.put(entity, tm);
         return tm;
@@ -572,8 +563,13 @@ public class TableMeta {
         if (table == null) {
             if (other.table != null)
                 return false;
-        } else if (!table.equals(other.table))
+        } else if (!table.equals(other.table)) {
             return false;
+        }
+        if ((viewDef == null && other.viewDef == null)||(viewDef != null && other.viewDef != null && viewDef.equals(other.viewDef))) {
+        } else {
+            return false;
+        }
         return true;
     }
 

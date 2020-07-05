@@ -79,7 +79,7 @@ public class DDEngine {
         }
         for (String path : paths) {
             DDMeta meta = pathToMeta.get(path);
-            resoveDDMeta(meta);
+            resolveDDMeta(meta);
         }
 
         /** 生成对应关系 */
@@ -138,7 +138,7 @@ public class DDEngine {
         return result;
     }
 
-    private void resoveDDMeta(DDMeta meta) {
+    private void resolveDDMeta(DDMeta meta) {
         Tuple3<String, String, String> tbls = splitPath(meta.getPath());
         if (tbls.a != null && tbls.b == null) {
             meta.setTable(tbls.a);

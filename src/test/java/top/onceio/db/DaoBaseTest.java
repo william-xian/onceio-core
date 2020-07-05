@@ -11,11 +11,11 @@ import top.onceio.core.db.tbl.OI18n;
 public class DaoBaseTest {
     protected static JdbcHelper jdbcHelper = new JdbcHelper();
 
-    protected static DaoHelper daoHelper = new DaoHelper();
+    protected static DaoHelper daoHelper;
 
     public static void initDao() {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        BeansEden.get().resolve(new String[]{"src/test/java/conf/"}, new String[]{"cn.xian.app"});
+        BeansEden.get().resolve(new String[]{"src/test/resources/conf/"}, new String[]{"cn.xian.app"});
         jdbcHelper = BeansEden.get().load(JdbcHelper.class);
         daoHelper = BeansEden.get().load(DaoHelper.class);
     }

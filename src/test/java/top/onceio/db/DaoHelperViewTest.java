@@ -90,7 +90,6 @@ public class DaoHelperViewTest extends DaoBaseTest {
         cnd.setPagesize(25);
         SelectTpl<GoodsOrderView> tplOrder = new SelectTpl<>(GoodsOrderView.class);
         tplOrder.using().setUsername(Tpl.USING_S);
-        cnd.orderBy().desc().setUsername(Tpl.USING_S);
         Page<GoodsOrderView> page = daoHelper.findByTpl(GoodsOrderView.class, tplOrder, cnd);
         System.out.println(page);
         Assert.assertEquals(new Long(25), page.getTotal());
@@ -100,6 +99,7 @@ public class DaoHelperViewTest extends DaoBaseTest {
 
         SelectTpl<GoodsOrderView> tpl = new SelectTpl<>(GoodsOrderView.class);
         tpl.max().setId(Tpl.USING_LONG);
+
         GoodsOrderView maxTime = daoHelper.fetch(GoodsOrderView.class, tpl, cnd);
         Assert.assertEquals(25L, maxTime.getId() + 0L);
 
