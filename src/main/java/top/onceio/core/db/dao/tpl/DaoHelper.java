@@ -1,9 +1,6 @@
 package top.onceio.core.db.dao.tpl;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Savepoint;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,27 +58,80 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
+    private List<TableMeta> findPGTableMeta(JdbcHelper jdbcHelper) {
+        List<TableMeta> result = new ArrayList<>();
+        String qColumns = "select *\n" +
+                "from information_schema.columns\n" +
+                "where table_schema not in ('information_schema','pg_catalog')\n" +
+                "ORDER BY table_schema,table_name";
+        Map<String, Map<String, ColumnMeta>> tableToColumns = new HashMap<>();
+        jdbcHelper.query(qColumns, null, (rs) -> {
+            try {
+                String table = rs.getString("table_schema") + "." + rs.getString("table_name");
+                Map<String, ColumnMeta> columnMetaList = tableToColumns.get(table);
+                if (columnMetaList == null) {
+                    columnMetaList = new HashMap<>();
+                    tableToColumns.put(table, columnMetaList);
+                }
+                ColumnMeta cm = new ColumnMeta();
+                cm.setName(rs.getString("column_name"));
+                cm.setNullable(rs.getString("is_nullable").equals("YES"));
+                String udtName = rs.getString("udt_name");
+                if (udtName.equals("bool")) {
+                    cm.setJavaBaseType(Boolean.TYPE);
+                } else if (udtName.equals("int2")) {
+                    cm.setJavaBaseType(Short.TYPE);
+                } else if (udtName.equals("int4")) {
+                    cm.setJavaBaseType(Integer.TYPE);
+                } else if (udtName.equals("int8")) {
+                    cm.setJavaBaseType(Long.TYPE);
+                } else if (udtName.equals("float4")) {
+                    cm.setJavaBaseType(Float.TYPE);
+                } else if (udtName.equals("float8")) {
+                    cm.setJavaBaseType(Double.TYPE);
+                } else if (udtName.equals("varchar") || udtName.equals("text")) {
+                    cm.setJavaBaseType(String.class);
+                } else if (udtName.equals("timestamptz") || udtName.equals("timestamp")) {
+                    cm.setJavaBaseType(Timestamp.class);
+                } else if (udtName.equals("time") || udtName.equals("date")) {
+                    cm.setJavaBaseType(Date.class);
+                }
+                columnMetaList.put(cm.getName(), cm);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
+            }
+        });
+
+        String qIndexes = "select * from pg_indexes";
+        jdbcHelper.query(qIndexes, null, (rs) -> {
+            try {
+                String table = rs.getString("schemaname") + "." + rs.getString("tablename");
+                String indexDef = rs.getString("indexdef");
+                //TODO
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
+            }
+        });
+        return result;
+    }
+
+    private List<TableMeta> findTableMeta(JdbcHelper jdbcHelper) {
+        switch (jdbcHelper.getDBType()) {
+            case POSTGRESQL:
+                return findPGTableMeta(jdbcHelper);
+        }
+        return null;
+    }
+
     public void init(JdbcHelper jdbcHelper, IdGenerator idGenerator, List<Class<? extends OEntity>> entities) {
         this.jdbcHelper = jdbcHelper;
         this.idGenerator = idGenerator;
         this.tableToTableMeta = new HashMap<>();
-        if (!exist(OTableMeta.class)) {
-            List<String> sqls = this.createOrUpdate(OTableMeta.class);
-            if (sqls != null && !sqls.isEmpty()) {
-                jdbcHelper.batchExec(sqls.toArray(new String[0]));
-            }
-        }
         TableMeta tm = TableMeta.createBy(OTableMeta.class);
         tableToTableMeta.put(tm.getTable().toLowerCase(), tm);
         Cnd<OTableMeta> cnd = new Cnd<>(OTableMeta.class);
-        cnd.setPage(1);
-        cnd.setPagesize(Integer.MAX_VALUE);
-        Page<OTableMeta> page = this.find(OTableMeta.class, cnd);
-        for (OTableMeta meta : page.getData()) {
-            if (meta.getName().equals(OTableMeta.class.getSimpleName().toLowerCase())) {
-                continue;
-            }
-            TableMeta old = OUtils.createFromJson(meta.getVal(), TableMeta.class);
+        List<TableMeta> page = findTableMeta(jdbcHelper);
+        for (TableMeta old : page) {
             old.getFieldConstraint();
             old.freshConstraintMetaTable();
             old.freshNameToField();
@@ -98,11 +148,6 @@ public class DaoHelper implements DDLDao, TransDao {
                     if (!sqls.isEmpty()) {
                         tblSqls.put(tbl.getSimpleName().toLowerCase(), sqls);
                     }
-                    Cnd<OTableMeta> cndMeta = new Cnd<>(OTableMeta.class);
-                    cndMeta.eq().setName(tbl.getSimpleName().toLowerCase());
-                    TableMeta tblMeta = TableMeta.createBy(tbl);
-                    OTableMeta ootm = this.fetch(OTableMeta.class, null, cndMeta);
-                    save(ootm, tblMeta.getTable(), OUtils.toJson(tblMeta));
                 }
             }
             List<String> order = new ArrayList<>();
@@ -164,20 +209,6 @@ public class DaoHelper implements DDLDao, TransDao {
 
     public void setTableToTableMata(Map<String, TableMeta> tableToTableMeta) {
         this.tableToTableMeta = tableToTableMeta;
-    }
-
-    private void save(OTableMeta ootm, String name, String val) {
-        if (ootm == null) {
-            ootm = new OTableMeta();
-            ootm.setId(IDGenerator.randomID());
-            ootm.setName(name);
-            ootm.setVal(val);
-            ootm.setCreatetime(System.currentTimeMillis());
-            insert(ootm);
-        } else {
-            ootm.setVal(val);
-            update(ootm);
-        }
     }
 
     public <E extends OEntity> List<String> createOrUpdate(Class<E> tbl) {

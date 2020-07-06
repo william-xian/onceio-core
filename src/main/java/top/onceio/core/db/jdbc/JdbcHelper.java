@@ -26,8 +26,13 @@ public class JdbcHelper {
 
     private DataSource dataSource;
 
+
     public DataSource getDataSource() {
         return dataSource;
+    }
+
+    public DBType getDBType() {
+        return DBType.POSTGRESQL;
     }
 
     public void setDataSource(DataSource dataSource) {
@@ -55,7 +60,6 @@ public class JdbcHelper {
      *                      on a closed connection or the given parameter is not one
      *                      of the <code>Connection</code> constants
      * @see DatabaseMetaData#supportsTransactionIsolationLevel
-     * @see #getTransactionIsolation
      */
     public boolean beginTransaction(int level, boolean readOnly) {
         boolean created = false;
