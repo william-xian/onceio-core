@@ -12,9 +12,15 @@ public class ConstraintMeta {
     public static final String FOREIGN_KEY = "FOREIGN KEY";
     public static final String UNIQUE = "UNIQUE";
     public static final String INDEX = "INDEX";
+    public static final String INDEX_NAME_PREFIX_PK = "pk_";
+    public static final String INDEX_NAME_PREFIX_FK = "fk_";
+    public static final String INDEX_NAME_PREFIX_UN = "un_";
+    public static final String INDEX_NAME_PREFIX_NQ = "nq_";
+
     String name;
     ConstraintType type;
     String using;
+    String schema;
     String table;
     String refTable;
     List<String> columns;
@@ -41,6 +47,14 @@ public class ConstraintMeta {
 
     public void setUsing(String using) {
         this.using = using;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     public String getTable() {
@@ -71,16 +85,16 @@ public class ConstraintMeta {
         String cName = null;
         switch (type) {
             case PRIMARY_KEY:
-                cName = String.format("pk_%s_%s", table, String.join("_", columns));
+                cName = String.format("pk_%s_%s_%s", schema, table, String.join("_", columns));
                 break;
             case FOREGIN_KEY:
-                cName = String.format("fk_%s_%s", table, String.join("_", columns));
+                cName = String.format("fk_%s_%s_%s", schema, table, String.join("_", columns));
                 break;
             case INDEX:
-                cName = String.format("nd_%s_%s", table, String.join("_", columns));
+                cName = String.format("nd_%s_%s_%s", schema, table, String.join("_", columns));
                 break;
             case UNIQUE:
-                cName = String.format("nq_%s_%s", table, String.join("_", columns));
+                cName = String.format("nq_%s_%s_%s", schema, table, String.join("_", columns));
                 break;
             default:
                 OAssert.fatal("不存在：%s", OUtils.toJson(this));
@@ -98,13 +112,14 @@ public class ConstraintMeta {
                 break;
             case FOREGIN_KEY:
                 def = String.format("FOREIGN KEY (%s) REFERENCES %s(%s)", String.join(",", columns), refTable, "id");
+//                def = String.format("(%s)", String.join(",", columns));
                 break;
             case UNIQUE:
                 def = String.format("UNIQUE (%s)", String.join(",", columns));
                 break;
             case INDEX:
                 String usingStruct = using != null ? (" USING " + using) : "";
-                def = String.format("ON %s%s (%s)", table, usingStruct, String.join(",", columns));
+                def = String.format("ON %s.%s%s (%s)", schema, table, usingStruct, String.join(",", columns));
                 break;
             default:
                 OAssert.fatal("不存在：%s", OUtils.toJson(this));
@@ -120,13 +135,13 @@ public class ConstraintMeta {
         if (type == ConstraintType.INDEX) {
             return String.format("CREATE INDEX %s %s;", cName, def);
         } else {
-            return String.format("ALTER TABLE %s ADD CONSTRAINT %s %s;", table, cName, def);
+            return String.format("ALTER TABLE %s.%s ADD CONSTRAINT %s %s;", schema, table, cName, def);
         }
     }
 
     public String dropSql() {
         String cName = (name == null ? genName() : name);
-        return String.format("ALTER TABLE %s DROP CONSTRAINT %s;", table, cName);
+        return String.format("ALTER TABLE %s.%s DROP CONSTRAINT %s;", schema, table, cName);
     }
 
     public static List<String> addConstraintSql(List<ConstraintMeta> cms) {

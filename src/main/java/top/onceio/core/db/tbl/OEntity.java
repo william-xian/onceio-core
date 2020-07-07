@@ -12,7 +12,7 @@ import top.onceio.core.util.OUtils;
 public abstract class OEntity {
     @Col(nullable = false)
     private Long id;
-    @Col(colDef = "boolean default false", nullable = false)
+    @Col(nullable = false)
     private transient Boolean rm;
     /**
      * 用户存储额外数据，如 聚合函数

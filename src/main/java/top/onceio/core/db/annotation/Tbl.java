@@ -11,7 +11,10 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 @Retention(RUNTIME)
 public @interface Tbl {
-    String schema() default "";
+
+    String schema() default "public";
+
+    String name() default "";
 
     Constraint[] constraints() default {};
 

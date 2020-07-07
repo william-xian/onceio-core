@@ -8,7 +8,7 @@ import top.onceio.core.db.tbl.OEntity;
 public class ReqLog extends OEntity {
     @Col(size = 255, nullable = true)
     private String curUser;
-    @Col(size = 8, colDef = "varchar(8) default ''", nullable = false)
+    @Col(size = 8, nullable = false)
     private String method;
     @Col(size = 255, nullable = true)
     private String params;
@@ -22,7 +22,7 @@ public class ReqLog extends OEntity {
     private Long beginTime;
     @Col(nullable = false)
     private Long requestTime;
-    @Col(colDef = "TEXT", nullable = true)
+    @Col(type = "TEXT", nullable = true)
     private String result;
 
     public String getCurUser() {

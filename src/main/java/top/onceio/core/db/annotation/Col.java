@@ -19,7 +19,9 @@ public @interface Col {
      */
     int size() default 255;
 
-    String colDef() default "";
+    String name() default "";
+
+    String type() default "";
 
     boolean unique() default false;
 

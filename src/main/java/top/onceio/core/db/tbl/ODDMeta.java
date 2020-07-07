@@ -7,9 +7,9 @@ import top.onceio.core.db.annotation.Tbl;
 public final class ODDMeta extends OEntity {
     @Col(size = 32, nullable = true)
     private String tag;
-    @Col(nullable = true, colDef = "TEXT")
+    @Col(nullable = true, type = "TEXT")
     private String path;
-    @Col(nullable = false, colDef = "TEXT")
+    @Col(nullable = false, type = "TEXT")
     private String val;
     @Col(nullable = true)
     private Long createtime;

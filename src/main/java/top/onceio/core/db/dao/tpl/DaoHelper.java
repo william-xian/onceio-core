@@ -1,11 +1,8 @@
 package top.onceio.core.db.dao.tpl;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 import java.util.function.Consumer;
 
 import org.apache.log4j.Logger;
@@ -21,9 +18,7 @@ import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.ConstraintMeta;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.tbl.OEntity;
-import top.onceio.core.db.tbl.OTableMeta;
 import top.onceio.core.exception.Failed;
-import top.onceio.core.util.IDGenerator;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OUtils;
 
@@ -31,7 +26,8 @@ public class DaoHelper implements DDLDao, TransDao {
     private static final Logger LOGGER = Logger.getLogger(DaoHelper.class);
 
     private JdbcHelper jdbcHelper;
-    private Map<String, TableMeta> tableToTableMeta;
+    private Map<Class<?>, TableMeta> classToTableMeta;
+    private Map<String, Class<?>> tableToClass;
     private IdGenerator idGenerator;
     private List<Class<? extends OEntity>> entities;
 
@@ -58,25 +54,50 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    private List<TableMeta> findPGTableMeta(JdbcHelper jdbcHelper) {
-        List<TableMeta> result = new ArrayList<>();
-        String qColumns = "select *\n" +
-                "from information_schema.columns\n" +
-                "where table_schema not in ('information_schema','pg_catalog')\n" +
-                "ORDER BY table_schema,table_name";
+    private Map<String, TableMeta> findPGTableMeta(JdbcHelper jdbcHelper, Collection<String> schemaTables) {
+        Map<String, TableMeta> result = new HashMap<>();
+        String qColumns = "SELECT\n" +
+                " ns.nspname as table_schema,\n" +
+                " c.relname as table_name,\n" +
+                " a.attnum,\n" +
+                " a.attname AS field,\n" +
+                " t.typname AS type,\n" +
+                " a.attlen AS length,\n" +
+                " a.atttypmod AS lengthvar,\n" +
+                " a.attnotnull AS nullable,\n" +
+                " b.description AS comment\n" +
+                " FROM pg_class c,\n" +
+                " pg_attribute a\n" +
+                " LEFT OUTER JOIN pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid,\n" +
+                " pg_type t,\n" +
+                " pg_namespace ns\n" +
+                " WHERE a.attnum > 0\n" +
+                " and a.attrelid = c.oid\n" +
+                " and a.atttypid = t.oid\n" +
+                " and ns.oid = c.relnamespace\n" +
+                " and concat(ns.nspname,'.',c.relname) IN \n" + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
+                " ORDER BY ns.nspname,c.relname";
         Map<String, Map<String, ColumnMeta>> tableToColumns = new HashMap<>();
-        jdbcHelper.query(qColumns, null, (rs) -> {
+
+        jdbcHelper.query(qColumns, schemaTables.toArray(), (rs) -> {
             try {
-                String table = rs.getString("table_schema") + "." + rs.getString("table_name");
-                Map<String, ColumnMeta> columnMetaList = tableToColumns.get(table);
+                String schema = rs.getString("table_schema");
+                String table = rs.getString("table_name");
+                int varcharMaxLen = rs.getInt("length");
+                //int numericPrecision = rs.getInt("numeric_precision");
+                //int numericScale = rs.getInt("numeric_scale");
+                String schemaTable = schema + "." + table;
+                Map<String, ColumnMeta> columnMetaList = tableToColumns.get(schemaTable);
                 if (columnMetaList == null) {
                     columnMetaList = new HashMap<>();
-                    tableToColumns.put(table, columnMetaList);
+                    tableToColumns.put(schemaTable, columnMetaList);
                 }
                 ColumnMeta cm = new ColumnMeta();
-                cm.setName(rs.getString("column_name"));
-                cm.setNullable(rs.getString("is_nullable").equals("YES"));
-                String udtName = rs.getString("udt_name");
+                cm.setName(rs.getString("field"));
+                cm.setNullable(rs.getBoolean("nullable"));
+                String udtName = rs.getString("type");
+                cm.setRefTable("");
+                cm.setType(udtName);
                 if (udtName.equals("bool")) {
                     cm.setJavaBaseType(Boolean.TYPE);
                 } else if (udtName.equals("int2")) {
@@ -89,7 +110,10 @@ public class DaoHelper implements DDLDao, TransDao {
                     cm.setJavaBaseType(Float.TYPE);
                 } else if (udtName.equals("float8")) {
                     cm.setJavaBaseType(Double.TYPE);
-                } else if (udtName.equals("varchar") || udtName.equals("text")) {
+                } else if (udtName.equals("varchar")) {
+                    cm.setJavaBaseType(String.class);
+                    cm.setType(String.format("varchar(%d)", varcharMaxLen));
+                } else if (udtName.equals("text")) {
                     cm.setJavaBaseType(String.class);
                 } else if (udtName.equals("timestamptz") || udtName.equals("timestamp")) {
                     cm.setJavaBaseType(Timestamp.class);
@@ -102,84 +126,165 @@ public class DaoHelper implements DDLDao, TransDao {
             }
         });
 
-        String qIndexes = "select * from pg_indexes";
+        Map<String, List<ConstraintMeta>> tableToConstraintMeta = new HashMap<>();
+        String qIndexes = "select *\n" +
+                "from information_schema.table_constraints as c \n" +
+                "left join pg_indexes as d on c.table_schema = d.schemaname and c.table_name = d.tablename and c.\"constraint_name\" = d.indexname\n" +
+                " WHERE concat(c.table_schema,'.',c.table_name) IN " + String.format("('%s')", String.join("','", schemaTables)) +
+                " ORDER BY c.table_schema,c.table_name";
         jdbcHelper.query(qIndexes, null, (rs) -> {
             try {
-                String table = rs.getString("schemaname") + "." + rs.getString("tablename");
+                String schema = rs.getString("table_schema");
+                String table = rs.getString("table_name");
+                String constraintName = rs.getString("constraint_name");
                 String indexDef = rs.getString("indexdef");
-                //TODO
+                String schemaTable = schema + "." + table;
+                Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
+                if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN) || constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK) || constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
+                    String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
+                    if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN)) {
+                        ColumnMeta cm = nameToColumnMeta.get(col);
+                        if (indexDef.toUpperCase().contains(ConstraintMeta.UNIQUE)) {
+                            cm.setUnique(true);
+                        }
+                        cm.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
+                    } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK)) {
+                        ColumnMeta cm = nameToColumnMeta.get(col);
+                        cm.setPrimaryKey(true);
+                        cm.setUnique(true);
+                    } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
+                        ConstraintMeta constraintMeta = new ConstraintMeta();
+                        List<String> columns = new ArrayList<>();
+                        for (String c : col.split(",")) {
+                            columns.add(c.trim());
+                        }
+                        constraintMeta.setColumns(columns);
+                        constraintMeta.setTable(table);
+                        constraintMeta.setSchema(schema);
+                        if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN)) {
+                            constraintMeta.setType(ConstraintType.UNIQUE);
+                        } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK)) {
+                            constraintMeta.setType(ConstraintType.PRIMARY_KEY);
+                        } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_FK)) {
+                            constraintMeta.setType(ConstraintType.FOREGIN_KEY);
+                            constraintMeta.setRefTable(indexDef.replaceAll("^.* REFERENCES ([^( ]+).*$", "$1").trim());
+                        } else {
+                            constraintMeta.setType(ConstraintType.UNIQUE);
+                        }
+                        constraintMeta.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
+                        List<ConstraintMeta> constraintMetas = tableToConstraintMeta.get(schema);
+                        if (constraintMetas == null) {
+                            constraintMetas = new ArrayList<>();
+                            tableToConstraintMeta.put(schemaTable, constraintMetas);
+                        }
+                        constraintMetas.add(constraintMeta);
+                    }
+
+                } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_FK)) {
+                    int begin = String.format("%s%s_%s_", ConstraintMeta.INDEX_NAME_PREFIX_FK, schema, table).length();
+                    String col = constraintName.substring(begin);
+                    ColumnMeta cm = nameToColumnMeta.get(col);
+                    cm.setUseFK(true);
+                    cm.setRefTable("");
+                    if (indexDef.toUpperCase().contains(ConstraintMeta.UNIQUE)) {
+                        cm.setUnique(true);
+                    }
+                }
+
             } catch (Exception e) {
                 LOGGER.error(e.getMessage());
             }
         });
+        tableToColumns.forEach((schemaTable, columnNameToCol) -> {
+            List<ConstraintMeta> constraints = tableToConstraintMeta.getOrDefault(schemaTable, new ArrayList<>());
+            String schema = schemaTable.split("\\.")[0];
+            String table = schemaTable.split("\\.")[1];
+            TableMeta tm = new TableMeta();
+            tm.setTable(table);
+            tm.setSchema(schema);
+            tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
+            tm.setConstraints(constraints);
+            tm.setPrimaryKey("id");
+            tm.freshConstraintMetaTable();
+            result.put(schemaTable, tm);
+        });
         return result;
     }
 
-    private List<TableMeta> findTableMeta(JdbcHelper jdbcHelper) {
+    private Map<String, TableMeta> findTableMeta(JdbcHelper jdbcHelper, Collection<String> schemaTables) {
         switch (jdbcHelper.getDBType()) {
             case POSTGRESQL:
-                return findPGTableMeta(jdbcHelper);
+                return findPGTableMeta(jdbcHelper, schemaTables);
+            default:
+                OAssert.err("不支持数据库类型：%s", jdbcHelper.getDBType());
         }
-        return null;
+        return new HashMap<>();
     }
 
     public void init(JdbcHelper jdbcHelper, IdGenerator idGenerator, List<Class<? extends OEntity>> entities) {
         this.jdbcHelper = jdbcHelper;
         this.idGenerator = idGenerator;
-        this.tableToTableMeta = new HashMap<>();
-        TableMeta tm = TableMeta.createBy(OTableMeta.class);
-        tableToTableMeta.put(tm.getTable().toLowerCase(), tm);
-        Cnd<OTableMeta> cnd = new Cnd<>(OTableMeta.class);
-        List<TableMeta> page = findTableMeta(jdbcHelper);
-        for (TableMeta old : page) {
-            old.getFieldConstraint();
-            old.freshConstraintMetaTable();
-            old.freshNameToField();
-            tableToTableMeta.put(old.getTable().toLowerCase(), old);
-        }
+        this.classToTableMeta = new HashMap<>();
+        this.tableToClass = new HashMap<>();
         if (entities != null) {
             this.entities = entities;
-            Map<String, List<String>> tblSqls = new HashMap<>();
             for (Class<? extends OEntity> tbl : entities) {
-                List<String> sqls = this.createOrUpdate(tbl);
-                /** 说明有变更之处  */
-                if (sqls != null) {
-                    /** 说明有数据库字段更改 */
-                    if (!sqls.isEmpty()) {
-                        tblSqls.put(tbl.getSimpleName().toLowerCase(), sqls);
-                    }
-                }
-            }
-            List<String> order = new ArrayList<>();
-            for (String tbl : tblSqls.keySet()) {
-                sorted(tbl, order);
-            }
-
-            List<String> sqls = new ArrayList<>();
-            for (String tbl : order) {
-                List<String> list = tblSqls.get(tbl);
-                if (list != null && !list.isEmpty()) {
-                    sqls.addAll(list);
-                }
-            }
-            if (!sqls.isEmpty()) {
-                jdbcHelper.batchExec(sqls.toArray(new String[0]));
+                TableMeta tm = TableMeta.createBy(tbl);
+                tm.freshNameToField(tbl);
+                tm.freshConstraintMetaTable();
+                classToTableMeta.put(tbl, tm);
+                tableToClass.put(tm.getSchema() + "." + tm.getTable(), tbl);
             }
         }
 
+        Map<String, TableMeta> oldTableMeta = findTableMeta(jdbcHelper, tableToClass.keySet());
+
+        Map<String, List<String>> tblSqls = new HashMap<>();
+        for (Class<?> tbl : classToTableMeta.keySet()) {
+            TableMeta tm = classToTableMeta.get(tbl);
+            String schemaTable = tm.getSchema() + "." + tm.getTable();
+            TableMeta old = oldTableMeta.get(schemaTable);
+            if (old == null) {
+                List<String> createSQL = tm.createTableSql();
+                if (!createSQL.isEmpty()) {
+                    tblSqls.put(schemaTable, createSQL);
+                }
+            } else if (!old.equals(tm)) {
+                List<String> updateSQL = old.upgradeTo(tm);
+                if (!updateSQL.isEmpty()) {
+                    tblSqls.put(schemaTable, updateSQL);
+                }
+            }
+        }
+        List<String> order = new ArrayList<>();
+        for (String schemaTable : tblSqls.keySet()) {
+            sorted(order, schemaTable);
+        }
+
+        List<String> sqls = new ArrayList<>();
+        for (String tbl : order) {
+            List<String> list = tblSqls.get(tbl);
+            if (list != null && !list.isEmpty()) {
+                sqls.addAll(list);
+            }
+        }
+        if (!sqls.isEmpty()) {
+            jdbcHelper.batchExec(sqls.toArray(new String[0]));
+        }
     }
 
-    private void sorted(String tbl, List<String> order) {
-        if (!order.contains(tbl)) {
-            TableMeta tblMeta = tableToTableMeta.get(tbl.toLowerCase());
+    private void sorted(List<String> order, String schemaTable) {
+        if (!order.contains(schemaTable)) {
+            Class<?> tbl = tableToClass.get(schemaTable);
+            TableMeta tblMeta = classToTableMeta.get(tbl);
             if (tblMeta != null) {
                 for (ConstraintMeta cm : tblMeta.getFieldConstraint()) {
                     if (cm.getType().equals(ConstraintType.FOREGIN_KEY)) {
-                        sorted(cm.getRefTable(), order);
+                        sorted(order, cm.getRefTable());
                     }
                 }
             }
-            order.add(tbl);
+            order.add(schemaTable);
         }
     }
 
@@ -203,35 +308,16 @@ public class DaoHelper implements DDLDao, TransDao {
         this.jdbcHelper = jdbcHelper;
     }
 
-    public Map<String, TableMeta> getTableToTableMata() {
-        return tableToTableMeta;
+    public Map<Class<?>, TableMeta> getTableToTableMata() {
+        return classToTableMeta;
     }
 
-    public void setTableToTableMata(Map<String, TableMeta> tableToTableMeta) {
-        this.tableToTableMeta = tableToTableMeta;
-    }
-
-    public <E extends OEntity> List<String> createOrUpdate(Class<E> tbl) {
-        TableMeta old = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
-        if (old == null) {
-            old = TableMeta.createBy(tbl);
-            List<String> sqls = old.createTableSql();
-            tableToTableMeta.put(old.getTable().toLowerCase(), old);
-            return sqls;
-        } else {
-            TableMeta tm = TableMeta.createBy(tbl);
-            if (old.equals(tm)) {
-            } else {
-                List<String> sqls = old.upgradeTo(tm);
-                tableToTableMeta.put(tm.getTable().toLowerCase(), tm);
-                return sqls;
-            }
-        }
-        return null;
+    public void setTableToTableMata(Map<Class<?>, TableMeta> tableToTableMeta) {
+        this.classToTableMeta = tableToTableMeta;
     }
 
     public <E extends OEntity> boolean drop(Class<E> tbl) {
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return false;
         }
@@ -320,7 +406,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> E insert(E entity) {
         OAssert.warnning(entity != null, "不可以插入null");
         Class<?> tbl = entity.getClass();
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         tm.validate(entity, false);
         TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
@@ -343,7 +429,7 @@ public class DaoHelper implements DDLDao, TransDao {
             return 0;
         }
         Class<?> tbl = entities.get(0).getClass();
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
 
         for (E entity : entities) {
@@ -378,7 +464,7 @@ public class DaoHelper implements DDLDao, TransDao {
     private <E extends OEntity> int update(E entity, boolean ignoreNull) {
         OAssert.warnning(entity != null, "不可以插入null");
         Class<?> tbl = entity.getClass();
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         tm.validate(entity, ignoreNull);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
@@ -407,7 +493,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     public <E extends OEntity> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
         OAssert.warnning(tpl.getId() != null && tpl != null, "Are you sure to update a null value?");
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         // validate(tm,tpl,false);
         String setTpl = tpl.getSetTpl();
@@ -420,7 +506,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     public <E extends OEntity> int updateByTplCnd(Class<E> tbl, UpdateTpl<E> tpl, Cnd<E> cnd) {
         OAssert.warnning(tpl != null, "Are you sure to update a null value?");
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         // validate(tm,tpl,false);
         List<Object> vals = new ArrayList<>();
@@ -442,7 +528,7 @@ public class DaoHelper implements DDLDao, TransDao {
         if (id == null)
             return 0;
         OAssert.warnning(id != null, "Long不能为null");
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         String sql = String.format("UPDATE %s SET rm=true WHERE id=?", tm.getTable());
         return jdbcHelper.update(sql, new Object[]{id});
@@ -451,7 +537,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E> int removeByIds(Class<E> tbl, List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         String stub = OUtils.genStub("?", ",", ids.size());
         String sql = String.format("UPDATE %s SET rm=true WHERE rm = false AND id IN (%s)", tm.getTable(), stub);
         LOGGER.debug(sql);
@@ -461,7 +547,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> int remove(Class<E> tbl, Cnd<E> cnd) {
         if (cnd == null)
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         List<Object> sqlArgs = new ArrayList<>();
         String whereCnd = cnd.whereSql(sqlArgs);
         String sql = String.format("UPDATE %s SET rm=true WHERE %s", tm.getTable(), whereCnd);
@@ -471,7 +557,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> int recovery(Class<E> tbl, Cnd<E> cnd) {
         if (cnd == null)
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         List<Object> sqlArgs = new ArrayList<>();
         String whereCnd = cnd.whereSql(sqlArgs);
         String sql = String.format("UPDATE %s SET rm=false WHERE rm=true AND %s", tm.getTable(), whereCnd);
@@ -484,7 +570,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E> int deleteById(Class<E> tbl, Long id) {
         if (id == null)
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         String sql = String.format("DELETE FROM %s WHERE id=?", tm.getTable());
         return jdbcHelper.update(sql, new Object[]{id});
     }
@@ -492,7 +578,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E> int deleteByIds(Class<E> tbl, List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         String stub = OUtils.genStub("?", ",", ids.size());
         String sql = String.format("DELETE FROM %s WHERE id IN (%s) ", tm.getTable(), stub);
         return jdbcHelper.update(sql, ids.toArray());
@@ -501,7 +587,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> int delete(Class<E> tbl, Cnd<E> cnd) {
         if (cnd == null)
             return 0;
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         List<Object> sqlArgs = new ArrayList<>();
         cnd.and().eq().setRm(true);
         String whereCnd = cnd.whereSql(sqlArgs);
@@ -518,7 +604,7 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends OEntity> long count(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd) {
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         List<Object> sqlArgs = new ArrayList<>();
         String sql = cnd.countSql(tm, tpl, sqlArgs);
@@ -531,7 +617,7 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends OEntity> Page<E> findByTpl(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd) {
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
         Page<E> page = new Page<E>();
         if (cnd.getPage() == null || cnd.getPage() <= 0) {
@@ -590,7 +676,7 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends OEntity> void download(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd, Consumer<E> consumer) {
-        TableMeta tm = tableToTableMeta.get(tbl.getSimpleName().toLowerCase());
+        TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return;
         }
