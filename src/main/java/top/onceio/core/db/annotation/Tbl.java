@@ -16,7 +16,7 @@ public @interface Tbl {
 
     String name() default "";
 
-    Constraint[] constraints() default {};
+    Index[] indexes() default {};
 
     /**
      * 根据关联表自动创建

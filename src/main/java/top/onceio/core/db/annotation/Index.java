@@ -7,10 +7,10 @@ import java.lang.annotation.Target;
 
 @Target({})
 @Retention(RUNTIME)
-public @interface Constraint {
+public @interface Index {
     String using() default "BTREE";
 
     boolean unique() default false;
 
-    String[] colNames() default {};
+    String[] columns() default {};
 }

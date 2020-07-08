@@ -2,14 +2,14 @@ package top.onceio.core.db.dao.tpl;
 
 import org.apache.log4j.Logger;
 import top.onceio.core.OConfig;
-import top.onceio.core.db.annotation.ConstraintType;
+import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.dao.Page;
 import top.onceio.core.db.dao.TransDao;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.meta.ColumnMeta;
-import top.onceio.core.db.meta.ConstraintMeta;
+import top.onceio.core.db.meta.IndexMeta;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.tbl.OEntity;
 import top.onceio.core.exception.Failed;
@@ -83,7 +83,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 "left join pg_namespace ns on ns.oid = c.relnamespace\n" +
                 "left join pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid\n" +
                 "left join pg_constraint pk on pk.conrelid = c.oid and pk.contype='p' and a.attnum = pk.conkey[1]\n" +
-                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1]\n" +
+                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1] and array_length(uk.conkey,0) = 1\n" +
                 "left join pg_constraint fk on fk.conrelid = c.oid and fk.contype='f' and a.attnum = fk.conkey[1] \n" +
                 "left join pg_class fc on fk.confrelid = fc.oid\n" +
                 "left join pg_namespace fns on fns.oid = fc.relnamespace\n" +
@@ -151,23 +151,24 @@ public class DaoHelper implements DDLDao, TransDao {
             }
         });
 
-        Map<String, List<ConstraintMeta>> tableToConstraintMeta = new HashMap<>();
-        String qIndexes = "select *\n" +
-                "from information_schema.table_constraints as c \n" +
-                "left join pg_indexes as d on c.table_schema = d.schemaname and c.table_name = d.tablename and c.\"constraint_name\" = d.indexname\n" +
-                " WHERE concat(c.table_schema,'.',c.table_name) IN " + String.format("('%s')", String.join("','", schemaTables)) +
-                " ORDER BY c.table_schema,c.table_name";
-        jdbcHelper.query(qIndexes, null, (rs) -> {
+        Map<String, List<IndexMeta>> tableToConstraintMeta = new HashMap<>();
+        String qIndexes = "select * from pg_indexes i\n" +
+                "where i.indexname like ? and concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
+                " ORDER BY i.schemaname,i.tablename";
+        List<String> args = new ArrayList<>(schemaTables.size()+1);
+        args.add(IndexMeta.INDEX_NAME_PREFIX_NQ+"%");
+        args.addAll(schemaTables);
+        jdbcHelper.query(qIndexes, args.toArray(), (rs) -> {
             try {
-                String schema = rs.getString("table_schema");
-                String table = rs.getString("table_name");
-                String constraintName = rs.getString("constraint_name");
+                String schema = rs.getString("schemaname");
+                String table = rs.getString("tablename");
+                String indexname = rs.getString("indexname");
                 String indexDef = rs.getString("indexdef");
                 String schemaTable = schema + "." + table;
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
                 String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
-                if (col.contains(",") && constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
-                    ConstraintMeta constraintMeta = new ConstraintMeta();
+                if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_NQ)) {
+                    IndexMeta constraintMeta = new IndexMeta();
                     List<String> columns = new ArrayList<>();
                     for (String c : col.split(",")) {
                         columns.add(c.trim());
@@ -175,33 +176,32 @@ public class DaoHelper implements DDLDao, TransDao {
                     constraintMeta.setColumns(columns);
                     constraintMeta.setTable(table);
                     constraintMeta.setSchema(schema);
-                    if (indexDef.toUpperCase().contains(" " + ConstraintMeta.UNIQUE + " ")) {
-                        constraintMeta.setType(ConstraintType.UNIQUE);
+                    if (indexDef.toUpperCase().contains(" " + IndexMeta.UNIQUE + " ")) {
+                        constraintMeta.setType(IndexType.UNIQUE_FIELD);
                     } else {
-                        constraintMeta.setType(ConstraintType.INDEX);
+                        constraintMeta.setType(IndexType.INDEX);
                     }
                     constraintMeta.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
-                    List<ConstraintMeta> constraintMetas = tableToConstraintMeta.get(schema);
+                    List<IndexMeta> constraintMetas = tableToConstraintMeta.get(schema);
                     if (constraintMetas == null) {
                         constraintMetas = new ArrayList<>();
                         tableToConstraintMeta.put(schemaTable, constraintMetas);
                     }
                     constraintMetas.add(constraintMeta);
                 }
-
             } catch (Exception e) {
                 LOGGER.error(e.getMessage());
             }
         });
         tableToColumns.forEach((schemaTable, columnNameToCol) -> {
-            List<ConstraintMeta> constraints = tableToConstraintMeta.getOrDefault(schemaTable, new ArrayList<>());
+            List<IndexMeta> constraints = tableToConstraintMeta.getOrDefault(schemaTable, new ArrayList<>());
             String schema = schemaTable.split("\\.")[0];
             String table = schemaTable.split("\\.")[1];
             TableMeta tm = new TableMeta();
             tm.setTable(table);
             tm.setSchema(schema);
             tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
-            tm.setConstraints(constraints);
+            tm.setIndexes(constraints);
             tm.setPrimaryKey("id");
             tm.freshConstraintMetaTable();
             result.put(schemaTable, tm);
@@ -276,8 +276,8 @@ public class DaoHelper implements DDLDao, TransDao {
             Class<?> tbl = tableToClass.get(schemaTable);
             TableMeta tblMeta = classToTableMeta.get(tbl);
             if (tblMeta != null) {
-                for (ConstraintMeta cm : tblMeta.getFieldConstraint()) {
-                    if (cm.getType().equals(ConstraintType.FOREIGN_KEY)) {
+                for (IndexMeta cm : tblMeta.getFieldConstraint()) {
+                    if (cm.getType().equals(IndexType.FOREIGN_KEY)) {
                         sorted(order, cm.getRefTable());
                     }
                 }
