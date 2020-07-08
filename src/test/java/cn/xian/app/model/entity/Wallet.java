@@ -5,8 +5,10 @@ import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.tbl.OEntity;
 
 
-@Tbl(extend = UserInfo.class, autoCreate = true)
+@Tbl(autoCreate = true)
 public class Wallet extends OEntity {
+    @Col(nullable = false, ref = UserInfo.class)
+    private Long id;
     @Col(nullable = true)
     private int balance;
     @Col(nullable = true)

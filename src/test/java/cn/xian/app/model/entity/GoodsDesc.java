@@ -4,8 +4,10 @@ import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.tbl.OEntity;
 
-@Tbl(extend = Goods.class)
+@Tbl
 public class GoodsDesc extends OEntity {
+    @Col(nullable = false,ref = Goods.class)
+    private Long id;
     @Col(size = 255, nullable = true)
     private String content;
     @Col(nullable = false)

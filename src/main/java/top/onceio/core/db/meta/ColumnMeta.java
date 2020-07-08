@@ -1,6 +1,7 @@
 package top.onceio.core.db.meta;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 public class ColumnMeta {
     String name;
@@ -15,6 +16,9 @@ public class ColumnMeta {
      * 正则表达式 或@JSON,@Email等特定教研
      */
     String pattern;
+    String defaultValue;
+    String comment;
+
     transient Field field;
     transient Class<?> javaBaseType;
 
@@ -90,6 +94,22 @@ public class ColumnMeta {
         this.primaryKey = primaryKey;
     }
 
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
     public Field getField() {
         return field;
     }
@@ -104,5 +124,27 @@ public class ColumnMeta {
 
     public void setJavaBaseType(Class<?> javaBaseType) {
         this.javaBaseType = javaBaseType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ColumnMeta that = (ColumnMeta) o;
+        return nullable == that.nullable &&
+                unique == that.unique &&
+                useFK == that.useFK &&
+                primaryKey == that.primaryKey &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(refTable, that.refTable) &&
+                Objects.equals(using, that.using) &&
+                Objects.equals(defaultValue, that.defaultValue) &&
+                Objects.equals(comment, that.comment);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, type, nullable, unique, refTable, useFK, using, primaryKey, defaultValue, comment);
     }
 }

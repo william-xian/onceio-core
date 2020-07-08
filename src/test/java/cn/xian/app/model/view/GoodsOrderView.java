@@ -7,10 +7,10 @@ import top.onceio.core.db.annotation.TblView;
 
 import java.util.function.Function;
 
-@TblView(def ="select go.*,g.name goodsName,g.genre genre,ui.name username \n" +
-        "from goodsorder go\n" +
-        "left join  userinfo ui on ui.id = go.userid\n" +
-        "left join goods g on g.id = go.goodsid")
+//@TblView(def ="select go.*,g.name goodsName,g.genre genre,ui.name username \n" +
+//        "from goodsorder go\n" +
+//        "left join  userinfo ui on ui.id = go.userid\n" +
+//        "left join goods g on g.id = go.goodsid")
 public class GoodsOrderView extends GoodsOrder {
     //@Col
     //private Long rowNum;

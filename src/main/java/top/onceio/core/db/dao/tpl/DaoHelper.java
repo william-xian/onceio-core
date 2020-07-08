@@ -1,12 +1,6 @@
 package top.onceio.core.db.dao.tpl;
 
-import java.sql.*;
-import java.sql.Date;
-import java.util.*;
-import java.util.function.Consumer;
-
 import org.apache.log4j.Logger;
-
 import top.onceio.core.OConfig;
 import top.onceio.core.db.annotation.ConstraintType;
 import top.onceio.core.db.dao.DDLDao;
@@ -21,6 +15,13 @@ import top.onceio.core.db.tbl.OEntity;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OUtils;
+
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class DaoHelper implements DDLDao, TransDao {
     private static final Logger LOGGER = Logger.getLogger(DaoHelper.class);
@@ -43,7 +44,7 @@ public class DaoHelper implements DDLDao, TransDao {
         Long cnt = 0L;
         try {
             cnt = (Long) jdbcHelper.queryForObject(
-                    String.format("SELECT count(*) FROM %s", tbl.getSimpleName().toLowerCase()));
+                    String.format("SELECT count(*) FROM %s", TableMeta.getTableName(tbl)));
         } catch (Failed e) {
             cnt = -1L;
         }
@@ -56,36 +57,65 @@ public class DaoHelper implements DDLDao, TransDao {
 
     private Map<String, TableMeta> findPGTableMeta(JdbcHelper jdbcHelper, Collection<String> schemaTables) {
         Map<String, TableMeta> result = new HashMap<>();
-        String qColumns = "SELECT\n" +
-                " ns.nspname as table_schema,\n" +
-                " c.relname as table_name,\n" +
-                " a.attnum,\n" +
-                " a.attname AS field,\n" +
-                " t.typname AS type,\n" +
-                " a.attlen AS length,\n" +
-                " a.atttypmod AS lengthvar,\n" +
-                " a.attnotnull AS nullable,\n" +
-                " b.description AS comment\n" +
-                " FROM pg_class c,\n" +
-                " pg_attribute a\n" +
-                " LEFT OUTER JOIN pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid,\n" +
-                " pg_type t,\n" +
-                " pg_namespace ns\n" +
-                " WHERE a.attnum > 0\n" +
-                " and a.attrelid = c.oid\n" +
-                " and a.atttypid = t.oid\n" +
-                " and ns.oid = c.relnamespace\n" +
-                " and concat(ns.nspname,'.',c.relname) IN \n" + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
-                " ORDER BY ns.nspname,c.relname";
+        if (schemaTables.isEmpty()) {
+            return result;
+        }
+        String qColumns = "select\n" +
+                "ns.nspname as schemaname,\n" +
+                "c.relname as tablename,\n" +
+                "a.attnum,\n" +
+                "a.attname AS field,\n" +
+                "t.typname AS type,\n" +
+                "isc.character_maximum_length max_length,\n" +
+                "isc.numeric_precision,\n" +
+                "isc.numeric_scale,\n" +
+                "isc.column_default,\n" +
+                "isc.is_nullable = 'YES' as nullable,\n" +
+                "b.description AS comment,\n" +
+                "pk.conname pk_conname,\n" +
+                "uk.conname uk_conname,\n" +
+                "fk.conname fk_conname,\n" +
+                "fc.relname f_tablename,\n" +
+                "fns.nspname f_schemaname\n" +
+                "from pg_attribute a \n" +
+                "left join pg_type t on a.atttypid = t.oid\n" +
+                "left join pg_class c on a.attrelid = c.oid\n" +
+                "left join pg_namespace ns on ns.oid = c.relnamespace\n" +
+                "left join pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid\n" +
+                "left join pg_constraint pk on pk.conrelid = c.oid and pk.contype='p' and a.attnum = pk.conkey[1]\n" +
+                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1]\n" +
+                "left join pg_constraint fk on fk.conrelid = c.oid and fk.contype='f' and a.attnum = fk.conkey[1] \n" +
+                "left join pg_class fc on fk.confrelid = fc.oid\n" +
+                "left join pg_namespace fns on fns.oid = fc.relnamespace\n" +
+                "left join information_schema.columns isc on isc.table_schema = ns.nspname and isc.table_name = c.relname and isc.column_name =  a.attname\n" +
+                "WHERE a.attnum > 0\n" +
+                "and a.attrelid = c.oid\n" +
+                "and a.atttypid = t.oid\n" +
+                "and ns.oid = c.relnamespace\n" +
+                "and concat(ns.nspname,'.',c.relname) IN " + String.format("(%s)\n", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
+                "ORDER BY ns.nspname,c.relname,a.attnum";
         Map<String, Map<String, ColumnMeta>> tableToColumns = new HashMap<>();
 
         jdbcHelper.query(qColumns, schemaTables.toArray(), (rs) -> {
             try {
-                String schema = rs.getString("table_schema");
-                String table = rs.getString("table_name");
-                int varcharMaxLen = rs.getInt("length");
-                //int numericPrecision = rs.getInt("numeric_precision");
-                //int numericScale = rs.getInt("numeric_scale");
+                String schema = rs.getString("schemaname");
+                String table = rs.getString("tablename");
+                int varcharMaxLen = rs.getInt("max_length");
+                int numericPrecision = rs.getInt("numeric_precision");
+                int numericScale = rs.getInt("numeric_scale");
+                String comment = rs.getString("comment");
+                String column_default = rs.getString("column_default");
+                boolean nullable = rs.getBoolean("nullable");
+                String field = rs.getString("field");
+                String typename = rs.getString("type");
+                String pk_conname = rs.getString("pk_conname");
+                String uk_conname = rs.getString("uk_conname");
+                String fk_conname = rs.getString("fk_conname");
+                String refTable = null;
+                if (fk_conname != null) {
+                    refTable = rs.getString("f_schemaname") + "." + rs.getString("f_tablename");
+                }
+
                 String schemaTable = schema + "." + table;
                 Map<String, ColumnMeta> columnMetaList = tableToColumns.get(schemaTable);
                 if (columnMetaList == null) {
@@ -93,33 +123,28 @@ public class DaoHelper implements DDLDao, TransDao {
                     tableToColumns.put(schemaTable, columnMetaList);
                 }
                 ColumnMeta cm = new ColumnMeta();
-                cm.setName(rs.getString("field"));
-                cm.setNullable(rs.getBoolean("nullable"));
-                String udtName = rs.getString("type");
-                cm.setRefTable("");
-                cm.setType(udtName);
-                if (udtName.equals("bool")) {
-                    cm.setJavaBaseType(Boolean.TYPE);
-                } else if (udtName.equals("int2")) {
-                    cm.setJavaBaseType(Short.TYPE);
-                } else if (udtName.equals("int4")) {
-                    cm.setJavaBaseType(Integer.TYPE);
-                } else if (udtName.equals("int8")) {
-                    cm.setJavaBaseType(Long.TYPE);
-                } else if (udtName.equals("float4")) {
-                    cm.setJavaBaseType(Float.TYPE);
-                } else if (udtName.equals("float8")) {
-                    cm.setJavaBaseType(Double.TYPE);
-                } else if (udtName.equals("varchar")) {
-                    cm.setJavaBaseType(String.class);
-                    cm.setType(String.format("varchar(%d)", varcharMaxLen));
-                } else if (udtName.equals("text")) {
-                    cm.setJavaBaseType(String.class);
-                } else if (udtName.equals("timestamptz") || udtName.equals("timestamp")) {
-                    cm.setJavaBaseType(Timestamp.class);
-                } else if (udtName.equals("time") || udtName.equals("date")) {
-                    cm.setJavaBaseType(Date.class);
+                cm.setName(field);
+                cm.setNullable(nullable);
+                cm.setUnique(uk_conname != null);
+                if (pk_conname != null) {
+                    cm.setPrimaryKey(true);
+                    cm.setUnique(true);
+                    cm.setNullable(false);
                 }
+                cm.setUseFK(fk_conname != null);
+                cm.setRefTable(refTable);
+                cm.setType(typename);
+                cm.setUsing("");
+                cm.setPattern("");
+                Class<?> javaBaseType = TableMeta.parseType(typename, varcharMaxLen, 0);
+                if (typename.equals("varchar")) {
+                    cm.setType(String.format("varchar(%d)", varcharMaxLen));
+                } else if (typename.equals("numeric")) {
+                    cm.setType(String.format("numeric(%d,%d)", numericPrecision, numericScale));
+                }
+                cm.setJavaBaseType(javaBaseType);
+                cm.setDefaultValue(column_default != null ? column_default : "");
+                cm.setComment(comment != null ? comment : "");
                 columnMetaList.put(cm.getName(), cm);
             } catch (Exception e) {
                 LOGGER.error(e.getMessage());
@@ -140,55 +165,28 @@ public class DaoHelper implements DDLDao, TransDao {
                 String indexDef = rs.getString("indexdef");
                 String schemaTable = schema + "." + table;
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
-                if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN) || constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK) || constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
-                    String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
-                    if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN)) {
-                        ColumnMeta cm = nameToColumnMeta.get(col);
-                        if (indexDef.toUpperCase().contains(ConstraintMeta.UNIQUE)) {
-                            cm.setUnique(true);
-                        }
-                        cm.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
-                    } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK)) {
-                        ColumnMeta cm = nameToColumnMeta.get(col);
-                        cm.setPrimaryKey(true);
-                        cm.setUnique(true);
-                    } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
-                        ConstraintMeta constraintMeta = new ConstraintMeta();
-                        List<String> columns = new ArrayList<>();
-                        for (String c : col.split(",")) {
-                            columns.add(c.trim());
-                        }
-                        constraintMeta.setColumns(columns);
-                        constraintMeta.setTable(table);
-                        constraintMeta.setSchema(schema);
-                        if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_UN)) {
-                            constraintMeta.setType(ConstraintType.UNIQUE);
-                        } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_PK)) {
-                            constraintMeta.setType(ConstraintType.PRIMARY_KEY);
-                        } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_FK)) {
-                            constraintMeta.setType(ConstraintType.FOREGIN_KEY);
-                            constraintMeta.setRefTable(indexDef.replaceAll("^.* REFERENCES ([^( ]+).*$", "$1").trim());
-                        } else {
-                            constraintMeta.setType(ConstraintType.UNIQUE);
-                        }
-                        constraintMeta.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
-                        List<ConstraintMeta> constraintMetas = tableToConstraintMeta.get(schema);
-                        if (constraintMetas == null) {
-                            constraintMetas = new ArrayList<>();
-                            tableToConstraintMeta.put(schemaTable, constraintMetas);
-                        }
-                        constraintMetas.add(constraintMeta);
+                String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
+                if (col.contains(",") && constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_NQ)) {
+                    ConstraintMeta constraintMeta = new ConstraintMeta();
+                    List<String> columns = new ArrayList<>();
+                    for (String c : col.split(",")) {
+                        columns.add(c.trim());
                     }
-
-                } else if (constraintName.startsWith(ConstraintMeta.INDEX_NAME_PREFIX_FK)) {
-                    int begin = String.format("%s%s_%s_", ConstraintMeta.INDEX_NAME_PREFIX_FK, schema, table).length();
-                    String col = constraintName.substring(begin);
-                    ColumnMeta cm = nameToColumnMeta.get(col);
-                    cm.setUseFK(true);
-                    cm.setRefTable("");
-                    if (indexDef.toUpperCase().contains(ConstraintMeta.UNIQUE)) {
-                        cm.setUnique(true);
+                    constraintMeta.setColumns(columns);
+                    constraintMeta.setTable(table);
+                    constraintMeta.setSchema(schema);
+                    if (indexDef.toUpperCase().contains(" " + ConstraintMeta.UNIQUE + " ")) {
+                        constraintMeta.setType(ConstraintType.UNIQUE);
+                    } else {
+                        constraintMeta.setType(ConstraintType.INDEX);
                     }
+                    constraintMeta.setUsing(indexDef.replaceAll("^.* USING ([^( ]+).*$", "$1").trim());
+                    List<ConstraintMeta> constraintMetas = tableToConstraintMeta.get(schema);
+                    if (constraintMetas == null) {
+                        constraintMetas = new ArrayList<>();
+                        tableToConstraintMeta.put(schemaTable, constraintMetas);
+                    }
+                    constraintMetas.add(constraintMeta);
                 }
 
             } catch (Exception e) {
@@ -279,7 +277,7 @@ public class DaoHelper implements DDLDao, TransDao {
             TableMeta tblMeta = classToTableMeta.get(tbl);
             if (tblMeta != null) {
                 for (ConstraintMeta cm : tblMeta.getFieldConstraint()) {
-                    if (cm.getType().equals(ConstraintType.FOREGIN_KEY)) {
+                    if (cm.getType().equals(ConstraintType.FOREIGN_KEY)) {
                         sorted(order, cm.getRefTable());
                     }
                 }
@@ -321,7 +319,7 @@ public class DaoHelper implements DDLDao, TransDao {
         if (tm == null) {
             return false;
         }
-        String sql = String.format("DROP TABLE IF EXISTS %s;", tbl.getSimpleName().toLowerCase());
+        String sql = String.format("DROP TABLE IF EXISTS %s;", TableMeta.getTableName(tbl));
         jdbcHelper.batchUpdate(sql);
         return true;
     }
@@ -407,7 +405,7 @@ public class DaoHelper implements DDLDao, TransDao {
         OAssert.warnning(entity != null, "不可以插入null");
         Class<?> tbl = entity.getClass();
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         tm.validate(entity, false);
         TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
         if (idNameVal.getIdAt(0) == null) {
@@ -430,7 +428,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
         Class<?> tbl = entities.get(0).getClass();
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
 
         for (E entity : entities) {
             tm.validate(entity, false);
@@ -466,7 +464,7 @@ public class DaoHelper implements DDLDao, TransDao {
         Class<?> tbl = entity.getClass();
         TableMeta tm = classToTableMeta.get(tbl);
         tm.validate(entity, ignoreNull);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(), Arrays.asList(entity));
         Object id = idNameVal.getIdAt(0);
         OAssert.err(id != null, "Long 不能为NULL");
@@ -494,7 +492,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
         OAssert.warnning(tpl.getId() != null && tpl != null, "Are you sure to update a null value?");
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         // validate(tm,tpl,false);
         String setTpl = tpl.getSetTpl();
         List<Object> vals = new ArrayList<>(tpl.getArgs().size() + 1);
@@ -507,7 +505,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends OEntity> int updateByTplCnd(Class<E> tbl, UpdateTpl<E> tpl, Cnd<E> cnd) {
         OAssert.warnning(tpl != null, "Are you sure to update a null value?");
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         // validate(tm,tpl,false);
         List<Object> vals = new ArrayList<>();
         vals.addAll(tpl.getArgs());
@@ -529,7 +527,7 @@ public class DaoHelper implements DDLDao, TransDao {
             return 0;
         OAssert.warnning(id != null, "Long不能为null");
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         String sql = String.format("UPDATE %s SET rm=true WHERE id=?", tm.getTable());
         return jdbcHelper.update(sql, new Object[]{id});
     }
@@ -605,7 +603,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     public <E extends OEntity> long count(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd) {
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         List<Object> sqlArgs = new ArrayList<>();
         String sql = cnd.countSql(tm, tpl, sqlArgs);
         LOGGER.debug(sql);
@@ -618,7 +616,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     public <E extends OEntity> Page<E> findByTpl(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd) {
         TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", tbl.getSimpleName());
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         Page<E> page = new Page<E>();
         if (cnd.getPage() == null || cnd.getPage() <= 0) {
             page.setPage(cnd.getPage());

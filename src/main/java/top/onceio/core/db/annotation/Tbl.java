@@ -18,8 +18,6 @@ public @interface Tbl {
 
     Constraint[] constraints() default {};
 
-    Class<?> extend() default void.class;
-
     /**
      * 根据关联表自动创建
      */

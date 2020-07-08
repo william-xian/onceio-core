@@ -23,6 +23,10 @@ public @interface Col {
 
     String type() default "";
 
+    String defaultValue() default "";
+
+    String comment() default "";
+
     boolean unique() default false;
 
     String using() default "";

@@ -113,7 +113,7 @@ public class JsonConfLoader {
             Enumeration<URL> files = OnceIO.getClassLoader().getResources(dir);
             while (files.hasMoreElements()) {
                 URL u = files.nextElement();
-                System.out.println(u.toString());
+                OLog.debug(u.toString());
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -2,6 +2,7 @@ package top.onceio.core.db.meta;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -21,7 +22,6 @@ public class TableMeta {
     private static final Logger LOGGER = Logger.getLogger(TableMeta.class);
     String schema;
     String table;
-    String extend;
     ConstraintMeta primaryKey;
     String viewDef;
     transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
@@ -29,6 +29,7 @@ public class TableMeta {
     List<ColumnMeta> columnMetas = new ArrayList<>(0);
     transient Map<String, ColumnMeta> nameToColumnMeta = new HashMap<>();
     transient Class<?> entity;
+
 
     public String getSchema() {
         return schema;
@@ -45,14 +46,6 @@ public class TableMeta {
     public void setTable(String table) {
         this.table = table;
         freshConstraintMetaTable();
-    }
-
-    public String getExtend() {
-        return extend;
-    }
-
-    public void setExtend(String extend) {
-        this.extend = extend;
     }
 
     public List<ColumnMeta> getColumnMetas() {
@@ -175,24 +168,11 @@ public class TableMeta {
                     cnsMeta.setTable(this.getTable());
                     cnsMeta.setName(ConstraintMeta.INDEX_NAME_PREFIX_FK + cnsMeta.getTable() + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
-                    cnsMeta.setType(ConstraintType.FOREGIN_KEY);
+                    cnsMeta.setType(ConstraintType.FOREIGN_KEY);
                     cnsMeta.setRefTable(cm.refTable);
                     fieldConstraint.add(cnsMeta);
                 }
                 nameToColumnMeta.put(cm.getName(), cm);
-            }
-            if (extend != null && !"".equals(extend)) {
-                ConstraintMeta cnsMeta = new ConstraintMeta();
-                List<String> cols = new ArrayList<>();
-                cols.add("id");
-                cnsMeta.setColumns(new ArrayList<String>(cols));
-                cnsMeta.setSchema(this.getSchema());
-                cnsMeta.setTable(this.getTable());
-                cnsMeta.setName(ConstraintMeta.INDEX_NAME_PREFIX_FK + cnsMeta.getTable() + "_id");
-                cnsMeta.setUsing("btree");
-                cnsMeta.setType(ConstraintType.FOREGIN_KEY);
-                cnsMeta.setRefTable(extend);
-                fieldConstraint.add(cnsMeta);
             }
         }
     }
@@ -216,13 +196,15 @@ public class TableMeta {
             String sql = String.format("ALTER TABLE %s.%s ADD COLUMN %s %s", schema, table, ocm.name, ocm.type);
             if (!ocm.nullable) {
                 sql = sql + String.format(" NOT NULL");
-                if (ocm.getType().startsWith("varchar") || ocm.getType().startsWith("char")) {
-                    sql = sql + " DEFAULT ''";
-                } else if (ocm.getType().startsWith("int")) {
-                    sql = sql + " DEFAULT 0";
-                } else if (ocm.getType().startsWith("bool")) {
-                    sql = sql + " DEFAULT false";
+            }
+            if (ocm.defaultValue != null && !ocm.defaultValue.equals("")) {
+                String dft = "";
+                if (ocm.getJavaBaseType().equals(String.class)) {
+                    dft = " DEFAULT '" + ocm.defaultValue + "'";
+                } else {
+                    dft = " DEFAULT " + ocm.defaultValue;
                 }
+                sql = sql + dft;
             }
             sql = sql + ";";
             sqls.add(sql);
@@ -236,10 +218,23 @@ public class TableMeta {
     public List<String> createTableSql() {
         List<String> sqls = new ArrayList<>();
         StringBuffer tbl = new StringBuffer();
+        List<String> comments = new ArrayList<>();
         if (viewDef == null) {
             tbl.append(String.format("CREATE TABLE %s.%s (", schema, table));
+
             for (ColumnMeta cm : columnMetas) {
-                tbl.append(String.format("%s %s%s,", cm.name, cm.type, cm.nullable ? "" : " not null"));
+                String dft = "";
+                if (cm.defaultValue != null && !cm.defaultValue.equals("")) {
+                    if (cm.getJavaBaseType().equals(String.class)) {
+                        dft = " DEFAULT '" + cm.defaultValue + "'";
+                    } else {
+                        dft = " DEFAULT " + cm.defaultValue;
+                    }
+                }
+                tbl.append(String.format("%s %s%s%s,", cm.name, cm.type, cm.nullable ? "" : " NOT NULL", dft));
+                if (cm.comment != null && !cm.comment.equals("")) {
+                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, cm.name, cm.comment));
+                }
             }
             tbl.delete(tbl.length() - 1, tbl.length());
             tbl.append(");");
@@ -252,6 +247,8 @@ public class TableMeta {
 
             /** 添加复合约束 */
             sqls.addAll(ConstraintMeta.addConstraintSql(constraints));
+
+            sqls.addAll(comments);
         } else {
             sqls.add(String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
             tbl.append(String.format("CREATE VIEW %s.%s AS (", schema, table));
@@ -295,16 +292,21 @@ public class TableMeta {
      */
     public List<String> upgradeTableTo(TableMeta other) {
         List<String> sqls = new ArrayList<>();
+        List<String> comments = new ArrayList<>();
         List<ColumnMeta> otherColumn = other.columnMetas;
         List<ColumnMeta> newColumns = new ArrayList<>();
         List<ConstraintMeta> dropIndexs = new ArrayList<>();
         List<ConstraintMeta> dropForeignKeys = new ArrayList<>();
         List<ColumnMeta> alterColumns = new ArrayList<>();
         List<ConstraintMeta> addForeignKeys = new ArrayList<>();
+
         for (ColumnMeta ocm : otherColumn) {
             ColumnMeta cm = nameToColumnMeta.get(ocm.name);
             if (cm == null) {
                 newColumns.add(ocm);
+                if (ocm.comment != null && !ocm.comment.equals("")) {
+                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, ocm.name, ocm.comment));
+                }
             } else {
                 if (cm.unique && !ocm.unique) {
                     ConstraintMeta cnstMeta = new ConstraintMeta();
@@ -321,12 +323,12 @@ public class TableMeta {
                     cnstMeta.setColumns(Arrays.asList(cm.getName()));
                     cnstMeta.setSchema(schema);
                     cnstMeta.setTable(table);
-                    cnstMeta.setType(ConstraintType.FOREGIN_KEY);
+                    cnstMeta.setType(ConstraintType.FOREIGN_KEY);
                     cnstMeta.setRefTable(cm.getRefTable());
                     cnstMeta.setUsing(cm.getUsing());
                     dropForeignKeys.add(cnstMeta);
                 }
-                if (!cm.type.equals(ocm.type) || cm.nullable != ocm.nullable) {
+                if (!Objects.equals(cm.type, ocm.type) || !Objects.equals(cm.defaultValue, ocm.defaultValue) || cm.nullable != ocm.nullable) {
                     alterColumns.add(ocm);
                 }
                 if (!cm.useFK && ocm.useFK) {
@@ -335,10 +337,15 @@ public class TableMeta {
                         cnstMeta.setColumns(Arrays.asList(cm.getName()));
                         cnstMeta.setSchema(schema);
                         cnstMeta.setTable(table);
-                        cnstMeta.setType(ConstraintType.FOREGIN_KEY);
-                        cnstMeta.setRefTable(cm.getRefTable());
-                        cnstMeta.setUsing(cm.getUsing());
+                        cnstMeta.setType(ConstraintType.FOREIGN_KEY);
+                        cnstMeta.setRefTable(ocm.getRefTable());
+                        cnstMeta.setUsing(ocm.getUsing());
                         addForeignKeys.add(cnstMeta);
+                    }
+                }
+                if (!Objects.equals(cm.comment, ocm.comment)) {
+                    if (ocm.comment != null && !ocm.comment.equals("")) {
+                        comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, ocm.name, ocm.comment));
                     }
                 }
             }
@@ -405,6 +412,31 @@ public class TableMeta {
 
     public static final Map<Class<?>, TableMeta> tableCache = new HashMap<>();
 
+
+    public static String getTableName(Class<?> clazz) {
+        String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
+        Tbl tbl = clazz.getAnnotation(Tbl.class);
+        if (tbl != null && !tbl.name().equals("")) {
+            return tbl.name();
+        } else {
+            return defaultName;
+        }
+    }
+
+    public static String getColumnName(Field field) {
+        return field.getName().replaceAll("([A-Z])", "_$1").toLowerCase();
+    }
+
+    private static String getViewName(Class<?> clazz) {
+        String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
+        TblView tblView = clazz.getAnnotation(TblView.class);
+        if (tblView != null && !tblView.name().equals("")) {
+            return tblView.name();
+        } else {
+            return defaultName;
+        }
+    }
+
     public static TableMeta createBy(Class<?> entity) {
         TableMeta tm = new TableMeta();
         tm.entity = entity;
@@ -412,7 +444,7 @@ public class TableMeta {
         TblView tblView = entity.getAnnotation(TblView.class);
         if (tbl != null) {
             tm.schema = tbl.schema();
-            tm.table = tbl.name().equalsIgnoreCase("") ? entity.getSimpleName().toLowerCase() : tbl.name();
+            tm.table = getTableName(entity);
             List<ConstraintMeta> constraints = new ArrayList<>();
             for (Constraint c : tbl.constraints()) {
                 ConstraintMeta cm = new ConstraintMeta();
@@ -420,18 +452,14 @@ public class TableMeta {
                 cm.setColumns(Arrays.asList(c.colNames()));
                 cm.setSchema(tm.getSchema());
                 cm.setTable(tm.getTable());
-                cm.setType(c.type());
+                if (c.unique()) {
+                    cm.setType(ConstraintType.UNIQUE_INDEX);
+                } else {
+                    cm.setType(ConstraintType.INDEX);
+                }
                 cm.setUsing(c.using());
             }
             tm.setConstraints(constraints);
-            if (!tbl.extend().equals(void.class)) {
-                Tbl extendTbl = tbl.extend().getAnnotation(Tbl.class);
-                String table = tbl.extend().getSimpleName().toLowerCase();
-                if (!extendTbl.name().equals("")) {
-                    table = extendTbl.name();
-                }
-                tm.setExtend(extendTbl.schema() + "." + table);
-            }
         }
         List<Class<?>> classes = new ArrayList<>();
         for (Class<?> clazz = entity; !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
@@ -447,18 +475,19 @@ public class TableMeta {
                     continue;
                 }
                 ColumnMeta cm = new ColumnMeta();
-                if ("".equals(col.name())) {
-                    cm.setName(field.getName().toLowerCase());
-                } else {
-                    cm.setName(col.name());
-                }
+                cm.setName(getColumnName(field));
                 cm.setUnique(col.unique());
                 cm.setUsing(col.using());
+                cm.setDefaultValue(col.defaultValue());
+                cm.setComment(col.comment());
+                cm.setNullable(col.nullable());
                 if (field.getName().equals("id")) {
+                    tm.setPrimaryKey("id");
                     cm.setPrimaryKey(true);
                     cm.setUnique(true);
+                    cm.setNullable(false);
+
                 }
-                cm.setNullable(col.nullable());
                 cm.setPattern(col.pattern());
                 if (col.type().equals("")) {
                     Class<?> javaBaseType = cm.getJavaBaseType();
@@ -472,7 +501,7 @@ public class TableMeta {
                             cm.setJavaBaseType(javaBaseType);
                         }
                     }
-                    String type = transType(clazz, entity, javaBaseType, col);
+                    String type = transType(javaBaseType, col);
                     cm.setType(type);
                 } else {
                     cm.setType(col.type());
@@ -480,9 +509,9 @@ public class TableMeta {
 
                 if (col.ref() != void.class) {
                     cm.setUseFK(col.useFK());
-                    String table = col.ref().getSimpleName().toLowerCase();
                     Tbl e = col.ref().getAnnotation(Tbl.class);
-                    cm.setRefTable(e.schema() + "." + (e.name().equals("") ? table : e.name()));
+                    String table = getTableName(col.ref());
+                    cm.setRefTable(e.schema() + "." + table);
                 }
                 int index = colOrder.indexOf(cm.getName());
                 if (index < 0) {
@@ -494,12 +523,11 @@ public class TableMeta {
             }
         }
         tm.setColumnMetas(columnMetas);
-        tm.setPrimaryKey("id");
         tm.freshNameToField(entity);
         tm.freshConstraintMetaTable();
         if (tblView != null) {
             tm.schema = tblView.schema();
-            String viewName = tblView.name().equalsIgnoreCase("") ? entity.getSimpleName() : tblView.name();
+            String viewName = tblView.name().equalsIgnoreCase("") ? TableMeta.getViewName(entity) : tblView.name();
             tm.setTable(viewName);
             tm.setViewDef(tblView.def());
         }
@@ -510,7 +538,7 @@ public class TableMeta {
     /**
      * 以postgresql為准
      */
-    private static String transType(Class<?> forefather, Class<?> clazz, Class<?> type, Col col) {
+    public static String transType(Class<?> type, Col col) {
         if (type.equals(Long.class) || type.equals(long.class)) {
             return "int8";
         } else if (type.equals(String.class)) {
@@ -518,7 +546,7 @@ public class TableMeta {
         } else if (type.equals(Integer.class) || type.equals(int.class)) {
             return "int4";
         } else if (type.equals(BigDecimal.class)) {
-            return String.format("decimal(%d,%d)", col.precision(), col.scale());
+            return String.format("numeric(%d,%d)", col.precision(), col.scale());
         } else if (type.equals(Boolean.class) || type.equals(boolean.class)) {
             return "bool";
         } else if (type.equals(Short.class) || type.equals(short.class)) {
@@ -535,6 +563,34 @@ public class TableMeta {
         return null;
     }
 
+    public static Class<?> parseType(String udtName, int size, int i) {
+        if (udtName.equals("bool")) {
+            return Boolean.TYPE;
+        } else if (udtName.equals("int2")) {
+            return Short.TYPE;
+        } else if (udtName.equals("int4")) {
+            return Integer.TYPE;
+        } else if (udtName.equals("int8")) {
+            return Long.TYPE;
+        } else if (udtName.equals("float4")) {
+            return Float.TYPE;
+        } else if (udtName.equals("float8")) {
+            return Double.TYPE;
+        } else if (udtName.equals("numeric")) {
+            return BigDecimal.class;
+        } else if (udtName.equals("varchar")) {
+            return String.class;
+        } else if (udtName.equals("text")) {
+            return String.class;
+        } else if (udtName.equals("timestamptz") || udtName.equals("timestamp")) {
+            return Timestamp.class;
+        } else if (udtName.equals("time") || udtName.equals("date")) {
+            return Date.class;
+        }
+        return Object.class;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -542,7 +598,6 @@ public class TableMeta {
         TableMeta tableMeta = (TableMeta) o;
         return Objects.equals(schema, tableMeta.schema) &&
                 Objects.equals(table, tableMeta.table) &&
-                Objects.equals(extend, tableMeta.extend) &&
                 Objects.equals(primaryKey, tableMeta.primaryKey) &&
                 Objects.equals(viewDef, tableMeta.viewDef) &&
                 Objects.equals(constraints, tableMeta.constraints) &&
@@ -552,7 +607,7 @@ public class TableMeta {
 
     @Override
     public int hashCode() {
-        return Objects.hash(schema, table, extend, primaryKey, viewDef, constraints, columnMetas, nameToColumnMeta);
+        return Objects.hash(schema, table, primaryKey, viewDef, constraints, columnMetas, nameToColumnMeta);
     }
 
     public void validate(Object obj, boolean ignoreNull) {

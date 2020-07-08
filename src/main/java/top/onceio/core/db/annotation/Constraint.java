@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 public @interface Constraint {
     String using() default "BTREE";
 
-    ConstraintType type() default ConstraintType.UNIQUE;
+    boolean unique() default false;
 
     String[] colNames() default {};
 }
