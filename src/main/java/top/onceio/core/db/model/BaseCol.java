@@ -1,12 +1,19 @@
 package top.onceio.core.db.model;
 
+import top.onceio.core.db.annotation.Col;
+
+import java.lang.reflect.Field;
+
 public class BaseCol<T extends BaseTable> implements Queryable {
     T table;
     public String name;
+    private Field field;
 
-    public BaseCol(T table, String name) {
+    public BaseCol(T table, Field field) {
         this.table = table;
-        this.name = name;
+        Col col = field.getAnnotation(Col.class);
+        this.name = col.name().equals("")?field.getName():col.name();
+        this.field = field;
     }
 
     public String name() {
@@ -64,8 +71,15 @@ public class BaseCol<T extends BaseTable> implements Queryable {
         table.sql.append(" " + name() + " in (");
         table.sql.append(sub.sql.toString());
         table.args.addAll(sub.args);
-        table.sql.deleteCharAt(table.sql.length() - 1);
         table.sql.append(")");
+        return table;
+    }
+
+    public T set(Object val) {
+        return table;
+    }
+
+    public T setExp(String val) {
         return table;
     }
 }

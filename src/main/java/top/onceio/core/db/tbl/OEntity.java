@@ -11,9 +11,9 @@ import top.onceio.core.util.OUtils;
  */
 public abstract class OEntity {
     @Col(nullable = false)
-    private Long id;
+    protected Long id;
     @Col(nullable = false, defaultValue = "false")
-    private transient Boolean rm;
+    protected transient Boolean rm;
     /**
      * 用户存储额外数据，如 聚合函数
      */

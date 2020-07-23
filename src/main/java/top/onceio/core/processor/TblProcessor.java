@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
-@AutoService(Processor.class)
+//@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
+//@SupportedSourceVersion(SourceVersion.RELEASE_8)
+//@AutoService(Processor.class)
 public class TblProcessor extends AbstractProcessor {
     private JavacTrees trees;
     private TreeMaker treeMaker;

@@ -1,9 +1,6 @@
 package top.onceio.core.util;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.ArrayList;
@@ -186,5 +183,16 @@ public class OReflectUtil {
         for (Class<?> cls : classes) {
             consumer.accept(cls);
         }
+    }
+
+    public static Field getField(Class<?> clazz, String name) {
+        for (Class<?> cls = clazz; cls != Object.class; cls = cls.getSuperclass()) {
+            for(Field field :cls.getDeclaredFields()) {
+                if(field.getName().equals(name)) {
+                    return field;
+                }
+            }
+        }
+        return null;
     }
 }

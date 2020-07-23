@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BaseTable<T> implements Queryable {
-    T meta;
-    String name;
-    String alias;
+    protected T meta;
+    protected String name;
+    protected String alias;
     protected StringBuilder sql = new StringBuilder();
     protected List<Object> args = new ArrayList<>();
 
@@ -23,8 +23,6 @@ public class BaseTable<T> implements Queryable {
     protected void bind(T meta) {
         this.meta = meta;
     }
-
-    public BaseCol id = new BaseCol(this, "id");
 
     public String name() {
         return name + "." + name;
