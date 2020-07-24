@@ -9,7 +9,7 @@ public class StringCol<T extends BaseTable> extends BaseCol<T> {
     }
 
     public T like(String other) {
-        table.sql.append(" " + name() + " like ?");
+        table.where.append(" " + name() + " like ?");
         table.args.add(other);
         return table;
     }

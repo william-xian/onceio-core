@@ -21,57 +21,57 @@ public class BaseCol<T extends BaseTable> implements Queryable {
     }
 
     public T eq(Object val) {
-        table.sql.append(" " + name() + " = ?");
+        table.where.append(" " + name() + " = ?");
         table.args.add(val);
         return table;
     }
 
     public T ne(Object val) {
-        table.sql.append(" " + name() + " != ?");
+        table.where.append(" " + name() + " != ?");
         table.args.add(val);
         return table;
     }
 
     public T gt(Object val) {
-        table.sql.append(" " + name() + " > ?");
+        table.where.append(" " + name() + " > ?");
         table.args.add(val);
         return table;
     }
 
     public T ge(Object val) {
-        table.sql.append(" " + name() + " >= ?");
+        table.where.append(" " + name() + " >= ?");
         table.args.add(val);
         return table;
     }
 
     public T lt(Object val) {
-        table.sql.append(" " + name() + " < ?");
+        table.where.append(" " + name() + " < ?");
         table.args.add(val);
         return table;
     }
 
     public T le(Object val) {
-        table.sql.append(" " + name() + " <= ?");
+        table.where.append(" " + name() + " <= ?");
         table.args.add(val);
         return table;
     }
 
     public T in(Object... vals) {
-        table.sql.append(" " + name() + " in (");
+        table.where.append(" " + name() + " IN (");
         for (Object val : vals) {
-            table.sql.append("?,");
+            table.where.append("?,");
             table.args.add(val);
         }
-        table.sql.deleteCharAt(table.sql.length() - 1);
-        table.sql.append(")");
+        table.where.deleteCharAt(table.where.length() - 1);
+        table.where.append(")");
         return table;
     }
 
     public T in(BaseTable sub) {
-        table.sql.append(" " + name() + " in (");
-        table.sql.append(sub.sql.toString());
+        table.where.append(" " + name() + " IN (");
+        table.where.append(sub.toString());
         table.args.addAll(sub.args);
-        table.sql.append(")");
+        table.where.append(")");
         return table;
     }
 

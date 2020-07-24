@@ -1,11 +1,14 @@
 package top.onceio.core.db.model;
 
-/**
- * 增 单个添加，批量添加, 不重复添加删 主键删除，条件删除改 主键更改，非null更改，表达式更改，条件批量更改
- */
-/**删 主键删除，条件删除*/
-/**改 主键更改，非null更改，表达式更改，条件批量更改*/
 
+
+/**
+ * 增 单个添加，批量添加, 不重复添加
+ * 删 主键删除，条件删除
+ * 改 主键更改，非null更改，表达式更改，条件批量更改
+ * 查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图，union）
+ * 函数
+ */
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.dao.DDLDao;
