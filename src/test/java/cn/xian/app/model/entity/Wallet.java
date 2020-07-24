@@ -5,6 +5,8 @@ import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.db.model.*;
 import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.db.model.*;
+import top.onceio.core.util.OReflectUtil;
 
 
 @Tbl(autoCreate = true)
@@ -52,9 +54,9 @@ public class Wallet extends BaseEntity {
             super("public.Wallet");
             super.bind(this, Wallet.class);
         }
-        public static Meta meta() {
-            return new Meta();
-        }
+    }
+    public static Meta meta() {
+        return new Meta();
     }
 
 }

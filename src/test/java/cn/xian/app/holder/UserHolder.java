@@ -14,7 +14,7 @@ public class UserHolder extends DaoHolder<UserInfo,UserInfo.Meta> {
     @Cacheable
     @Api
     public UserInfo fetchByName(@Param("name") String name) {
-        return super.fetch(UserInfo.Meta.meta().name.eq(name));
+        return super.fetch(UserInfo.meta().name.eq(name));
     }
 
     @Override

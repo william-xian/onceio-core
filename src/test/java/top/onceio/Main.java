@@ -17,8 +17,8 @@ public class Main {
     }
 
     public static void leftJoin() {
-        User.Meta u = User.Meta.meta().alias("u");
-        Bill.Meta b = Bill.Meta.meta().alias("b");
+        User.Meta u = User.meta().alias("u");
+        Bill.Meta b = Bill.meta().alias("b");
         u.select(u.name, u.age, b.amount)
                 .from(u)
                 .join(b).on(u.id, b.userId)
@@ -30,8 +30,8 @@ public class Main {
     }
 
     public static void subQuery() {
-        User.Meta u = User.Meta.meta().alias("u");
-        Bill.Meta b = Bill.Meta.meta().alias("b");
+        User.Meta u = User.meta().alias("u");
+        Bill.Meta b = Bill.meta().alias("b");
         b.select(b.userId).from().where().amount.gt(1);
         u.select(u.name, u.age)
                 .from()
@@ -41,7 +41,7 @@ public class Main {
     }
 
     public static void view() {
-        UserBillView.Meta v = UserBillView.Meta.meta();
+        UserBillView.Meta v = UserBillView.meta();
         v.select(v.name, v.age, v.amount).from().where().name.like("%a");
         System.out.println(v.toSql());
     }

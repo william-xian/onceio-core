@@ -565,7 +565,7 @@ public class BeansEden {
                 try {
                     String name = field.get(null).toString();
                     String key = "msg/" + group.value() + "_" + OUtils.encodeMD5(name);
-                    OI18n i18n = dao.fetch(OI18n.Meta.meta().oid.eq(key));
+                    OI18n i18n = dao.fetch(OI18n.meta().oid.eq(key));
                     if (i18n == null) {
                         i18n = new OI18n();
                         i18n.setOid(key);
@@ -601,7 +601,7 @@ public class BeansEden {
                     } else {
                         name = fieldname;
                     }
-                    OI18n i18n = dao.fetch(OI18n.Meta.meta().oid.eq(key));
+                    OI18n i18n = dao.fetch(OI18n.meta().oid.eq(key));
 
                     if (i18n == null) {
                         i18n = new OI18n();

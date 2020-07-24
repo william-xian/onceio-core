@@ -13,20 +13,18 @@ public class User extends BaseEntity {
     protected String name;
     @Col
     protected int age;
-
-    public static class Meta extends BaseEntity.Meta<Meta> {
-        public StringCol<User.Meta> name = new StringCol(this, OReflectUtil.getField(User.class, "name"));
-        public BaseCol<User.Meta> age = new BaseCol(this, OReflectUtil.getField(User.class, "age"));
-
+    
+    
+    public static class Meta extends BaseEntity.Meta<Meta>  {
+        public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(User.class, "name"));
+        public BaseCol<Meta> age = new BaseCol(this, OReflectUtil.getField(User.class, "age"));
         public Meta() {
-            super("user");
+            super("public.User");
             super.bind(this, User.class);
         }
-
-        public static Meta meta() {
-            return new Meta();
-        }
     }
-
+    public static Meta meta() {
+        return new Meta();
+    }
 
 }

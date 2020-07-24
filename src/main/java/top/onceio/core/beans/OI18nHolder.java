@@ -18,7 +18,7 @@ public class OI18nHolder extends DaoHolder<OI18n, OI18n.Meta> {
     public String translate(@Param("msg") String msg, @Param("lang") String lang) throws Exception {
         if (lang != null && !lang.equals(Locale.getDefault().getLanguage())) {
             String key = "msg/" + lang + "_" + OUtils.encodeMD5(msg);
-            OI18n i18n = fetch(OI18n.Meta.meta().oid.eq(key));
+            OI18n i18n = fetch(OI18n.meta().oid.eq(key));
             if (i18n != null) {
                 msg = i18n.getName();
             }

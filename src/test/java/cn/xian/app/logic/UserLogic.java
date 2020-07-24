@@ -41,7 +41,7 @@ public class UserLogic {
 
     public Page<UserInfo> find(UserInfo uc) {
         System.out.println("find:" + uc);
-        Page<UserInfo> ucs = userHolder.find(UserInfo.Meta.meta());
+        Page<UserInfo> ucs = userHolder.find(UserInfo.meta());
         return ucs;
     }
 

@@ -11,11 +11,11 @@ public class WalletHolder extends DaoHolder<Wallet, Wallet.Meta> {
 
     @Transactional
     public void transfer(Long from, Long to, Integer v) {
-        int cnt = updateBy(Wallet.Meta.meta().balance.setExp("-" + v).id.eq(from));
+        int cnt = updateBy(Wallet.meta().balance.setExp("-" + v).id.eq(from));
         if (cnt != 1) {
             Failed.throwMsg("Wallet Id：%d is not found", from);
         }
-        cnt = updateBy(Wallet.Meta.meta().balance.setExp("+" + v).id.eq(to));
+        cnt = updateBy(Wallet.meta().balance.setExp("+" + v).id.eq(to));
         if (cnt != 1) {
             Failed.throwMsg("Wallet Id: %d is not found", from);
         }
