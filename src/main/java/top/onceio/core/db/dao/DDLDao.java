@@ -2,12 +2,11 @@ package top.onceio.core.db.dao;
 
 import java.util.List;
 
-import top.onceio.core.db.meta.TableMeta;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 
 public interface DDLDao {
 
-    public <E extends OEntity> boolean drop(Class<E> tbl);
+    public <E extends BaseEntity> boolean drop(Class<E> tbl);
 
     public int[] batchUpdate(final String... sql);
 

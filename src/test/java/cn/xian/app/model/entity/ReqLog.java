@@ -2,10 +2,10 @@ package cn.xian.app.model.entity;
 
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 
 @Tbl
-public class ReqLog extends OEntity {
+public class ReqLog extends BaseEntity {
     @Col(size = 255, nullable = true)
     private String curUser;
     @Col(size = 8, nullable = false)

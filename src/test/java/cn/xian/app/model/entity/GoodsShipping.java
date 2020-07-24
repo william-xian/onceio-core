@@ -3,10 +3,10 @@ package cn.xian.app.model.entity;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Index;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 
 @Tbl(indexes = {@Index(columns = {"buyer_id", "receiver_id"})})
-public class GoodsShipping extends OEntity {
+public class GoodsShipping extends BaseEntity {
     @Col(ref = GoodsOrder.class, nullable = false)
     private long goodsOrderId;
     @Col(ref = UserInfo.class, nullable = false)

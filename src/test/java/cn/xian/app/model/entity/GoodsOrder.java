@@ -2,10 +2,10 @@ package cn.xian.app.model.entity;
 
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 
 @Tbl
-public class GoodsOrder extends OEntity {
+public class GoodsOrder extends BaseEntity {
     @Col(ref = UserInfo.class)
     private Long userId;
     @Col(ref = Goods.class, nullable = false)

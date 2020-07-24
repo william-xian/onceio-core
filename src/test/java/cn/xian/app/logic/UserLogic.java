@@ -10,7 +10,6 @@ import top.onceio.core.annotation.Def;
 import top.onceio.core.annotation.Using;
 import top.onceio.core.aop.annotation.Transactional;
 import top.onceio.core.db.dao.Page;
-import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.exception.Failed;
 
 @Def
@@ -42,7 +41,7 @@ public class UserLogic {
 
     public Page<UserInfo> find(UserInfo uc) {
         System.out.println("find:" + uc);
-        Page<UserInfo> ucs = userHolder.find(new Cnd<UserInfo>(UserInfo.class));
+        Page<UserInfo> ucs = userHolder.find(UserInfo.Meta.meta());
         return ucs;
     }
 

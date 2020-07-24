@@ -1,10 +1,13 @@
 package top.onceio.core.db.model;
 
+import top.onceio.core.util.OReflectUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class BaseTable<T> {
-    protected T meta;
+
+public class BaseTable<M> {
+    protected M meta;
     protected String name;
     protected String alias;
     protected List<Object> args = new ArrayList<>();
@@ -17,25 +20,28 @@ public class BaseTable<T> {
     private StringBuilder limit = new StringBuilder();
     private StringBuilder order = new StringBuilder();
 
+    public BaseCol<?> id;
     public BaseTable(String name) {
         this.name = name;
         this.alias = "t";
     }
 
-    public BaseTable(String name, String alias) {
-        this.name = name;
-        this.alias = alias;
-    }
-
-    protected void bind(T meta) {
+    protected <E> void bind(M meta, Class<E> e) {
         this.meta = meta;
+        id = new BaseCol(this, OReflectUtil.getField(e,"id"));
     }
 
     public String name() {
         return name + "." + name;
     }
 
-    public T select(Queryable... cs) {
+    public M alias(String alias) {
+        this.alias = alias;
+        return meta;
+    }
+
+
+    public M select(Queryable... cs) {
         if (cs.length > 0) {
             for (Queryable c : cs) {
                 select.append(" " + c.name() + ",");
@@ -47,7 +53,7 @@ public class BaseTable<T> {
         return meta;
     }
 
-    public <O extends BaseTable> T from(O... tables) {
+    public <O extends BaseTable> M from(O... tables) {
         if (tables.length == 0) {
             from.append(" " + name + " as " + alias);
         } else {
@@ -59,21 +65,21 @@ public class BaseTable<T> {
         return meta;
     }
 
-    public T join(BaseTable otherTable) {
+    public M join(BaseTable otherTable) {
         from.append(" LEFT JOIN " + otherTable.name + " AS " + otherTable.alias);
         return meta;
     }
 
-    public T on(BaseCol ac, BaseCol bc) {
+    public M on(BaseCol ac, BaseCol bc) {
         from.append(String.format(" ON %s.%s = %s.%s", ac.table.alias, ac.name, bc.table.alias, bc.name));
         return meta;
     }
 
-    public T where() {
+    public M where() {
         return meta;
     }
 
-    public <C extends BaseCol> T groupBy(C... cs) {
+    public <C extends BaseCol> M groupBy(C... cs) {
         for (C c : cs) {
             group.append(String.format(" %s.%s,", c.table.alias, c.name));
         }
@@ -81,7 +87,7 @@ public class BaseTable<T> {
         return meta;
     }
 
-    public <C extends BaseCol> T orderBy(C... cs) {
+    public <C extends BaseCol> M orderBy(C... cs) {
         for (C c : cs) {
             order.append(String.format(" %s.%s,", c.table.alias, c.name));
         }
@@ -89,7 +95,7 @@ public class BaseTable<T> {
         return meta;
     }
 
-    public <C extends BaseCol> T orderByDesc(C... cs) {
+    public <C extends BaseCol> M orderByDesc(C... cs) {
         for (C c : cs) {
             order.append(String.format(" %s.%s desc,", c.table.alias, c.name));
         }
@@ -97,39 +103,39 @@ public class BaseTable<T> {
         return meta;
     }
 
-    public T limit(int s, int e) {
+    public M limit(int s, int e) {
         limit.append(" " + s + "," + e);
         return meta;
     }
 
-    public T as(String alias) {
+    public M as(String alias) {
         this.alias = alias;
         return meta;
     }
 
-    public T and() {
+    public M and() {
         where.append(" AND ");
         return meta;
     }
 
-    public T or() {
+    public M or() {
         where.append(" OR ");
         return this.meta;
     }
 
-    public T and(BaseTable meta) {
+    public M and(BaseTable meta) {
         where.append(" AND (" + meta.toString() + ")");
         args.addAll(meta.args);
         return this.meta;
     }
 
-    public T or(BaseTable meta) {
+    public M or(BaseTable meta) {
         where.append(" OR (" + meta.toString() + ")");
         args.addAll(meta.args);
         return this.meta;
     }
 
-    public T not(BaseTable meta) {
+    public M not(BaseTable meta) {
         where.append(" NOT (" + meta.toString() + ")");
         args.addAll(meta.args);
         return this.meta;

@@ -1,10 +1,8 @@
 package top.onceio;
 
-import cn.xian.app.model.entity2.Bill;
-import cn.xian.app.model.entity2.User;
-import cn.xian.app.model.entity2.UserBillView;
-import top.onceio.core.db.model.BaseTable;
-import top.onceio.core.db.model.ModelHelper;
+import cn.xian.app.model.entity.Bill;
+import cn.xian.app.model.entity.User;
+import cn.xian.app.model.view.UserBillView;
 
 public class Main {
 
@@ -19,8 +17,8 @@ public class Main {
     }
 
     public static void leftJoin() {
-        User.Meta u = User.Meta.meta("u");
-        Bill.Meta b = Bill.Meta.meta("b");
+        User.Meta u = User.Meta.meta().alias("u");
+        Bill.Meta b = Bill.Meta.meta().alias("b");
         u.select(u.name, u.age, b.amount)
                 .from(u)
                 .join(b).on(u.id, b.userId)
@@ -32,8 +30,8 @@ public class Main {
     }
 
     public static void subQuery() {
-        User.Meta u = User.Meta.meta("u");
-        Bill.Meta b = Bill.Meta.meta("b");
+        User.Meta u = User.Meta.meta().alias("u");
+        Bill.Meta b = Bill.Meta.meta().alias("b");
         b.select(b.userId).from().where().amount.gt(1);
         u.select(u.name, u.age)
                 .from()

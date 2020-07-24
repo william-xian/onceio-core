@@ -4,9 +4,11 @@ import top.onceio.core.annotation.I18nCfg;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.util.OUtils;
+import top.onceio.core.db.model.*;
+import top.onceio.core.util.OReflectUtil;
 
 @Tbl
-public class OI18n extends OEntity {
+public class OI18n extends BaseEntity {
     @Col(size = 64, nullable = false)
     private String oid;
     @Col(size = 255, nullable = false)
@@ -50,4 +52,18 @@ public class OI18n extends OEntity {
         I18nCfg group = clazz.getAnnotation(I18nCfg.class);
         return "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldName;
     }
+    
+    public static class Meta extends BaseEntity.Meta<Meta>  {
+        public BaseCol<Meta> oid = new BaseCol(this, OReflectUtil.getField(OI18n.class, "oid"));
+        public BaseCol<Meta> name = new BaseCol(this, OReflectUtil.getField(OI18n.class, "name"));
+        public BaseCol<Meta> val = new BaseCol(this, OReflectUtil.getField(OI18n.class, "val"));
+        public Meta() {
+            super("public.OI18n");
+            super.bind(this, OI18n.class);
+        }
+        public static Meta meta() {
+            return new Meta();
+        }
+    }
+
 }

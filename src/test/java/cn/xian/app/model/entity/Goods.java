@@ -3,10 +3,10 @@ package cn.xian.app.model.entity;
 import cn.xian.app.constant.GoodsGenre;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 
 @Tbl
-public class Goods extends OEntity {
+public class Goods extends BaseEntity {
 
     @Col(size = 32, nullable = true)
     private String name;

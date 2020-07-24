@@ -6,25 +6,25 @@ import java.util.function.Consumer;
 
 import top.onceio.core.annotation.Using;
 import top.onceio.core.beans.ApiMethod;
-import top.onceio.core.db.dao.tpl.DaoHelper;
-import top.onceio.core.db.dao.tpl.Cnd;
-import top.onceio.core.db.dao.tpl.SelectTpl;
-import top.onceio.core.db.dao.tpl.UpdateTpl;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
-public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
+public abstract class DaoHolder<T extends BaseEntity,M extends BaseEntity.Meta> implements Dao<T,M> {
     @Using
     protected DaoHelper daoHelper;
 
     private Class<T> tbl;
+    private Class<M> mode;
 
     @SuppressWarnings("unchecked")
     public DaoHolder() {
         Type t = DaoHolder.class.getTypeParameters()[0];
         tbl = (Class<T>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
+        Type m = DaoHolder.class.getTypeParameters()[1];
+        mode = (Class<M>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), m);
     }
 
     public DaoHelper getDaoHelper() {
@@ -75,38 +75,10 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
         return daoHelper.updateIgnoreNull(entity);
     }
 
-    @Override
-    public int updateByTpl(UpdateTpl<T> tpl) {
-        return daoHelper.updateByTpl(tbl, tpl);
-    }
-
     @Api(value = "/by", method = ApiMethod.PATCH)
     @Override
-    public int updateByTplCnd(@Param("tpl") UpdateTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-        return daoHelper.updateByTplCnd(tbl, tpl, cnd);
-    }
-
-    @Override
-    public int removeById(@Param("id") Long id) {
-        return daoHelper.removeById(tbl, id);
-    }
-
-    @Api(value = "/{ids}", method = ApiMethod.DELETE)
-    @Override
-    public int removeByIds(@Param("ids") List<Long> ids) {
-        return daoHelper.removeByIds(tbl, ids);
-    }
-
-    @Api(value = "/by", method = ApiMethod.DELETE)
-    @Override
-    public int remove(@Param("cnd") Cnd<T> cnd) {
-        return daoHelper.remove(tbl, cnd);
-    }
-
-    @Api(value = "/recovery", method = ApiMethod.PUT)
-    @Override
-    public int recovery(@Param("cnd") Cnd<T> cnd) {
-        return daoHelper.recovery(tbl, cnd);
+    public int updateBy(BaseTable<M> tpl) {
+        return daoHelper.updateBy(tbl, tpl);
     }
 
     @Override
@@ -120,14 +92,14 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
     }
 
     @Override
-    public int delete(Cnd<T> cnd) {
+    public int delete(BaseTable<M> cnd) {
         return daoHelper.delete(tbl, cnd);
     }
 
     @Api(value = "/first", method = {ApiMethod.GET})
     @Override
-    public T fetch(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-        return daoHelper.fetch(tbl, tpl, cnd);
+    public T fetch(@Param("tpl") BaseTable<M> tpl) {
+        return daoHelper.fetch(tbl, tpl);
     }
 
     @Api(value = "/byIds", method = {ApiMethod.GET})
@@ -137,20 +109,15 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
     }
 
 
+    @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public Page<T> find(Cnd<T> cnd) {
+    public Page<T> find(BaseTable<M> cnd) {
         return daoHelper.find(tbl, cnd);
     }
 
-    @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public Page<T> findTpl(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd) {
-        return daoHelper.findByTpl(tbl, tpl, cnd);
-    }
-
-    @Override
-    public void download(@Param("tpl") SelectTpl<T> tpl, @Param("cnd") Cnd<T> cnd, Consumer<T> consumer) {
-        daoHelper.download(tbl, tpl, cnd, consumer);
+    public void find(BaseTable<M> cnd, Consumer<T> consumer) {
+        daoHelper.find(tbl, cnd, consumer);
     }
 
     @Override
@@ -160,7 +127,7 @@ public abstract class DaoHolder<T extends OEntity> implements Dao<T> {
 
     @Api(value = "/count", method = {ApiMethod.GET})
     @Override
-    public long count(@Param("cnd") Cnd<T> cnd) {
+    public long count(@Param("cnd") BaseTable<M> cnd) {
         return daoHelper.count(tbl, cnd);
     }
 

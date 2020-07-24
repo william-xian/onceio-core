@@ -46,12 +46,11 @@ import top.onceio.core.aop.proxies.CacheableProxy;
 import top.onceio.core.aop.proxies.TransactionalProxy;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.annotation.TblView;
+import top.onceio.core.db.dao.DaoHelper;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
-import top.onceio.core.db.dao.tpl.DaoHelper;
-import top.onceio.core.db.dao.tpl.Cnd;
 import top.onceio.core.db.jdbc.JdbcHelper;
-import top.onceio.core.db.tbl.OEntity;
+import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.db.tbl.OI18n;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.mvc.annocations.Api;
@@ -93,16 +92,16 @@ public class BeansEden {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Class<? extends OEntity>> matchTblTblView() {
-        List<Class<? extends OEntity>> entities = new LinkedList<>();
+    public List<Class<? extends BaseEntity>> matchTblTblView() {
+        List<Class<? extends BaseEntity>> entities = new LinkedList<>();
         for (Class<?> clazz : scanner.getClasses(Tbl.class)) {
-            if (OEntity.class.isAssignableFrom(clazz)) {
-                entities.add((Class<? extends OEntity>) clazz);
+            if (BaseEntity.class.isAssignableFrom(clazz)) {
+                entities.add((Class<? extends BaseEntity>) clazz);
             }
         }
         for (Class<?> clazz : scanner.getClasses(TblView.class)) {
-            if (OEntity.class.isAssignableFrom(clazz)) {
-                entities.add((Class<? extends OEntity>) clazz);
+            if (BaseEntity.class.isAssignableFrom(clazz)) {
+                entities.add((Class<? extends BaseEntity>) clazz);
             }
         }
         return entities;
@@ -124,7 +123,7 @@ public class BeansEden {
     }
 
     private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator,
-                                      List<Class<? extends OEntity>> entities) {
+                                      List<Class<? extends BaseEntity>> entities) {
         DaoHelper daoHelper = new DaoHelper();
         daoHelper.init(jdbcHelper, idGenerator, entities);
         return daoHelper;
@@ -566,9 +565,7 @@ public class BeansEden {
                 try {
                     String name = field.get(null).toString();
                     String key = "msg/" + group.value() + "_" + OUtils.encodeMD5(name);
-                    Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-                    cnd.eq().setOid(key);
-                    OI18n i18n = dao.fetch(null, cnd);
+                    OI18n i18n = dao.fetch(OI18n.Meta.meta().oid.eq(key));
                     if (i18n == null) {
                         i18n = new OI18n();
                         i18n.setOid(key);
@@ -604,9 +601,7 @@ public class BeansEden {
                     } else {
                         name = fieldname;
                     }
-                    Cnd<OI18n> cnd = new Cnd<>(OI18n.class);
-                    cnd.eq().setOid(key);
-                    OI18n i18n = dao.fetch(null, cnd);
+                    OI18n i18n = dao.fetch(OI18n.Meta.meta().oid.eq(key));
 
                     if (i18n == null) {
                         i18n = new OI18n();
