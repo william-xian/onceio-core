@@ -1,6 +1,5 @@
 package top.onceio.core.db.model;
 
-import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OReflectUtil;
 
 import java.util.ArrayList;
@@ -21,6 +20,7 @@ public class BaseTable<M> {
     private StringBuilder limit = new StringBuilder();
     private StringBuilder order = new StringBuilder();
 
+    StringBuilder update = new StringBuilder();
     List<BaseTable<?>> refs = new ArrayList<>();
 
     public BaseCol<?> id;
@@ -44,6 +44,13 @@ public class BaseTable<M> {
         return meta;
     }
 
+    public String getAlias() {
+        return alias;
+    }
+
+    public List<Object> getArgs() {
+        return args;
+    }
 
     public M select(Queryable... cs) {
         if (cs.length > 0) {
@@ -52,7 +59,7 @@ public class BaseTable<M> {
             }
             select.deleteCharAt(select.length() - 1);
         } else {
-            select.append("*");
+            select.append(" *");
         }
         return meta;
     }
@@ -113,7 +120,7 @@ public class BaseTable<M> {
     }
 
     public M limit(int s, int e) {
-        limit.append(" " + s + "," + e);
+        limit.append(String.format(" %d OFFSET %d", s, e));
         return meta;
     }
 
@@ -133,7 +140,7 @@ public class BaseTable<M> {
     }
 
     public M and(BaseTable meta) {
-        where.append(" AND (" + meta.toString() + ")");
+        where.append(" AND (" + meta.where + ")");
         args.addAll(meta.args);
 
         refs.add(meta);
@@ -141,29 +148,31 @@ public class BaseTable<M> {
     }
 
     public M or(BaseTable meta) {
-        where.append(" OR (" + meta.toString() + ")");
+        where.append(" OR (" + meta.where + ")");
         args.addAll(meta.args);
 
         refs.add(meta);
         return this.meta;
     }
 
-    public M not(BaseTable meta) {
-        where.append(" NOT (" + meta.toString() + ")");
-        args.addAll(meta.args);
-
-        refs.add(meta);
-        return this.meta;
-    }
 
     @Override
     public String toString() {
         StringBuilder sql = new StringBuilder();
         if (select.length() > 0) {
             sql.append("SELECT" + select);
+            if (from.length() > 0) {
+                sql.append(" FROM" + from);
+            }
         }
-        if (from.length() > 0) {
-            sql.append(" FROM" + from);
+        if (update.length() > 0) {
+            if (from.length() <= 0) {
+                sql.append("UPDATE " + name + " as " + alias);
+            } else {
+                sql.append("UPDATE" + from);
+            }
+            sql.append(" SET" + update);
+            sql.deleteCharAt(sql.length() - 1);
         }
         if (where.length() > 0) {
             sql.append(" WHERE" + where);
@@ -178,7 +187,7 @@ public class BaseTable<M> {
             sql.append(" ORDER BY" + order);
         }
         if (limit.length() > 0) {
-            sql.append(" LIMIT" + limit);
+            sql.append(" LIMIT " + limit);
         }
         return sql.toString();
     }
@@ -204,4 +213,22 @@ public class BaseTable<M> {
     public List<BaseTable<?>> getRefs() {
         return refs;
     }
+
+    public BaseTable<M> copy() {
+        BaseTable<M> other = new BaseTable<>(this.name);
+        other.name = this.name;
+        other.meta = this.meta;
+        other.select.append(this.select);
+        other.from.append(this.from);
+        other.where.append(this.where);
+        other.group.append(this.group);
+        other.having.append(this.having);
+        other.order.append(this.order);
+        other.limit.append(this.limit);
+        other.args.addAll(this.args);
+
+        // other.refs.addAll(this.refs);
+        return other;
+    }
+
 }

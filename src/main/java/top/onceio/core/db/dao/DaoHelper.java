@@ -1,14 +1,5 @@
 package top.onceio.core.db.dao;
 
-
-/**
- * 增 单个添加，批量添加, 不重复添加
- * 删 主键删除，条件删除
- * 改 主键更改，非null更改，表达式更改，条件批量更改
- * 查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图，union）
- * 函数
- */
-
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.jdbc.JdbcHelper;
@@ -20,6 +11,7 @@ import top.onceio.core.db.model.BaseTable;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
+import top.onceio.core.util.OLog;
 import top.onceio.core.util.OUtils;
 
 import java.sql.ResultSet;
@@ -31,11 +23,11 @@ import java.util.function.Consumer;
 
 /**
  * 增 单个添加，批量添加, 不重复添加删 主键删除，条件删除改 主键更改，非null更改，表达式更改，条件批量更改
- */
-/**删 主键删除，条件删除*/
-/**改 主键更改，非null更改，表达式更改，条件批量更改*/
-
-/**查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图）*/
+ * 删 主键删除，条件删除
+ * 改 主键更改，非null更改，表达式更改，条件批量更改
+ * 查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图，union）
+ * 函数
+ **/
 public class DaoHelper implements DDLDao, TransDao {
 
     private static final Logger LOGGER = Logger.getLogger(DaoHelper.class);
@@ -97,7 +89,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 "left join pg_namespace ns on ns.oid = c.relnamespace\n" +
                 "left join pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid\n" +
                 "left join pg_constraint pk on pk.conrelid = c.oid and pk.contype='p' and a.attnum = pk.conkey[1]\n" +
-                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1] and array_length(uk.conkey,0) = 1\n" +
+                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1]\n" +
                 "left join pg_constraint fk on fk.conrelid = c.oid and fk.contype='f' and a.attnum = fk.conkey[1] \n" +
                 "left join pg_class fc on fk.confrelid = fc.oid\n" +
                 "left join pg_namespace fns on fns.oid = fc.relnamespace\n" +
@@ -147,7 +139,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 }
                 cm.setUseFK(fk_conname != null);
                 cm.setRefTable(refTable);
-                cm.setType(typename);
+                cm.setType(typename.toLowerCase());
                 cm.setUsing("");
                 cm.setPattern("");
                 Class<?> javaBaseType = TableMeta.parseType(typename, varcharMaxLen, 0);
@@ -263,6 +255,7 @@ public class DaoHelper implements DDLDao, TransDao {
             }
         }
         List<String> sqlList = planBuilder.build(nameToMeta);
+
         if (!sqlList.isEmpty()) {
             jdbcHelper.batchExec(sqlList.toArray(new String[0]));
         }
@@ -370,25 +363,25 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> E get(Class<E> tbl, Long id) {
-        BaseTable<M> cnd = new BaseTable<M>(null);
-        Page<E> page = find(tbl, cnd);
-        if (page.getData().size() == 1) {
-            return page.getData().get(0);
-        }
-        return null;
+        TableMeta tm = classToTableMeta.get(tbl);
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
+        String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getSchema() + "." + tm.getTable());
+        final List<E> rows = new ArrayList<>(1);
+        jdbcHelper.query(sql, new Object[]{id}, rs -> {
+            E row = null;
+            try {
+                row = createBy(tbl, tm, rs);
+            } catch (SQLException e) {
+                Failed.throwError(e.getMessage());
+            } finally {
+                rows.add(row);
+            }
+        });
+        return rows.get(0);
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> E insert(E entity) {
-        OAssert.warnning(entity != null, "不可以插入null");
-        Class<?> tbl = entity.getClass();
-        TableMeta tm = classToTableMeta.get(tbl);
-        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
-        tm.validate(entity, false);
-        List<Object> vals = new ArrayList<>();//TODO idNameVal.getIdValsList().get(0);
-        List<String> names = new ArrayList<>();//TODO idNameVal.getIdNames();
-        String stub = OUtils.genStub("?", ",", names.size());
-        String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(), String.join(",", names), stub);
-        jdbcHelper.update(sql, vals.toArray());
+        batchInsert(Arrays.asList(entity));
         return entity;
     }
 
@@ -400,29 +393,43 @@ public class DaoHelper implements DDLDao, TransDao {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
 
+        List<String> names = new ArrayList<>();
+        for (ColumnMeta cm : tm.getColumnMetas()) {
+            names.add(cm.getName());
+        }
+        List<Object[]> valArray = new ArrayList<>();
         for (E entity : entities) {
             tm.validate(entity, false);
-            if (entity.getId() == null) {
-                Long id = idGenerator.next(tbl);
-                entity.setId(id);
-            }
+            Object[] val = initEntity(tm, names, entity);
+            valArray.add(val);
         }
-        List<String> names = new ArrayList<>();//TODO idNameVal.getIdNames();
-        List<List<Object>> valsList = new ArrayList<>();//TODO idNameVal.getIdValsList();
 
         String stub = OUtils.genStub("?", ",", names.size());
-        //TODO
         String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(), String.join(",", names), stub);
-        List<Object[]> vals = new ArrayList<>(valsList.size());
-        for (int i = 0; i < valsList.size(); i++) {
-            vals.add(valsList.get(i).toArray());
-        }
-        int[] cnts = jdbcHelper.batchUpdate(sql, vals);
+        int[] cntArray = jdbcHelper.batchUpdate(sql, valArray);
         int cnt = 0;
-        for (int c : cnts) {
+        for (int c : cntArray) {
             cnt += c;
         }
         return cnt;
+    }
+
+    private <E extends BaseEntity> Object[] initEntity(TableMeta tm, List<String> names, E entity) {
+        if (entity.getId() == null) {
+            Long id = idGenerator.next(entity.getClass());
+            entity.setId(id);
+        }
+        Object[] val = new Object[names.size()];
+        for (int i = 0; i < names.size(); i++) {
+            String name = names.get(i);
+            try {
+                Object v = tm.getColumnMetaByName(name).getField().get(entity);
+                val[i] = v;
+            } catch (IllegalAccessException e) {
+                OLog.error(e.getMessage());
+            }
+        }
+        return val;
     }
 
     private <E extends BaseEntity, M extends BaseEntity.Meta> int update(E entity, boolean ignoreNull) {
@@ -431,12 +438,37 @@ public class DaoHelper implements DDLDao, TransDao {
         TableMeta tm = classToTableMeta.get(tbl);
         tm.validate(entity, ignoreNull);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
-        List<String> names = new ArrayList<>();//TODO idNameVal.getNames();
-        List<Object> vals = new ArrayList<>();//TODO idNameVal.getValsList().get(0);
-        String sql = String.format("UPDATE %s SET %s=? WHERE id=? AND rm = false;", tm.getTable(),
-                String.join("=?,", names));
-        vals.add(entity.getId());
-        return jdbcHelper.update(sql, vals.toArray());
+
+        List<String> names = new ArrayList<>();
+        long id = entity.getId();
+        for (ColumnMeta cm : tm.getColumnMetas()) {
+            if (!cm.isPrimaryKey()) {
+                names.add(cm.getName());
+            }
+        }
+        Object[] val = initEntity(tm, names, entity);
+
+        if (ignoreNull) {
+            Iterator<String> iterator = names.iterator();
+            List<Object> notNull = new ArrayList<>();
+            for (Object v : val) {
+                iterator.next();
+                if (v != null) {
+                    notNull.add(v);
+                } else {
+                    iterator.remove();
+                }
+            }
+            val = notNull.toArray();
+        }
+
+        List<Object> args = new ArrayList<>();
+        for (Object v : val) {
+            args.add(v);
+        }
+        args.add(id);
+        String sql = String.format("UPDATE %s SET %s=? WHERE id=?", tm.getTable(), String.join("=?,", names));
+        return jdbcHelper.update(sql, args.toArray());
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> int update(E entity) {
@@ -448,14 +480,14 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> int updateBy(Class<E> tbl, BaseTable<M> tpl) {
-        return 0;
+        return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
     public <E> int deleteById(Class<E> tbl, Long id) {
         if (id == null)
             return 0;
         TableMeta tm = classToTableMeta.get(tbl);
-        String sql = String.format("DELETE FROM %s WHERE id=?", tm.getTable());
+        String sql = String.format("DELETE FROM %s WHERE id = ?", tm.getTable());
         return jdbcHelper.update(sql, new Object[]{id});
     }
 
@@ -469,29 +501,70 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> int delete(Class<E> tbl, BaseTable<M> cnd) {
-        if (cnd == null)
-            return 0;
-        TableMeta tm = classToTableMeta.get(tbl);
-        List<Object> sqlArgs = new ArrayList<>();
-        String whereCnd = "";//TODO cnd.whereSql(sqlArgs);
-        String sql = String.format("DELETE FROM %s WHERE %s;", tm.getTable(), whereCnd);
-        return jdbcHelper.update(sql, sqlArgs.toArray());
+        if (cnd == null || cnd.toString().trim().isEmpty()) {
+            TableMeta tm = classToTableMeta.get(tbl);
+            String sql = String.format("DELETE FROM %s;", tm.getTable());
+            return jdbcHelper.update(sql, new Object[0]);
+        } else {
+            TableMeta tm = classToTableMeta.get(tbl);
+            String sql = String.format("DELETE FROM %s %s;", tm.getTable(), cnd.toString());
+            return jdbcHelper.update(sql, cnd.getArgs().toArray());
+        }
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> long count(Class<E> tbl) {
-        return 0;
+        return count(tbl, null);
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> long count(Class<E> tbl, BaseTable<M> cnd) {
-        return 0;
+        if (cnd == null || cnd.toString().trim().isEmpty()) {
+            TableMeta tm = classToTableMeta.get(tbl);
+            String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
+            return (long) jdbcHelper.queryForObject(sql);
+
+        } else {
+            TableMeta tm = classToTableMeta.get(tbl);
+            String sql = String.format("SELECT COUNT(1) FROM %s AS %s %s;", cnd.getName(), cnd.getAlias(), cnd.where());
+            return (long) jdbcHelper.queryForObject(sql, cnd.getArgs().toArray());
+        }
+
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> Page<E> find(Class<E> tbl, BaseTable<M> cnd) {
-        return new Page<>();
+    public <E extends BaseEntity, M extends BaseEntity.Meta> List<E> find(Class<E> tbl, BaseTable<M> cnd) {
+        List<E> data = new ArrayList<>();
+        find(tbl, cnd, e -> {
+            data.add(e);
+        });
+        return data;
+    }
+
+    public <E extends BaseEntity, M extends BaseEntity.Meta> Page<E> find(Class<E> tbl, BaseTable<M> cnd, int page, int pageSize) {
+        Page<E> result = new Page<>();
+        result.setPagesize(pageSize);
+        List<E> data = new ArrayList<>(10);
+        result.setData(data);
+        if (page <= 0) {
+            result.setTotal(count(tbl, cnd));
+            if (page != 0) {
+                page = Math.abs(page) - 1;
+            }
+            result.setPage(page + 1);
+        }
+        BaseTable<M> limitCnd = cnd.copy();
+
+        limitCnd.limit(pageSize, pageSize * page);
+        find(tbl, limitCnd, e -> {
+            result.getData().add(e);
+        });
+        return result;
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> E fetch(Class<E> tbl, BaseTable<M> cnd) {
-        return null;
+        Page<E> page = find(tbl, cnd, 1, 1);
+        if (page.getData().size() == 0) {
+            return null;
+        }
+        return page.getData().get(0);
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> void find(Class<E> tbl, BaseTable<M> cnd, Consumer<E> consumer) {
@@ -499,18 +572,13 @@ public class DaoHelper implements DDLDao, TransDao {
         if (tm == null) {
             return;
         }
-        List<Object> args = new ArrayList<>();
-        StringBuffer sql = new StringBuffer();//TODO cnd.wholeSql(tm, tpl, args);
-        jdbcHelper.query(sql.toString(), args.toArray(new Object[0]), new Consumer<ResultSet>() {
-            @Override
-            public void accept(ResultSet rs) {
-                E row = null;
-                try {
-                    row = createBy(tbl, tm, rs);
-                    consumer.accept(row);
-                } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
-                }
+        jdbcHelper.query(cnd.toString(), cnd.getArgs().toArray(new Object[0]), rs -> {
+            E row = null;
+            try {
+                row = createBy(tbl, tm, rs);
+                consumer.accept(row);
+            } catch (SQLException e) {
+                Failed.throwError(e.getMessage());
             }
         });
     }
@@ -519,8 +587,21 @@ public class DaoHelper implements DDLDao, TransDao {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<E>();
         }
-        BaseTable<M> cnd = new BaseTable<M>(null);
-        Page<E> page = new Page<>();//TODO fetch(tbl, cnd);
-        return page.getData();
+        TableMeta tm = classToTableMeta.get(tbl);
+        OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
+        String sql = String.format("SELECT * FROM %s WHERE id IN ()", tm.getSchema() + "." + tm.getTable(), OUtils.genStub("?", ",", ids.size()));
+        final List<E> rows = new ArrayList<>(ids.size());
+        jdbcHelper.query(sql, ids.toArray(), rs -> {
+            try {
+                E row = null;
+                while (rs.next()) {
+                    row = createBy(tbl, tm, rs);
+                    rows.add(row);
+                }
+            } catch (SQLException e) {
+                Failed.throwError(e.getMessage());
+            }
+        });
+        return rows;
     }
 }

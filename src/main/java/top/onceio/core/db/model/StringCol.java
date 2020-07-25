@@ -13,4 +13,10 @@ public class StringCol<T extends BaseTable> extends BaseCol<T> {
         table.args.add(other);
         return table;
     }
+
+    public T notLike(String other) {
+        table.where.append(" " + name() + " NOT like ?");
+        table.args.add(other);
+        return table;
+    }
 }

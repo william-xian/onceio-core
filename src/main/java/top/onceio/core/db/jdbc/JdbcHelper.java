@@ -253,6 +253,9 @@ public class JdbcHelper {
     }
 
     private int[] batchExec(String sql, List<Object[]> args) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql);
+        }
         Connection conn = trans.get();
         PreparedStatement stat = null;
         int[] result = null;

@@ -12,13 +12,12 @@ public class Bill extends BaseEntity {
     protected Long userId;
     @Col
     protected Integer amount;
-
-
+    
     public static class Meta extends BaseEntity.Meta<Meta>  {
         public BaseCol<Meta> userId = new BaseCol(this, OReflectUtil.getField(Bill.class, "userId"));
         public BaseCol<Meta> amount = new BaseCol(this, OReflectUtil.getField(Bill.class, "amount"));
         public Meta() {
-            super("public.Bill");
+            super("public.bill");
             super.bind(this, Bill.class);
         }
     }

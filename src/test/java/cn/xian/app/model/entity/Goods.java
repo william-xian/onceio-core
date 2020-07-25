@@ -29,4 +29,6 @@ public class Goods extends BaseEntity {
     public void setGenre(Integer genre) {
         this.genre = genre;
     }
+
+
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.mvc.annocations.Param;
 
 public interface Dao<T, M> {
     /**
@@ -101,7 +102,10 @@ public interface Dao<T, M> {
      * @param cnd null值代表不限制
      * @return 返回分页数据
      */
-    Page<T> find(BaseTable<M> cnd);
+    List<T> find(BaseTable<M> cnd);
+
+
+    Page<T> find(@Param("cnd")BaseTable<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize);
 
     /**
      * 根据筛选条件，将数据依次传给consumer处理

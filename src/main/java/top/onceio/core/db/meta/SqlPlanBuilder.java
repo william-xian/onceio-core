@@ -3,7 +3,6 @@ package top.onceio.core.db.meta;
 import top.onceio.core.db.model.BaseTable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SqlPlanBuilder {
     public static int DROP = 0;

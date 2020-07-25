@@ -12,7 +12,7 @@ public class BaseCol<T extends BaseTable> implements Queryable {
     public BaseCol(T table, Field field) {
         this.table = table;
         Col col = field.getAnnotation(Col.class);
-        this.name = col.name().equals("")?field.getName():col.name();
+        this.name = col.name().equals("") ? field.getName() : col.name();
         this.field = field;
     }
 
@@ -76,12 +76,34 @@ public class BaseCol<T extends BaseTable> implements Queryable {
         table.refs.add(sub);
         return table;
     }
+    public T notIn(Object... vals) {
+        table.where.append(" " + name() + " NOT IN (");
+        for (Object val : vals) {
+            table.where.append("?,");
+            table.args.add(val);
+        }
+        table.where.deleteCharAt(table.where.length() - 1);
+        table.where.append(")");
+        return table;
+    }
 
+    public T notIn(BaseTable sub) {
+        table.where.append(" " + name() + " NOT IN (");
+        table.where.append(sub.toString());
+        table.args.addAll(sub.args);
+        table.where.append(")");
+
+        table.refs.add(sub);
+        return table;
+    }
     public T set(Object val) {
+        table.update.append(" " + name + " = ?,");
+        table.args.add(val);
         return table;
     }
 
     public T setExp(String val) {
+        table.update.append(String.format(" %s = %s + (%s),", name, name, val));
         return table;
     }
 }

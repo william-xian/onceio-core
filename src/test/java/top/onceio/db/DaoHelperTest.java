@@ -28,7 +28,6 @@ public class DaoHelperTest extends DaoBaseTest {
     @After
     public void clean() {
         daoHelper.delete(UserInfo.class, UserInfo.meta());
-
     }
 
     @Test
@@ -57,24 +56,14 @@ public class DaoHelperTest extends DaoBaseTest {
         uc.setPasswd("passwd");
         daoHelper.insert(uc);
         Assert.assertEquals(11, daoHelper.count(UserInfo.class));
-        UserInfo db = daoHelper.get(UserInfo.class, uc.getId());
 
-        Assert.assertEquals(db.toString(), uc.toString());
-        int deleted1 = daoHelper.deleteById(UserInfo.class, uc.getId());
-        Assert.assertEquals(0, deleted1);
-        Assert.assertEquals(11, daoHelper.count(UserInfo.class));
-        /**
-         *
-         */
         int deleteRemoved1 = daoHelper.deleteById(UserInfo.class, uc.getId());
         Assert.assertEquals(1, deleteRemoved1);
         Assert.assertEquals(10, daoHelper.count(UserInfo.class));
 
         int deleted10 = daoHelper.deleteByIds(UserInfo.class, ids);
-        Assert.assertEquals(0, deleted10);
+        Assert.assertEquals(10, deleted10);
 
-        int deletedRemoved10 = daoHelper.deleteByIds(UserInfo.class, ids);
-        Assert.assertEquals(10, deletedRemoved10);
         Assert.assertEquals(0, daoHelper.count(UserInfo.class));
     }
 
@@ -133,7 +122,7 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo uc1 = ucs.get(0);
         UserInfo uc2 = ucs.get(1);
         UserInfo.Meta tpl = UserInfo.meta();
-        tpl.genre.setExp("+1").id.eq(uc1.getId());
+        tpl.genre.setExp("1").id.eq(uc1.getId());
         daoHelper.updateBy(UserInfo.class, tpl);
         UserInfo db1 = daoHelper.get(UserInfo.class, uc1.getId());
         Assert.assertEquals(1, db1.getGenre().intValue());
@@ -163,17 +152,23 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo.Meta cnd3 = UserInfo.meta();
         cnd3.avatar.like("avatar%00");
         Assert.assertEquals(2, daoHelper.count(UserInfo.class, cnd3));
+
+
         UserInfo.Meta cnd4 = UserInfo.meta();
+        cnd4.genre.eq(2).or().genre.ne(3);
+        UserInfo.Meta cnd5 = UserInfo.meta();
+        cnd5.avatar.notLike("avatar%00").and(cnd4);
         /** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
-        cnd4.and(cnd1).not(cnd3);
-        Assert.assertEquals(6, daoHelper.count(UserInfo.class, cnd4));
-        cnd4.limit(-2,4);
-        Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd4);
+        Assert.assertEquals(6, daoHelper.count(UserInfo.class, cnd5));
+
+        UserInfo.Meta cnd6 = UserInfo.meta().select().from().where().avatar.notLike("avatar%00").and(cnd4);
+
+        //TODO
+        Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6,-2,4);
         Assert.assertEquals(2, page1.getData().size());
         Assert.assertEquals(6, page1.getTotal().longValue());
         int cnt = daoHelper.deleteByIds(UserInfo.class, ids);
         System.out.println("delete - " + cnt);
-
     }
 
     @Test

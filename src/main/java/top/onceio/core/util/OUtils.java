@@ -36,6 +36,13 @@ public final class OUtils {
         return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
+    /**
+     * getStub("?",",",5)
+     * @param e 元素
+     * @param s 分割符号
+     * @param cnt 个数
+     * @return
+     */
     public static String genStub(String e, String s, int cnt) {
         StringBuffer sb = new StringBuffer((e.length() + s.length()) * cnt);
         for (int i = 0; i < cnt - 1; i++) {

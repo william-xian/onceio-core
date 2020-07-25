@@ -37,7 +37,10 @@ public class TableMeta {
     }
 
     public static String getTableName(Class<?> clazz) {
-        String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
+        String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").toLowerCase();
+        if (defaultName.startsWith("_")) {
+            defaultName = defaultName.substring(1);
+        }
         Tbl tbl = clazz.getAnnotation(Tbl.class);
         if (tbl != null && !tbl.name().equals("")) {
             return tbl.name();
@@ -47,7 +50,7 @@ public class TableMeta {
     }
 
     public static String getColumnName(Field field) {
-        String defaultName = field.getName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
+        String defaultName = field.getName().replaceAll("([A-Z])", "_$1").toLowerCase();
         Col col = field.getAnnotation(Col.class);
         if (col != null && !"".equals(col.name())) {
             return col.name();
@@ -132,7 +135,7 @@ public class TableMeta {
                     String type = transType(javaBaseType, col);
                     cm.setType(type);
                 } else {
-                    cm.setType(col.type());
+                    cm.setType(col.type().toLowerCase());
                 }
 
                 if (col.ref() != void.class) {

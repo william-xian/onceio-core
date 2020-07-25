@@ -1,9 +1,11 @@
 package top.onceio.core.beans;
 
+import java.util.List;
 import java.util.Locale;
 
 import top.onceio.core.aop.annotation.Cacheable;
 import top.onceio.core.db.dao.DaoHolder;
+import top.onceio.core.db.model.BaseTable;
 import top.onceio.core.db.tbl.OI18n;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.AutoApi;
@@ -25,5 +27,4 @@ public class OI18nHolder extends DaoHolder<OI18n, OI18n.Meta> {
         }
         return msg;
     }
-
 }

@@ -12,7 +12,7 @@ import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
-public abstract class DaoHolder<T extends BaseEntity,M extends BaseEntity.Meta> implements Dao<T,M> {
+public abstract class DaoHolder<T extends BaseEntity, M extends BaseEntity.Meta> implements Dao<T, M> {
     @Using
     protected DaoHelper daoHelper;
 
@@ -96,7 +96,7 @@ public abstract class DaoHolder<T extends BaseEntity,M extends BaseEntity.Meta> 
         return daoHelper.delete(tbl, cnd);
     }
 
-    @Api(value = "/first", method = {ApiMethod.GET})
+    @Api(value = "/fetch", method = {ApiMethod.GET})
     @Override
     public T fetch(@Param("tpl") BaseTable<M> tpl) {
         return daoHelper.fetch(tbl, tpl);
@@ -108,11 +108,15 @@ public abstract class DaoHolder<T extends BaseEntity,M extends BaseEntity.Meta> 
         return daoHelper.findByIds(tbl, ids);
     }
 
+    @Override
+    public List<T> find(@Param("cnd") BaseTable<M> cnd) {
+        return daoHelper.find(tbl, cnd);
+    }
 
     @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public Page<T> find(BaseTable<M> cnd) {
-        return daoHelper.find(tbl, cnd);
+    public Page<T> find(@Param("cnd") BaseTable<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
+        return daoHelper.find(tbl, cnd, page, pageSize);
     }
 
     @Override
