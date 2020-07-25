@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.dao.Page;
+import top.onceio.core.db.model.Func;
 import top.onceio.core.util.IDGenerator;
 import top.onceio.core.util.OUtils;
 
@@ -164,7 +165,7 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo.Meta cnd6 = UserInfo.meta().avatar.notLike("avatar%00").and(cnd4);
 
         //TODO
-        Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6,-2,4);
+        Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6, -2, 4);
         Assert.assertEquals(2, page1.getData().size());
         Assert.assertEquals(6, page1.getTotal().longValue());
         int cnt = daoHelper.deleteByIds(UserInfo.class, ids);
@@ -209,38 +210,34 @@ public class DaoHelperTest extends DaoBaseTest {
         }
         daoHelper.batchInsert(ucs);
 
-        /*
-        Cnd<UserInfo> cnd = new Cnd<UserInfo>(UserInfo.class);
-        cnd.groupBy().use().setGenre(Tpl.USING_INT);
+        UserInfo.Meta meta = UserInfo.meta();
+        meta.select(meta.genre);
+        meta.groupBy(meta.genre);
 
-        SelectTpl<UserInfo> distinct = new SelectTpl<UserInfo>(UserInfo.class);
-        distinct.using().setGenre(SelectTpl.USING_INT);
-        Page<UserInfo> page = daoHelper.find(UserInfo.class, distinct, cnd);
-        Assert.assertEquals(page.getTotal(), new Long(4));
+        List<UserInfo> data = daoHelper.find(UserInfo.class, meta);
+        Assert.assertEquals(data.size(), 4);
 
-        SelectTpl<UserInfo> max = new SelectTpl<UserInfo>(UserInfo.class);
+        UserInfo.Meta max = UserInfo.meta();
+        max.select(Func.max(max.genre));
 
-        max.max().setGenre(SelectTpl.USING_INT);
-        UserInfo ucMax = daoHelper.fetch(UserInfo.class, max, null);
+        UserInfo ucMax = daoHelper.fetch(UserInfo.class, max);
         Assert.assertEquals(ucMax.getGenre(), new Integer(3));
 
-        SelectTpl<UserInfo> min = new SelectTpl<UserInfo>(UserInfo.class);
-        min.min().setGenre(SelectTpl.USING_INT);
-        UserInfo ucMin = daoHelper.fetch(UserInfo.class, min, null);
+        UserInfo.Meta min = UserInfo.meta();
+        max.select(Func.min(min.genre));
+        UserInfo ucMin = daoHelper.fetch(UserInfo.class, min);
         Assert.assertEquals(ucMin.getGenre(), new Integer(0));
 
+        UserInfo.Meta sum = UserInfo.meta();
+        sum.select(Func.sum(min.genre));
+        UserInfo ucSum = daoHelper.fetch(UserInfo.class, sum);
+        Assert.assertEquals(ucSum.getGenre(), new Long(13));
 
-        SelectTpl<UserInfo> sum = new SelectTpl<UserInfo>(UserInfo.class);
-        sum.sum().setGenre(SelectTpl.USING_INT);
-        UserInfo ucSum = daoHelper.fetch(UserInfo.class, sum, null);
-        Assert.assertEquals(ucSum.getExtra().get("sum_genre"), new Long(13));
-
-        SelectTpl<UserInfo> avg = new SelectTpl<UserInfo>(UserInfo.class);
-        avg.avg().setGenre(SelectTpl.USING_INT);
-        UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg, null);
+        UserInfo.Meta avg = UserInfo.meta();
+        avg.select(Func.avg(avg.genre));
+        UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg);
         System.out.println(ucAvg);
 
-        */
         daoHelper.deleteByIds(UserInfo.class, ids);
     }
 }

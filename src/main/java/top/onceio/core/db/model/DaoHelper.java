@@ -556,11 +556,11 @@ public class DaoHelper implements DDLDao, TransDao {
         result.setData(data);
         if (page <= 0) {
             result.setTotal(count(tbl, cnd));
-            if (page != 0) {
-                page = Math.abs(page) - 1;
-            }
-            result.setPage(page + 1);
         }
+        if (page != 0) {
+            page = Math.abs(page) - 1;
+        }
+        result.setPage(page + 1);
         BaseTable<M> limitCnd = cnd.copy();
 
         limitCnd.limit(pageSize, pageSize * page);
