@@ -1,13 +1,16 @@
-package top.onceio.core.db.dao;
+package top.onceio.core.db.model;
 
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
+import top.onceio.core.db.dao.DDLDao;
+import top.onceio.core.db.dao.IdGenerator;
+import top.onceio.core.db.dao.Page;
+import top.onceio.core.db.dao.TransDao;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.IndexMeta;
 import top.onceio.core.db.meta.SqlPlanBuilder;
 import top.onceio.core.db.meta.TableMeta;
-import top.onceio.core.db.model.BaseTable;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
@@ -524,7 +527,8 @@ public class DaoHelper implements DDLDao, TransDao {
 
         } else {
             TableMeta tm = classToTableMeta.get(tbl);
-            String sql = String.format("SELECT COUNT(1) FROM %s AS %s %s;", cnd.getName(), cnd.getAlias(), cnd.where());
+            String withName = cnd.alias + "_with";
+            String sql = String.format("WITH %s AS (%s) SELECT COUNT(1) FROM %s", withName, cnd.toString(), withName);
             return (long) jdbcHelper.queryForObject(sql, cnd.getArgs().toArray());
         }
 
@@ -539,6 +543,13 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     public <E extends BaseEntity, M extends BaseEntity.Meta> Page<E> find(Class<E> tbl, BaseTable<M> cnd, int page, int pageSize) {
+        if (cnd.select.length() == 0) {
+            cnd.select();
+        }
+        if (cnd.from.length() == 0) {
+            cnd.from();
+        }
+
         Page<E> result = new Page<>();
         result.setPagesize(pageSize);
         List<E> data = new ArrayList<>(10);
@@ -571,6 +582,12 @@ public class DaoHelper implements DDLDao, TransDao {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return;
+        }
+        if (cnd.select.length() == 0) {
+            cnd.select();
+        }
+        if (cnd.from.length() == 0) {
+            cnd.from();
         }
         jdbcHelper.query(cnd.toString(), cnd.getArgs().toArray(new Object[0]), rs -> {
             E row = null;

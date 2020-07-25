@@ -45,7 +45,7 @@ import top.onceio.core.aop.proxies.CachePutProxy;
 import top.onceio.core.aop.proxies.CacheableProxy;
 import top.onceio.core.aop.proxies.TransactionalProxy;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.dao.DaoHelper;
+import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.jdbc.JdbcHelper;
@@ -595,7 +595,7 @@ public class BeansEden {
                     } else {
                         name = fieldname;
                     }
-                    OI18n i18n = dao.fetch(OI18n.meta().select().from().where().oid.eq(key));
+                    OI18n i18n = dao.fetch(OI18n.meta().oid.eq(key));
                     if (i18n == null) {
                         i18n = new OI18n();
                         i18n.setOid(key);

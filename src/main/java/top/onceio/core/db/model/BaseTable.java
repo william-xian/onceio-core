@@ -12,8 +12,8 @@ public class BaseTable<M> {
     protected String alias;
     protected List<Object> args = new ArrayList<>();
 
-    private StringBuilder select = new StringBuilder();
-    private StringBuilder from = new StringBuilder();
+    StringBuilder select = new StringBuilder();
+    StringBuilder from = new StringBuilder();
     StringBuilder where = new StringBuilder();
     private StringBuilder group = new StringBuilder();
     private StringBuilder having = new StringBuilder();
@@ -42,10 +42,6 @@ public class BaseTable<M> {
     public M alias(String alias) {
         this.alias = alias;
         return meta;
-    }
-
-    public String getAlias() {
-        return alias;
     }
 
     public List<Object> getArgs() {

@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import top.onceio.core.annotation.Using;
 import top.onceio.core.beans.ApiMethod;
 import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;

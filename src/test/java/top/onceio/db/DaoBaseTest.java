@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.junit.Test;
 import top.onceio.core.beans.BeansEden;
 import top.onceio.core.db.jdbc.JdbcHelper;
-import top.onceio.core.db.dao.DaoHelper;
+import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.tbl.OI18n;
 
 public class DaoBaseTest {

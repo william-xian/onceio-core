@@ -150,18 +150,18 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo.Meta cnd1 = UserInfo.meta();
         cnd1.genre.eq(2).or().genre.ne(3);
         UserInfo.Meta cnd3 = UserInfo.meta();
-        cnd3.avatar.like("avatar%00");
+        cnd3.select().from().where().avatar.like("avatar%00");
         Assert.assertEquals(2, daoHelper.count(UserInfo.class, cnd3));
 
 
         UserInfo.Meta cnd4 = UserInfo.meta();
         cnd4.genre.eq(2).or().genre.ne(3);
         UserInfo.Meta cnd5 = UserInfo.meta();
-        cnd5.avatar.notLike("avatar%00").and(cnd4);
+        cnd5.select().from().where().avatar.notLike("avatar%00").and(cnd4);
         /** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
         Assert.assertEquals(6, daoHelper.count(UserInfo.class, cnd5));
 
-        UserInfo.Meta cnd6 = UserInfo.meta().select().from().where().avatar.notLike("avatar%00").and(cnd4);
+        UserInfo.Meta cnd6 = UserInfo.meta().avatar.notLike("avatar%00").and(cnd4);
 
         //TODO
         Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6,-2,4);
