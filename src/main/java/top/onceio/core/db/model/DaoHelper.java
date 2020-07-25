@@ -15,6 +15,7 @@ import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OLog;
+import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 import java.sql.ResultSet;
@@ -325,9 +326,14 @@ public class DaoHelper implements DDLDao, TransDao {
                 if (cm != null) {
                     try {
                         Object val = rs.getObject(colName);
-                        cm.getField().set(row, val);
+                        if(val != null && !val.getClass().equals(cm.getJavaBaseType())) {
+                            Object fieldVal = OReflectUtil.strToBaseType(cm.getField().getType(), val.toString());
+                            cm.getField().set(row, fieldVal);
+                        }else {
+                            cm.getField().set(row, val);
+                        }
                     } catch (IllegalArgumentException | IllegalAccessException e) {
-                        e.printStackTrace();
+                        OLog.error(e.getMessage());
                     }
                 }
             }

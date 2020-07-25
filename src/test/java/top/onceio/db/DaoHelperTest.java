@@ -229,9 +229,9 @@ public class DaoHelperTest extends DaoBaseTest {
         Assert.assertEquals(ucMin.getGenre(), new Integer(0));
 
         UserInfo.Meta sum = UserInfo.meta();
-        sum.select(Func.sum(min.genre));
+        sum.select(Func.sum(sum.genre));
         UserInfo ucSum = daoHelper.fetch(UserInfo.class, sum);
-        Assert.assertEquals(ucSum.getGenre(), new Long(13));
+        Assert.assertEquals(ucSum.getGenre().intValue(), 13);
 
         UserInfo.Meta avg = UserInfo.meta();
         avg.select(Func.avg(avg.genre));
