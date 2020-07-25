@@ -72,6 +72,8 @@ public class BaseCol<T extends BaseTable> implements Queryable {
         table.where.append(sub.toString());
         table.args.addAll(sub.args);
         table.where.append(")");
+
+        table.refs.add(sub);
         return table;
     }
 

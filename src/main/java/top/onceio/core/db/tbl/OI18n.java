@@ -3,9 +3,9 @@ package top.onceio.core.db.tbl;
 import top.onceio.core.annotation.I18nCfg;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.util.OUtils;
-import top.onceio.core.db.model.*;
+import top.onceio.core.db.model.StringCol;
 import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.util.OUtils;
 
 @Tbl
 public class OI18n extends BaseEntity {
@@ -54,16 +54,16 @@ public class OI18n extends BaseEntity {
     }
     
     public static class Meta extends BaseEntity.Meta<Meta>  {
-        public BaseCol<Meta> oid = new BaseCol(this, OReflectUtil.getField(OI18n.class, "oid"));
-        public BaseCol<Meta> name = new BaseCol(this, OReflectUtil.getField(OI18n.class, "name"));
-        public BaseCol<Meta> val = new BaseCol(this, OReflectUtil.getField(OI18n.class, "val"));
+        public StringCol<Meta> oid = new StringCol(this, OReflectUtil.getField(OI18n.class, "oid"));
+        public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(OI18n.class, "name"));
+        public StringCol<Meta> val = new StringCol(this, OReflectUtil.getField(OI18n.class, "val"));
         public Meta() {
-            super("public.OI18n");
+            super("public.o_i18n");
             super.bind(this, OI18n.class);
         }
-        public static Meta meta() {
-            return new Meta();
-        }
+    }
+    public static Meta meta() {
+        return new Meta();
     }
 
 }

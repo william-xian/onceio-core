@@ -14,7 +14,7 @@ public class GoodsShipping extends BaseEntity {
     @Col(ref = UserInfo.class, nullable = false)
     private long receiverId;
     @Col(size = 255)
-    private String addr;
+    private String address;
 
     public long getGoodsOrderId() {
         return goodsOrderId;
@@ -40,11 +40,11 @@ public class GoodsShipping extends BaseEntity {
         this.receiverId = receiverId;
     }
 
-    public String getAddr() {
-        return addr;
+    public String getAddress() {
+        return address;
     }
 
-    public void setAddr(String addr) {
-        this.addr = addr;
+    public void setAddress(String addr) {
+        this.address = addr;
     }
 }

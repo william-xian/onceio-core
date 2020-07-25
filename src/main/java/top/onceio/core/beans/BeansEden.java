@@ -45,7 +45,6 @@ import top.onceio.core.aop.proxies.CachePutProxy;
 import top.onceio.core.aop.proxies.CacheableProxy;
 import top.onceio.core.aop.proxies.TransactionalProxy;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.annotation.TblView;
 import top.onceio.core.db.dao.DaoHelper;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
@@ -68,7 +67,7 @@ public class BeansEden {
     private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
     private ApiResover apiResover = new ApiResover();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
-            Using.class, Tbl.class, TblView.class, I18nMsg.class, I18nCfg.class, Aop.class);
+            Using.class, Tbl.class, I18nMsg.class, I18nCfg.class, Aop.class);
     private static BeansEden instance = null;
 
     private BeansEden() {
@@ -95,11 +94,6 @@ public class BeansEden {
     public List<Class<? extends BaseEntity>> matchTblTblView() {
         List<Class<? extends BaseEntity>> entities = new LinkedList<>();
         for (Class<?> clazz : scanner.getClasses(Tbl.class)) {
-            if (BaseEntity.class.isAssignableFrom(clazz)) {
-                entities.add((Class<? extends BaseEntity>) clazz);
-            }
-        }
-        for (Class<?> clazz : scanner.getClasses(TblView.class)) {
             if (BaseEntity.class.isAssignableFrom(clazz)) {
                 entities.add((Class<? extends BaseEntity>) clazz);
             }

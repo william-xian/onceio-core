@@ -1,7 +1,6 @@
 package top.onceio.core.db.dao;
 
 
-
 /**
  * 增 单个添加，批量添加, 不重复添加
  * 删 主键删除，条件删除
@@ -9,11 +8,13 @@ package top.onceio.core.db.dao;
  * 查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图，union）
  * 函数
  */
+
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.jdbc.JdbcHelper;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.IndexMeta;
+import top.onceio.core.db.meta.SqlPlanBuilder;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.model.BaseTable;
 import top.onceio.core.db.tbl.BaseEntity;
@@ -28,7 +29,9 @@ import java.sql.Savepoint;
 import java.util.*;
 import java.util.function.Consumer;
 
-/**增 单个添加，批量添加, 不重复添加*/
+/**
+ * 增 单个添加，批量添加, 不重复添加删 主键删除，条件删除改 主键更改，非null更改，表达式更改，条件批量更改
+ */
 /**删 主键删除，条件删除*/
 /**改 主键更改，非null更改，表达式更改，条件批量更改*/
 
@@ -39,7 +42,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     private JdbcHelper jdbcHelper;
     private Map<Class<?>, TableMeta> classToTableMeta;
-    private Map<String, Class<?>> tableToClass;
+    private Map<String, TableMeta> nameToMeta;
     private IdGenerator idGenerator;
     private List<Class<? extends BaseEntity>> entities;
 
@@ -234,7 +237,7 @@ public class DaoHelper implements DDLDao, TransDao {
         this.jdbcHelper = jdbcHelper;
         this.idGenerator = idGenerator;
         this.classToTableMeta = new HashMap<>();
-        this.tableToClass = new HashMap<>();
+        this.nameToMeta = new HashMap<>();
         if (entities != null) {
             this.entities = entities;
             for (Class<? extends BaseEntity> tbl : entities) {
@@ -242,58 +245,26 @@ public class DaoHelper implements DDLDao, TransDao {
                 tm.freshNameToField(tbl);
                 tm.freshConstraintMetaTable();
                 classToTableMeta.put(tbl, tm);
-                tableToClass.put(tm.getSchema() + "." + tm.getTable(), tbl);
+                nameToMeta.put(tm.getSchema() + "." + tm.getTable(), tm);
             }
         }
 
-        Map<String, TableMeta> oldTableMeta = findTableMeta(jdbcHelper, tableToClass.keySet());
+        Map<String, TableMeta> oldTableMeta = findTableMeta(jdbcHelper, nameToMeta.keySet());
 
-        Map<String, List<String>> tblSqls = new HashMap<>();
+        SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         for (Class<?> tbl : classToTableMeta.keySet()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String schemaTable = tm.getSchema() + "." + tm.getTable();
             TableMeta old = oldTableMeta.get(schemaTable);
             if (old == null) {
-                List<String> createSQL = tm.createTableSql();
-                if (!createSQL.isEmpty()) {
-                    tblSqls.put(schemaTable, createSQL);
-                }
+                planBuilder.append(tm.createTableSql());
             } else if (!old.equals(tm)) {
-                List<String> updateSQL = old.upgradeTo(tm);
-                if (!updateSQL.isEmpty()) {
-                    tblSqls.put(schemaTable, updateSQL);
-                }
+                planBuilder.append(old.upgradeTo(tm));
             }
         }
-        List<String> order = new ArrayList<>();
-        for (String schemaTable : tblSqls.keySet()) {
-            sorted(order, schemaTable);
-        }
-
-        List<String> sqls = new ArrayList<>();
-        for (String tbl : order) {
-            List<String> list = tblSqls.get(tbl);
-            if (list != null && !list.isEmpty()) {
-                sqls.addAll(list);
-            }
-        }
-        if (!sqls.isEmpty()) {
-            jdbcHelper.batchExec(sqls.toArray(new String[0]));
-        }
-    }
-
-    private void sorted(List<String> order, String schemaTable) {
-        if (!order.contains(schemaTable)) {
-            Class<?> tbl = tableToClass.get(schemaTable);
-            TableMeta tblMeta = classToTableMeta.get(tbl);
-            if (tblMeta != null) {
-                for (IndexMeta cm : tblMeta.getFieldConstraint()) {
-                    if (cm.getType().equals(IndexType.FOREIGN_KEY)) {
-                        sorted(order, cm.getRefTable());
-                    }
-                }
-            }
-            order.add(schemaTable);
+        List<String> sqlList = planBuilder.build(nameToMeta);
+        if (!sqlList.isEmpty()) {
+            jdbcHelper.batchExec(sqlList.toArray(new String[0]));
         }
     }
 

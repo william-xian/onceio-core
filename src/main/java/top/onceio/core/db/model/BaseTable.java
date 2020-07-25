@@ -1,5 +1,6 @@
 package top.onceio.core.db.model;
 
+import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OReflectUtil;
 
 import java.util.ArrayList;
@@ -20,7 +21,10 @@ public class BaseTable<M> {
     private StringBuilder limit = new StringBuilder();
     private StringBuilder order = new StringBuilder();
 
+    List<BaseTable<?>> refs = new ArrayList<>();
+
     public BaseCol<?> id;
+
     public BaseTable(String name) {
         this.name = name;
         this.alias = "t";
@@ -28,11 +32,11 @@ public class BaseTable<M> {
 
     protected <E> void bind(M meta, Class<E> e) {
         this.meta = meta;
-        id = new BaseCol(this, OReflectUtil.getField(e,"id"));
+        id = new BaseCol(this, OReflectUtil.getField(e, "id"));
     }
 
-    public String name() {
-        return name + "." + name;
+    public String getName() {
+        return name;
     }
 
     public M alias(String alias) {
@@ -59,14 +63,19 @@ public class BaseTable<M> {
         } else {
             for (O t : tables) {
                 from.append(" " + t.name + " AS " + t.alias + ",");
+
+                refs.add(t);
             }
             from.deleteCharAt(from.length() - 1);
         }
+
         return meta;
     }
 
     public M join(BaseTable otherTable) {
         from.append(" LEFT JOIN " + otherTable.name + " AS " + otherTable.alias);
+
+        refs.add(otherTable);
         return meta;
     }
 
@@ -126,18 +135,24 @@ public class BaseTable<M> {
     public M and(BaseTable meta) {
         where.append(" AND (" + meta.toString() + ")");
         args.addAll(meta.args);
+
+        refs.add(meta);
         return this.meta;
     }
 
     public M or(BaseTable meta) {
         where.append(" OR (" + meta.toString() + ")");
         args.addAll(meta.args);
+
+        refs.add(meta);
         return this.meta;
     }
 
     public M not(BaseTable meta) {
         where.append(" NOT (" + meta.toString() + ")");
         args.addAll(meta.args);
+
+        refs.add(meta);
         return this.meta;
     }
 
@@ -184,5 +199,9 @@ public class BaseTable<M> {
             }
         }
         return sql.toString();
+    }
+
+    public List<BaseTable<?>> getRefs() {
+        return refs;
     }
 }

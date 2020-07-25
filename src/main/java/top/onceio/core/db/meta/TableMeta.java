@@ -8,11 +8,9 @@ import java.util.*;
 
 import org.apache.log4j.Logger;
 
-import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Index;
-import top.onceio.core.db.annotation.IndexType;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.annotation.TblView;
+import top.onceio.core.db.annotation.*;
+import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.DefView;
 import top.onceio.core.exception.VolidateFailed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OReflectUtil;
@@ -23,7 +21,9 @@ public class TableMeta {
     String schema;
     String table;
     IndexMeta primaryKey;
-    String viewDef;
+    BaseTable viewDef;
+    TblType type;
+
     transient List<IndexMeta> fieldConstraint = new ArrayList<>(0);
     List<IndexMeta> indexes = new ArrayList<>();
     List<ColumnMeta> columnMetas = new ArrayList<>(0);
@@ -32,6 +32,9 @@ public class TableMeta {
 
     public static final Map<Class<?>, TableMeta> tableCache = new HashMap<>();
 
+    public String name() {
+        return schema + "." + table;
+    }
 
     public static String getTableName(Class<?> clazz) {
         String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
@@ -53,24 +56,14 @@ public class TableMeta {
         }
     }
 
-    public static String getViewName(Class<?> clazz) {
-        String defaultName = clazz.getSimpleName().replaceAll("([A-Z])", "_$1").replaceFirst("_", "").toLowerCase();
-        TblView tblView = clazz.getAnnotation(TblView.class);
-        if (tblView != null && !tblView.name().equals("")) {
-            return tblView.name();
-        } else {
-            return defaultName;
-        }
-    }
-
     public static TableMeta createBy(Class<?> entity) {
         TableMeta tm = new TableMeta();
         tm.entity = entity;
         Tbl tbl = entity.getAnnotation(Tbl.class);
-        TblView tblView = entity.getAnnotation(TblView.class);
-        if (tbl != null) {
-            tm.schema = tbl.schema();
-            tm.table = getTableName(entity);
+        tm.schema = tbl.schema();
+        tm.table = getTableName(entity);
+        tm.type = tbl.type();
+        if (tbl.type().equals(TblType.TABLE)) {
             List<IndexMeta> constraints = new ArrayList<>();
             for (Index c : tbl.indexes()) {
                 IndexMeta cm = new IndexMeta();
@@ -86,6 +79,15 @@ public class TableMeta {
                 cm.setUsing(c.using());
             }
             tm.setIndexes(constraints);
+        } else if (DefView.class.isAssignableFrom(entity)) {
+            try {
+                DefView view = (DefView) (entity.newInstance());
+                tm.viewDef = view.def();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
         }
         List<Class<?>> classes = new ArrayList<>();
         for (Class<?> clazz = entity; !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
@@ -151,12 +153,7 @@ public class TableMeta {
         tm.setColumnMetas(columnMetas);
         tm.freshNameToField(entity);
         tm.freshConstraintMetaTable();
-        if (tblView != null) {
-            tm.schema = tblView.schema();
-            String viewName = tblView.name().equalsIgnoreCase("") ? TableMeta.getViewName(entity) : tblView.name();
-            tm.setTable(viewName);
-            tm.setViewDef(tblView.def());
-        }
+
         tableCache.put(entity, tm);
         return tm;
     }
@@ -216,7 +213,6 @@ public class TableMeta {
         return Object.class;
     }
 
-
     public String getSchema() {
         return schema;
     }
@@ -238,12 +234,8 @@ public class TableMeta {
         return columnMetas;
     }
 
-    public String getViewDef() {
+    public BaseTable getViewDef() {
         return viewDef;
-    }
-
-    public void setViewDef(String viewDef) {
-        this.viewDef = viewDef;
     }
 
     public IndexMeta getPrimaryKey() {
@@ -401,8 +393,8 @@ public class TableMeta {
     /**
      * drop table if exists tbl_a;
      */
-    public List<String> createTableSql() {
-        List<String> sqls = new ArrayList<>();
+    public SqlPlanBuilder createTableSql() {
+        SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         StringBuffer tbl = new StringBuffer();
         List<String> comments = new ArrayList<>();
         if (viewDef == null) {
@@ -424,25 +416,25 @@ public class TableMeta {
             }
             tbl.delete(tbl.length() - 1, tbl.length());
             tbl.append(");");
-            sqls.add(tbl.toString());
+            planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
             if (primaryKey != null) {
-                sqls.add(primaryKey.addSql());
+                planBuilder.append(SqlPlanBuilder.ALTER, this, primaryKey.addSql());
             }
             /** 添加字段约束 */
-            sqls.addAll(IndexMeta.addConstraintSql(fieldConstraint));
+            planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(fieldConstraint));
 
             /** 添加复合约束 */
-            sqls.addAll(IndexMeta.addConstraintSql(indexes));
+            planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(indexes));
 
-            sqls.addAll(comments);
+            planBuilder.append(SqlPlanBuilder.COMMENT, this, comments);
         } else {
-            sqls.add(String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
+            planBuilder.append(SqlPlanBuilder.DROP, this, String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
             tbl.append(String.format("CREATE VIEW %s.%s AS (", schema, table));
-            tbl.append(viewDef);
+            tbl.append(viewDef.toSql());
             tbl.append(");");
-            sqls.add(tbl.toString());
+            planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
         }
-        return sqls;
+        return planBuilder;
     }
 
     /**
@@ -451,22 +443,21 @@ public class TableMeta {
      * @param other
      * @return
      */
-    public List<String> upgradeTo(TableMeta other) {
+    public SqlPlanBuilder upgradeTo(TableMeta other) {
         if (!table.equals(other.table)) {
             return null;
         }
         if (viewDef == null) {
             return upgradeTableTo(other);
         } else {
-            List<String> sqls = new ArrayList<>();
-            sqls.add(String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
+            SqlPlanBuilder planBuilder = new SqlPlanBuilder();
+            planBuilder.append(SqlPlanBuilder.DROP, other, String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
             StringBuffer tbl = new StringBuffer();
-            tbl.append(String.format("CREATE OR REPLACE VIEW %s.%s AS (", schema, table));
+            tbl.append(String.format("CREATE VIEW %s.%s AS (", schema, table));
             tbl.append(viewDef);
             tbl.append(");");
-            sqls.add(tbl.toString());
-
-            return sqls;
+            planBuilder.append(SqlPlanBuilder.CREATE, other, tbl.toString());
+            return planBuilder;
         }
     }
 
@@ -476,8 +467,7 @@ public class TableMeta {
      * @param other
      * @return
      */
-    public List<String> upgradeTableTo(TableMeta other) {
-        List<String> sqls = new ArrayList<>();
+    public SqlPlanBuilder upgradeTableTo(TableMeta other) {
         List<String> comments = new ArrayList<>();
         List<ColumnMeta> otherColumn = other.columnMetas;
         List<ColumnMeta> newColumns = new ArrayList<>();
@@ -577,23 +567,24 @@ public class TableMeta {
             }
         }
 
+        SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         if (primaryKey != null && !primaryKey.equals(other.primaryKey)) {
-            sqls.add(primaryKey.dropSql());
+            planBuilder.append(SqlPlanBuilder.DROP, other, primaryKey.dropSql());
         }
         if (other.primaryKey != null && !other.primaryKey.equals(primaryKey)) {
-            sqls.add(other.primaryKey.addSql());
+            planBuilder.append(SqlPlanBuilder.ALTER, other, other.primaryKey.addSql());
         }
-        sqls.addAll(addColumnSql(newColumns));
 
-        sqls.addAll(IndexMeta.dropConstraintSql(dropIndexs));
-        sqls.addAll(IndexMeta.dropConstraintSql(dropForeignKeys));
-        sqls.addAll(alterColumnSql(alterColumns));
-        sqls.addAll(IndexMeta.addConstraintSql(addForeignKeys));
-        sqls.addAll(IndexMeta.dropConstraintSql(dropUniqueConstraint));
-        sqls.addAll(IndexMeta.addConstraintSql(addUniqueConstraint));
-        sqls.addAll(IndexMeta.dropConstraintSql(dropCustomizedConstraint));
-        sqls.addAll(IndexMeta.addConstraintSql(addCustomizedConstraint));
-        return sqls;
+        planBuilder.append(SqlPlanBuilder.ALTER, other, addColumnSql(newColumns));
+        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropIndexs));
+        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropForeignKeys));
+        planBuilder.append(SqlPlanBuilder.ALTER, other, alterColumnSql(alterColumns));
+        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addForeignKeys));
+        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropUniqueConstraint));
+        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addUniqueConstraint));
+        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropCustomizedConstraint));
+        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addCustomizedConstraint));
+        return planBuilder;
     }
 
 

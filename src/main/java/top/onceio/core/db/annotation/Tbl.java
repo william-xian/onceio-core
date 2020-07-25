@@ -22,4 +22,6 @@ public @interface Tbl {
      * 根据关联表自动创建
      */
     boolean autoCreate() default false;
+
+    TblType type() default TblType.TABLE;
 }
