@@ -2,6 +2,7 @@ package top.onceio.core.db.model;
 
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
+import top.onceio.core.db.annotation.TblType;
 import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.dao.Page;
@@ -595,7 +596,13 @@ public class DaoHelper implements DDLDao, TransDao {
         if (cnd.from.length() == 0) {
             cnd.from();
         }
-        jdbcHelper.query(cnd.toString(), cnd.getArgs().toArray(new Object[0]), rs -> {
+        String sql = null;
+        if(TblType.TABLE.equals(tm.getType())) {
+            sql = cnd.toString();
+        } else if(TblType.WITH.equals(tm.getType())) {
+            sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toString() , cnd.toString());
+        }
+        jdbcHelper.query(sql, cnd.getArgs().toArray(new Object[0]), rs -> {
             E row = null;
             try {
                 row = createBy(tbl, tm, rs);

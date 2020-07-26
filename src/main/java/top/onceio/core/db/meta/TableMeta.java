@@ -637,4 +637,8 @@ public class TableMeta {
         }
 
     }
+
+    public TblType getType() {
+        return type;
+    }
 }
