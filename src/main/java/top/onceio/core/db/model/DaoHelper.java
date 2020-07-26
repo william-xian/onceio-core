@@ -66,11 +66,21 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    private Map<String, TableMeta> findPGTableMeta(JdbcHelper jdbcHelper, Collection<String> schemaTables) {
+    private Map<String, TableMeta> findPGTableMeta(JdbcHelper jdbcHelper, Collection<String> tables) {
         Map<String, TableMeta> result = new HashMap<>();
-        if (schemaTables.isEmpty()) {
+        if (tables.isEmpty()) {
             return result;
         }
+        List<String> schemaTables = new ArrayList<>();
+        for(String table:tables) {
+            if(!table.contains(".")){
+                schemaTables.add("public."+table);
+            }else {
+                schemaTables.add(table);
+            }
+        }
+
+
         String qColumns = "select\n" +
                 "ns.nspname as schemaname,\n" +
                 "c.relname as tablename,\n" +
@@ -127,7 +137,7 @@ public class DaoHelper implements DDLDao, TransDao {
                     refTable = rs.getString("f_schemaname") + "." + rs.getString("f_tablename");
                 }
 
-                String schemaTable = schema + "." + table;
+                String schemaTable = (schema + "." + table).toLowerCase().replace("public.","");
                 Map<String, ColumnMeta> columnMetaList = tableToColumns.get(schemaTable);
                 if (columnMetaList == null) {
                     columnMetaList = new HashMap<>();
@@ -175,7 +185,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 String table = rs.getString("tablename");
                 String indexname = rs.getString("indexname");
                 String indexDef = rs.getString("indexdef");
-                String schemaTable = schema + "." + table;
+                String schemaTable = (schema + "." + table).toLowerCase().replace("public.","");
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
                 String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
                 if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_NQ)) {
@@ -186,7 +196,6 @@ public class DaoHelper implements DDLDao, TransDao {
                     }
                     constraintMeta.setColumns(columns);
                     constraintMeta.setTable(table);
-                    constraintMeta.setSchema(schema);
                     if (indexDef.toUpperCase().contains(" " + IndexMeta.UNIQUE + " ")) {
                         constraintMeta.setType(IndexType.UNIQUE_FIELD);
                     } else {
@@ -206,16 +215,14 @@ public class DaoHelper implements DDLDao, TransDao {
         });
         tableToColumns.forEach((schemaTable, columnNameToCol) -> {
             List<IndexMeta> constraints = tableToConstraintMeta.getOrDefault(schemaTable, new ArrayList<>());
-            String schema = schemaTable.split("\\.")[0];
-            String table = schemaTable.split("\\.")[1];
+            String table = schemaTable;
             TableMeta tm = new TableMeta();
             tm.setTable(table);
-            tm.setSchema(schema);
             tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
             tm.setIndexes(constraints);
             tm.setPrimaryKey("id");
             tm.freshConstraintMetaTable();
-            result.put(schemaTable, tm);
+            result.put(schemaTable.toLowerCase().replace("public.",""), tm);
         });
         return result;
     }
@@ -242,7 +249,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 tm.freshNameToField(tbl);
                 tm.freshConstraintMetaTable();
                 classToTableMeta.put(tbl, tm);
-                nameToMeta.put(tm.getSchema() + "." + tm.getTable(), tm);
+                nameToMeta.put(tm.getTable(), tm);
             }
         }
 
@@ -251,7 +258,7 @@ public class DaoHelper implements DDLDao, TransDao {
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         for (Class<?> tbl : classToTableMeta.keySet()) {
             TableMeta tm = classToTableMeta.get(tbl);
-            String schemaTable = tm.getSchema() + "." + tm.getTable();
+            String schemaTable = tm.getTable();
             TableMeta old = oldTableMeta.get(schemaTable);
             if (old == null) {
                 planBuilder.append(tm.createTableSql());
@@ -375,7 +382,7 @@ public class DaoHelper implements DDLDao, TransDao {
     public <E extends BaseEntity, M extends BaseEntity.Meta> E get(Class<E> tbl, Long id) {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
-        String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getSchema() + "." + tm.getTable());
+        String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
         final List<E> rows = new ArrayList<>(1);
         jdbcHelper.query(sql, new Object[]{id}, rs -> {
             E row = null;
@@ -600,7 +607,7 @@ public class DaoHelper implements DDLDao, TransDao {
         if(TblType.TABLE.equals(tm.getType())) {
             sql = cnd.toString();
         } else if(TblType.WITH.equals(tm.getType())) {
-            sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toString() , cnd.toString());
+            sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toSql() , cnd.toString());
         }
         jdbcHelper.query(sql, cnd.getArgs().toArray(new Object[0]), rs -> {
             E row = null;
@@ -619,7 +626,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
-        String sql = String.format("SELECT * FROM %s WHERE id IN ()", tm.getSchema() + "." + tm.getTable(), OUtils.genStub("?", ",", ids.size()));
+        String sql = String.format("SELECT * FROM %s WHERE id IN ()", tm.getTable(), OUtils.genStub("?", ",", ids.size()));
         final List<E> rows = new ArrayList<>(ids.size());
         jdbcHelper.query(sql, ids.toArray(), rs -> {
             try {

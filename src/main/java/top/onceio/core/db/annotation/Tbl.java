@@ -12,8 +12,6 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface Tbl {
 
-    String schema() default "public";
-
     String name() default "";
 
     Index[] indexes() default {};

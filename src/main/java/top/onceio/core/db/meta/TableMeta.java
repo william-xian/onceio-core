@@ -18,7 +18,6 @@ import top.onceio.core.util.OUtils;
 
 public class TableMeta {
     private static final Logger LOGGER = Logger.getLogger(TableMeta.class);
-    String schema;
     String table;
     IndexMeta primaryKey;
     BaseTable viewDef;
@@ -33,7 +32,7 @@ public class TableMeta {
     public static final Map<Class<?>, TableMeta> tableCache = new HashMap<>();
 
     public String name() {
-        return schema + "." + table;
+        return table;
     }
 
     public static String getTableName(Class<?> clazz) {
@@ -43,7 +42,7 @@ public class TableMeta {
         }
         Tbl tbl = clazz.getAnnotation(Tbl.class);
         if (tbl != null && !tbl.name().equals("")) {
-            return tbl.name();
+            return tbl.name().toLowerCase().replace("public.","");
         } else {
             return defaultName;
         }
@@ -63,7 +62,6 @@ public class TableMeta {
         TableMeta tm = new TableMeta();
         tm.entity = entity;
         Tbl tbl = entity.getAnnotation(Tbl.class);
-        tm.schema = tbl.schema();
         tm.table = getTableName(entity);
         tm.type = tbl.type();
         if (tbl.type().equals(TblType.TABLE)) {
@@ -72,7 +70,6 @@ public class TableMeta {
                 IndexMeta cm = new IndexMeta();
                 constraints.add(cm);
                 cm.setColumns(Arrays.asList(c.columns()));
-                cm.setSchema(tm.getSchema());
                 cm.setTable(tm.getTable());
                 if (c.unique()) {
                     cm.setType(IndexType.UNIQUE_INDEX);
@@ -140,9 +137,8 @@ public class TableMeta {
 
                 if (col.ref() != void.class) {
                     cm.setUseFK(col.useFK());
-                    Tbl e = col.ref().getAnnotation(Tbl.class);
                     String table = getTableName(col.ref());
-                    cm.setRefTable(e.schema() + "." + table);
+                    cm.setRefTable(table);
                 }
                 int index = colOrder.indexOf(cm.getName());
                 if (index < 0) {
@@ -216,14 +212,6 @@ public class TableMeta {
         return Object.class;
     }
 
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
-    }
-
     public String getTable() {
         return table;
     }
@@ -251,9 +239,8 @@ public class TableMeta {
 
     public void setPrimaryKey(String primaryKey) {
         IndexMeta pk = new IndexMeta();
-        pk.setSchema(this.schema);
         pk.setTable(this.table);
-        pk.setName(String.format("%s%s_%s_%s", IndexMeta.INDEX_NAME_PREFIX_PK, pk.schema, pk.table, primaryKey));
+        pk.setName(String.format("%s%s_%s", IndexMeta.INDEX_NAME_PREFIX_PK, pk.table.replace('.','_'), primaryKey));
         pk.setColumns(Arrays.asList(primaryKey));
         pk.setType(IndexType.PRIMARY_KEY);
         pk.setUsing("BTREE");
@@ -334,7 +321,6 @@ public class TableMeta {
                     List<String> cols = new ArrayList<>();
                     cols.add(cm.getName());
                     cnsMeta.setColumns(new ArrayList<String>(cols));
-                    cnsMeta.setSchema(this.getSchema());
                     cnsMeta.setTable(this.getTable());
                     cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_UN + cnsMeta.getTable() + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
@@ -345,7 +331,6 @@ public class TableMeta {
                     List<String> cols = new ArrayList<>();
                     cols.add(cm.getName());
                     cnsMeta.setColumns(new ArrayList<String>(cols));
-                    cnsMeta.setSchema(this.getSchema());
                     cnsMeta.setTable(this.getTable());
                     cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_FK + cnsMeta.getTable() + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
@@ -361,7 +346,7 @@ public class TableMeta {
     private List<String> alterColumnSql(List<ColumnMeta> columnMetas) {
         List<String> sqls = new ArrayList<>();
         for (ColumnMeta ocm : columnMetas) {
-            String sql = String.format("ALTER TABLE %s.%s ALTER COLUMN %s TYPE %s", schema, table, ocm.name, ocm.type);
+            String sql = String.format("ALTER TABLE %s ALTER COLUMN %s TYPE %s", table, ocm.name, ocm.type);
             if (!ocm.nullable) {
                 sql = sql + String.format(", ALTER COLUMN %s SET NOT NULL", ocm.name);
             }
@@ -374,7 +359,7 @@ public class TableMeta {
     private List<String> addColumnSql(List<ColumnMeta> columnMetas) {
         List<String> sqls = new ArrayList<>();
         for (ColumnMeta ocm : columnMetas) {
-            String sql = String.format("ALTER TABLE %s.%s ADD COLUMN %s %s", schema, table, ocm.name, ocm.type);
+            String sql = String.format("ALTER TABLE %%s ADD COLUMN %s %s", table, ocm.name, ocm.type);
             if (!ocm.nullable) {
                 sql = sql + String.format(" NOT NULL");
             }
@@ -401,7 +386,7 @@ public class TableMeta {
         StringBuffer tbl = new StringBuffer();
         List<String> comments = new ArrayList<>();
         if (viewDef == null) {
-            tbl.append(String.format("CREATE TABLE %s.%s (", schema, table));
+            tbl.append(String.format("CREATE TABLE %s (", table));
 
             for (ColumnMeta cm : columnMetas) {
                 String dft = "";
@@ -414,7 +399,7 @@ public class TableMeta {
                 }
                 tbl.append(String.format("%s %s%s%s,", cm.name, cm.type, cm.nullable ? "" : " NOT NULL", dft));
                 if (cm.comment != null && !cm.comment.equals("")) {
-                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, cm.name, cm.comment));
+                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, cm.name, cm.comment));
                 }
             }
             tbl.delete(tbl.length() - 1, tbl.length());
@@ -431,8 +416,8 @@ public class TableMeta {
 
             planBuilder.append(SqlPlanBuilder.COMMENT, this, comments);
         } else {
-            planBuilder.append(SqlPlanBuilder.DROP, this, String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
-            tbl.append(String.format("CREATE VIEW %s.%s AS (", schema, table));
+            planBuilder.append(SqlPlanBuilder.DROP, this, String.format("DROP VIEW IF EXISTS %s;", table));
+            tbl.append(String.format("CREATE VIEW %s AS (", table));
             tbl.append(viewDef.toSql());
             tbl.append(");");
             planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
@@ -454,9 +439,9 @@ public class TableMeta {
             return upgradeTableTo(other);
         } else {
             SqlPlanBuilder planBuilder = new SqlPlanBuilder();
-            planBuilder.append(SqlPlanBuilder.DROP, other, String.format("DROP VIEW IF EXISTS %s.%s;", schema, table));
+            planBuilder.append(SqlPlanBuilder.DROP, other, String.format("DROP VIEW IF EXISTS %s;", table));
             StringBuffer tbl = new StringBuffer();
-            tbl.append(String.format("CREATE VIEW %s.%s AS (", schema, table));
+            tbl.append(String.format("CREATE VIEW %s AS (", table));
             tbl.append(viewDef);
             tbl.append(");");
             planBuilder.append(SqlPlanBuilder.CREATE, other, tbl.toString());
@@ -484,13 +469,12 @@ public class TableMeta {
             if (cm == null) {
                 newColumns.add(ocm);
                 if (ocm.comment != null && !ocm.comment.equals("")) {
-                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, ocm.name, ocm.comment));
+                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, ocm.name, ocm.comment));
                 }
             } else {
                 if (cm.unique && !ocm.unique) {
                     IndexMeta cnstMeta = new IndexMeta();
                     cnstMeta.setColumns(Arrays.asList(ocm.getName()));
-                    cnstMeta.setSchema(schema);
                     cnstMeta.setTable(table);
                     cnstMeta.setType(IndexType.UNIQUE_FIELD);
                     cnstMeta.setUsing(ocm.getUsing());
@@ -500,7 +484,6 @@ public class TableMeta {
                 if (cm.useFK && !ocm.useFK) {
                     IndexMeta cnstMeta = new IndexMeta();
                     cnstMeta.setColumns(Arrays.asList(cm.getName()));
-                    cnstMeta.setSchema(schema);
                     cnstMeta.setTable(table);
                     cnstMeta.setType(IndexType.FOREIGN_KEY);
                     cnstMeta.setRefTable(cm.getRefTable());
@@ -514,7 +497,6 @@ public class TableMeta {
                     if (ocm.useFK && ocm.refTable != null) {
                         IndexMeta cnstMeta = new IndexMeta();
                         cnstMeta.setColumns(Arrays.asList(cm.getName()));
-                        cnstMeta.setSchema(schema);
                         cnstMeta.setTable(table);
                         cnstMeta.setType(IndexType.FOREIGN_KEY);
                         cnstMeta.setRefTable(ocm.getRefTable());
@@ -524,7 +506,7 @@ public class TableMeta {
                 }
                 if (!Objects.equals(cm.comment, ocm.comment)) {
                     if (ocm.comment != null && !ocm.comment.equals("")) {
-                        comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';", schema, table, ocm.name, ocm.comment));
+                        comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, ocm.name, ocm.comment));
                     }
                 }
             }
@@ -596,8 +578,7 @@ public class TableMeta {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TableMeta tableMeta = (TableMeta) o;
-        return Objects.equals(schema, tableMeta.schema) &&
-                Objects.equals(table, tableMeta.table) &&
+        return Objects.equals(table, tableMeta.table) &&
                 Objects.equals(primaryKey, tableMeta.primaryKey) &&
                 Objects.equals(viewDef, tableMeta.viewDef) &&
                 Objects.equals(indexes, tableMeta.indexes) &&
@@ -607,7 +588,7 @@ public class TableMeta {
 
     @Override
     public int hashCode() {
-        return Objects.hash(schema, table, primaryKey, viewDef, indexes, columnMetas, nameToColumnMeta);
+        return Objects.hash(table, primaryKey, viewDef, indexes, columnMetas, nameToColumnMeta);
     }
 
     public void validate(Object obj, boolean ignoreNull) {

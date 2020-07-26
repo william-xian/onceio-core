@@ -20,10 +20,13 @@ public class IndexMeta {
     String name;
     IndexType type;
     String using;
-    String schema;
     String table;
     String refTable;
     List<String> columns;
+
+    private static String indexName(String table) {
+        return table.replace('.','_');
+    }
 
     public String getName() {
         return name;
@@ -47,14 +50,6 @@ public class IndexMeta {
 
     public void setUsing(String using) {
         this.using = using;
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 
     public String getTable() {
@@ -85,17 +80,17 @@ public class IndexMeta {
         String cName = null;
         switch (type) {
             case PRIMARY_KEY:
-                cName = String.format("%s%s_%s_%s", INDEX_NAME_PREFIX_PK, schema, table, String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_PK, indexName(table), String.join("_", columns));
                 break;
             case FOREIGN_KEY:
-                cName = String.format("%s%s_%s_%s", INDEX_NAME_PREFIX_FK, schema, table, String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_FK, indexName(table), String.join("_", columns));
                 break;
             case UNIQUE_INDEX:
             case INDEX:
-                cName = String.format("%s%s_%s_%s", INDEX_NAME_PREFIX_NQ, schema, table, String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_NQ, indexName(table), String.join("_", columns));
                 break;
             case UNIQUE_FIELD:
-                cName = String.format("%s%s_%s_%s", INDEX_NAME_PREFIX_UN, schema, table, String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_UN, indexName(table), String.join("_", columns));
                 break;
             default:
                 OAssert.fatal("不存在：%s", OUtils.toJson(this));
@@ -120,7 +115,7 @@ public class IndexMeta {
                 break;
             case UNIQUE_INDEX:
             case INDEX:
-                def = String.format("ON %s.%s%s (%s)", schema, table, usingStruct, String.join(",", columns));
+                def = String.format("ON %s%s (%s)", table, usingStruct, String.join(",", columns));
                 break;
             default:
                 OAssert.fatal("不存在：%s", OUtils.toJson(this));
@@ -138,13 +133,13 @@ public class IndexMeta {
         } else if (type == IndexType.UNIQUE_INDEX) {
             return String.format("CREATE UNIQUE INDEX %s %s;", cName, def);
         } else {
-            return String.format("ALTER TABLE %s.%s ADD CONSTRAINT %s %s;", schema, table, cName, def);
+            return String.format("ALTER TABLE %s ADD CONSTRAINT %s %s;", table, cName, def);
         }
     }
 
     public String dropSql() {
         String cName = (name == null ? genName() : name);
-        return String.format("ALTER TABLE %s.%s DROP CONSTRAINT %s;", schema, table, cName);
+        return String.format("ALTER TABLE %s DROP CONSTRAINT %s;", table, cName);
     }
 
     public static List<String> addConstraintSql(List<IndexMeta> cms) {

@@ -5,10 +5,7 @@ import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.annotation.TblType;
-import top.onceio.core.db.model.BaseCol;
-import top.onceio.core.db.model.BaseTable;
-import top.onceio.core.db.model.DefView;
-import top.onceio.core.db.model.StringCol;
+import top.onceio.core.db.model.*;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.util.OReflectUtil;
 
@@ -26,11 +23,11 @@ public class UserBillView extends BaseEntity implements DefView {
     public BaseTable def() {
         UserInfo.Meta u = UserInfo.meta().alias("u");
         Bill.Meta b = Bill.meta().alias("b");
-        u.select(u.name, u.age, b.amount)
+        u.select(u.name, u.age, Func.sum(b.amount))
                 .from()
                 .join(b).on(u.id, b.userId)
                 .where().name.like("%a").and().age.gt(18)
-                .groupBy(u.name, b.amount)
+                .groupBy(u.name, u.age)
                 .orderBy(u.age);
         return u;
     }
@@ -40,7 +37,7 @@ public class UserBillView extends BaseEntity implements DefView {
         public BaseCol<Meta> age = new BaseCol(this, OReflectUtil.getField(UserBillView.class, "age"));
         public BaseCol<Meta> amount = new BaseCol(this, OReflectUtil.getField(UserBillView.class, "amount"));
         public Meta() {
-            super("public.user_bill_view");
+            super("user_bill_view");
             super.bind(this, UserBillView.class);
         }
     }

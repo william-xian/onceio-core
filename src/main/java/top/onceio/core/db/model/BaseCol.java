@@ -1,6 +1,6 @@
 package top.onceio.core.db.model;
 
-import top.onceio.core.db.annotation.Col;
+import top.onceio.core.db.meta.TableMeta;
 
 import java.lang.reflect.Field;
 
@@ -11,8 +11,7 @@ public class BaseCol<T extends BaseTable> implements Queryable {
 
     public BaseCol(T table, Field field) {
         this.table = table;
-        Col col = field.getAnnotation(Col.class);
-        this.name = col.name().equals("") ? field.getName() : col.name();
+        this.name = TableMeta.getColumnName(field);
         this.field = field;
     }
 
