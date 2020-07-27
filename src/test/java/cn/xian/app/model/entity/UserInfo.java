@@ -55,7 +55,6 @@ public class UserInfo extends BaseEntity {
         return this;
     }
 
-
     public static class Meta extends BaseEntity.Meta<Meta>  {
         public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(UserInfo.class, "name"));
         public StringCol<Meta> passwd = new StringCol(this, OReflectUtil.getField(UserInfo.class, "passwd"));
@@ -63,7 +62,7 @@ public class UserInfo extends BaseEntity {
         public BaseCol<Meta> genre = new BaseCol(this, OReflectUtil.getField(UserInfo.class, "genre"));
         public BaseCol<Meta> age = new BaseCol(this, OReflectUtil.getField(UserInfo.class, "age"));
         public Meta() {
-            super("public.user_info");
+            super("user_info");
             super.bind(this, UserInfo.class);
         }
     }

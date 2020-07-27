@@ -6,6 +6,8 @@ import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.model.BaseCol;
 import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.db.model.*;
+import top.onceio.core.util.OReflectUtil;
 
 @Tbl(indexes = {@Index(columns = {"user_id", "merchant_id"})})
 public class Bill extends BaseEntity {
@@ -40,11 +42,14 @@ public class Bill extends BaseEntity {
         this.amount = amount;
     }
 
+
+
     public static class Meta extends BaseEntity.Meta<Meta>  {
         public BaseCol<Meta> userId = new BaseCol(this, OReflectUtil.getField(Bill.class, "userId"));
+        public BaseCol<Meta> merchantId = new BaseCol(this, OReflectUtil.getField(Bill.class, "merchantId"));
         public BaseCol<Meta> amount = new BaseCol(this, OReflectUtil.getField(Bill.class, "amount"));
         public Meta() {
-            super("public.bill");
+            super("bill");
             super.bind(this, Bill.class);
         }
     }
