@@ -3,7 +3,6 @@ package top.onceio.core.processor;
 
 import com.google.auto.service.AutoService;
 import com.google.common.base.CaseFormat;
-import com.sun.source.tree.Tree;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Type;
@@ -26,17 +25,21 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.tools.Diagnostic;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
 public class TblProcessor extends AbstractProcessor {
+    private static final String META_CLASS_NAME = "Meta";
+    private static final String META_METHOD_NAME = "meta";
+    private static final String CLASS_INIT_METHOD_NAME = "<init>";
+    private static final String META_BIND_METHOD_NAME = "super.bind";
+
     private JavacTrees trees;
     private TreeMaker treeMaker;
     private Names names;
@@ -59,40 +62,53 @@ public class TblProcessor extends AbstractProcessor {
         classReader.loadClass(names.fromString(OReflectUtil.class.getName()));
     }
 
+    class EntityTranslator extends TreeTranslator {
+
+        private boolean hasMetaClass = false;
+        private JCTree.JCAnnotation tbl;
+        private JCTree.JCClassDecl jcClass;
+
+        @Override
+        public void visitClassDef(JCTree.JCClassDecl jcClass) {
+            super.visitClassDef(jcClass);
+            this.jcClass = jcClass;
+
+            if(jcClass.name.toString().equals(META_CLASS_NAME)) {
+                hasMetaClass = true;
+            }
+
+        }
+
+        public void visitAnnotation(JCTree.JCAnnotation var1) {
+            var1.annotationType = this.translate(var1.annotationType);
+            var1.args = this.translate(var1.args);
+            if (treeMaker.Type(var1.type).toString().equals(Tbl.class.getName())) {
+                this.tbl = var1;
+            }
+            this.result = var1;
+        }
+    }
+
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> annotation = roundEnv.getElementsAnnotatedWith(Tbl.class);
 
-        annotation.stream().map(element -> trees.getTree(element)).collect(Collectors.toList())
-                .forEach(tree -> tree.accept(new TreeTranslator() {
+        final Map<String, JCTree.JCClassDecl> nameToEntity = new HashMap<>();
+        java.util.List<JCTree> entities = annotation.stream().map(element -> trees.getTree(element)).collect(Collectors.toList());
 
-                    @Override
-                    public void visitClassDef(JCTree.JCClassDecl jcClass) {
-                        super.visitClassDef(jcClass);
+        for (JCTree tree : entities) {
+            EntityTranslator entityTranslator = new EntityTranslator();
+            tree.accept(entityTranslator);
+            if(entityTranslator.hasMetaClass) continue;
+            JCTree.JCClassDecl jcClass = entityTranslator.jcClass;
+            Map<String, TypeMirror> fieldToType = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m -> m.getKind().isField())
+                    .collect(Collectors.toMap(k -> k.getSimpleName().toString(), v -> v.asType()));
 
-
-                        Map<String, TypeMirror> fieldToType = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m->m.getKind().isField())
-                                .collect(Collectors.toMap(k->k.getSimpleName().toString(), v->v.asType()));
-
-
-                        Map<Name, JCTree.JCMethodDecl> methodMap = jcClass.defs.stream().filter(k -> k.getKind().equals(Tree.Kind.METHOD))
-                                .map(tree -> (JCTree.JCMethodDecl) tree)
-                                .collect(Collectors.toMap(JCTree.JCMethodDecl::getName, Function.identity()));
-
-                        JCTree.JCClassDecl metaClass = generateMetaClass(jcClass, fieldToType);
-                        jcClass.defs = jcClass.defs.append(metaClass);
-
-                        jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
-                        messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
-
-                    }
-
-                    @Override
-                    public void visitImport(JCTree.JCImport jcImport) {
-                        super.visitImport(jcImport);
-                    }
-
-                }));
+            JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
+            jcClass.defs = jcClass.defs.append(metaClass);
+            jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
+            // messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
+        }
         return true;
     }
 
@@ -150,17 +166,17 @@ public class TblProcessor extends AbstractProcessor {
      * @param metaClassName
      * @return public top.onceio.core.db.model.BaseCol<Meta> age = new top.onceio.core.db.model.BaseCol(this, OReflectUtil.getField(User.class, "age"));
      */
-    private JCTree.JCVariableDecl generateColField(JCTree.JCFieldAccess entityClass, Name metaClassName, String fieldName,TypeMirror fieldType) {
+    private JCTree.JCVariableDecl generateColField(JCTree.JCFieldAccess entityClass, Name metaClassName, String fieldName, TypeMirror fieldType) {
 
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
         Name variableName = names.fromString(fieldName);
         JCTree.JCTypeApply typeApply;
-        if(fieldType.getKind().equals(TypeKind.BOOLEAN) || fieldType.getKind().equals(TypeKind.BYTE)
+        if (fieldType.getKind().equals(TypeKind.BOOLEAN) || fieldType.getKind().equals(TypeKind.BYTE)
                 || fieldType.getKind().equals(TypeKind.SHORT) || fieldType.getKind().equals(TypeKind.INT) || fieldType.getKind().equals(TypeKind.LONG)
                 || fieldType.getKind().equals(TypeKind.FLOAT) || fieldType.getKind().equals(TypeKind.DOUBLE)) {
             typeApply = treeMaker.TypeApply(memberAccess(BaseCol.class.getName()), List.of(treeMaker.Ident(metaClassName)));
-        }else {
+        } else {
             typeApply = treeMaker.TypeApply(memberAccess(StringCol.class.getName()), List.of(treeMaker.Ident(metaClassName)));
         }
 
@@ -185,44 +201,55 @@ public class TblProcessor extends AbstractProcessor {
      * public top.onceio.core.db.model.BaseCol<Meta> age = new top.onceio.core.db.model.BaseCol(this, OReflectUtil.getField(User.class, "age"));
      * public top.onceio.core.db.model.StringCol<Meta> name = new top.onceio.core.db.model.StringCol(this, OReflectUtil.getField(User.class, "name"));
      * public Meta() {
-     * super("user");
-     * super.bind(this, User.class);
+     * super.bind("user",this, User.class);
      * }
      * }
      *
      * @return
      */
-    private JCTree.JCClassDecl generateMetaClass(JCTree.JCClassDecl jcEntityClass, Map<String, TypeMirror> fieldToType) {
+    private JCTree.JCClassDecl generateMetaClass(JCTree.JCAnnotation tblAnn, JCTree.JCClassDecl jcEntityClass, Map<String, TypeMirror> fieldToType) {
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.STATIC | Flags.PUBLIC);
         JCTree.JCFieldAccess entityClass = treeMaker.Select(treeMaker.Ident(jcEntityClass.name), names.fromString("class"));
 
-        Name metaClassName = getNameFromString("Meta");
+        Name metaClassName = getNameFromString(META_CLASS_NAME);
         List<JCTree.JCTypeParameter> typeParameters = List.nil();
         JCTree.JCExpression extending = treeMaker.TypeApply(memberAccess(BaseTable.class.getName()), List.of(treeMaker.Ident(metaClassName)));
         List<JCTree.JCExpression> implementing = List.nil();
         final ArrayList<JCTree> defs = new ArrayList<>();
 
 
-        JCTree.JCMethodDecl m = generateMetaConstructionMethod(jcEntityClass,entityClass, metaClassName);
+        JCTree.JCMethodDecl m = generateMetaConstructionMethod(tblAnn, jcEntityClass, entityClass, metaClassName);
         defs.add(m);
         fieldToType.forEach((fieldName, fieldType) -> {
-            defs.add(generateColField(entityClass, metaClassName, fieldName,fieldType));
+            defs.add(generateColField(entityClass, metaClassName, fieldName, fieldType));
         });
         JCTree.JCClassDecl metaClassDecl = treeMaker.ClassDef(modifiers, metaClassName, typeParameters, extending, implementing, List.from(defs));
-
 
 
         return metaClassDecl;
     }
 
-    private JCTree.JCMethodDecl generateMetaConstructionMethod(JCTree.JCClassDecl jcEntityClass,JCTree.JCFieldAccess entityClass, Name methodName) {
+    private JCTree.JCMethodDecl generateMetaConstructionMethod(JCTree.JCAnnotation tblAnn, JCTree.JCClassDecl jcEntityClass, JCTree.JCFieldAccess entityClass, Name methodName) {
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
         ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
 
-        JCTree.JCExpression fn = memberAccess("super.bind");
+        JCTree.JCExpression fn = memberAccess(META_BIND_METHOD_NAME);
 
-        JCTree.JCMethodInvocation m = treeMaker.Apply(List.nil(), fn, List.of(treeMaker.Literal(jcEntityClass.name.toString()),memberAccess("this"),entityClass));
+        String tableName = jcEntityClass.name.toString().replaceAll("([A-Z])", "_$1").toLowerCase();
+        if (tableName.startsWith("_")) {
+            tableName = tableName.substring(1);
+        }
+        for (JCTree.JCExpression arg : tblAnn.getArguments()) {
+            String[] fv = arg.toString().split("=");
+            if (fv[0].trim().equals("name")) {
+                String v = fv[1].trim();
+                tableName = v.substring(1, v.length() - 1);
+            }
+        }
+
+
+        JCTree.JCMethodInvocation m = treeMaker.Apply(List.nil(), fn, List.of(treeMaker.Literal(tableName), memberAccess("this"), entityClass));
 
         jcStatements.append(treeMaker.Exec(m));
         JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
@@ -232,14 +259,14 @@ public class TblProcessor extends AbstractProcessor {
         List<JCTree.JCExpression> throwsClauses = List.nil();
 
         return treeMaker
-                .MethodDef(modifiers, names.fromString("<init>"), returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
+                .MethodDef(modifiers, names.fromString(CLASS_INIT_METHOD_NAME), null, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
 
     private JCTree.JCMethodDecl generateMetaMethod(JCTree.JCClassDecl metaClass) {
 
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.STATIC | Flags.PUBLIC);
 
-        Name methodName = getNameFromString("meta");
+        Name methodName = getNameFromString(META_METHOD_NAME);
 
         JCTree.JCNewClass metaVal = treeMaker.NewClass(
                 null,
@@ -270,6 +297,7 @@ public class TblProcessor extends AbstractProcessor {
         return treeMaker
                 .MethodDef(modifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
+
 
     private JCTree.JCExpression memberAccess(String components) {
         String[] componentArray = components.split("\\.");
