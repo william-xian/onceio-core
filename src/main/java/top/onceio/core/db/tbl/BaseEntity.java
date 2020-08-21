@@ -1,9 +1,6 @@
 package top.onceio.core.db.tbl;
 
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.model.BaseCol;
-import top.onceio.core.db.model.BaseTable;
-import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 /**
@@ -29,16 +26,5 @@ public abstract class BaseEntity {
         return OUtils.toJson(this);
     }
 
-    public static class Meta<M> extends BaseTable<M> {
-        public BaseCol<?> id;
 
-        public Meta(String table) {
-            super(table);
-            id = new BaseCol(this, OReflectUtil.getField(BaseEntity.class, "id"));
-        }
-
-        public static Meta meta(String table) {
-            return new Meta(table);
-        }
-    }
 }

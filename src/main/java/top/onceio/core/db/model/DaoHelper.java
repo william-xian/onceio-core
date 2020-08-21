@@ -319,7 +319,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.batchUpdate(sql, batchArgs);
     }
 
-    private static <E extends BaseEntity, M extends BaseEntity.Meta> E createBy(Class<E> tbl, TableMeta tm, ResultSet rs) throws SQLException {
+    private static <E extends BaseEntity, M extends BaseTable> E createBy(Class<E> tbl, TableMeta tm, ResultSet rs) throws SQLException {
         E row = null;
         try {
             row = tbl.newInstance();
@@ -379,7 +379,7 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.commit();
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> E get(Class<E> tbl, Long id) {
+    public <E extends BaseEntity, M extends BaseTable> E get(Class<E> tbl, Long id) {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
@@ -397,12 +397,12 @@ public class DaoHelper implements DDLDao, TransDao {
         return rows.get(0);
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> E insert(E entity) {
+    public <E extends BaseEntity, M extends BaseTable> E insert(E entity) {
         batchInsert(Arrays.asList(entity));
         return entity;
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> int batchInsert(List<E> entities) {
+    public <E extends BaseEntity, M extends BaseTable> int batchInsert(List<E> entities) {
         if (entities == null || entities.isEmpty()) {
             return 0;
         }
@@ -449,7 +449,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return val;
     }
 
-    private <E extends BaseEntity, M extends BaseEntity.Meta> int update(E entity, boolean ignoreNull) {
+    private <E extends BaseEntity, M extends BaseTable> int update(E entity, boolean ignoreNull) {
         OAssert.warnning(entity != null, "不可以插入null");
         Class<?> tbl = entity.getClass();
         TableMeta tm = classToTableMeta.get(tbl);
@@ -488,15 +488,15 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, args.toArray());
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> int update(E entity) {
+    public <E extends BaseEntity, M extends BaseTable> int update(E entity) {
         return update(entity, false);
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> int updateIgnoreNull(E entity) {
+    public <E extends BaseEntity, M extends BaseTable> int updateIgnoreNull(E entity) {
         return update(entity, true);
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> int updateBy(Class<E> tbl, BaseTable<M> tpl) {
+    public <E extends BaseEntity, M extends BaseTable> int updateBy(Class<E> tbl, BaseTable<M> tpl) {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
@@ -517,7 +517,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, ids.toArray());
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> int delete(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseEntity, M extends BaseTable> int delete(Class<E> tbl, BaseTable<M> cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("DELETE FROM %s;", tm.getTable());
@@ -529,11 +529,11 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> long count(Class<E> tbl) {
+    public <E extends BaseEntity, M extends BaseTable> long count(Class<E> tbl) {
         return count(tbl, null);
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> long count(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseEntity, M extends BaseTable> long count(Class<E> tbl, BaseTable<M> cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
@@ -548,7 +548,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> List<E> find(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseEntity, M extends BaseTable> List<E> find(Class<E> tbl, BaseTable<M> cnd) {
         List<E> data = new ArrayList<>();
         find(tbl, cnd, e -> {
             data.add(e);
@@ -556,7 +556,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return data;
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> Page<E> find(Class<E> tbl, BaseTable<M> cnd, int page, int pageSize) {
+    public <E extends BaseEntity, M extends BaseTable> Page<E> find(Class<E> tbl, BaseTable<M> cnd, int page, int pageSize) {
         if (cnd.select.length() == 0) {
             cnd.select();
         }
@@ -584,7 +584,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return result;
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> E fetch(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseEntity, M extends BaseTable> E fetch(Class<E> tbl, BaseTable<M> cnd) {
         Page<E> page = find(tbl, cnd, 1, 1);
         if (page.getData().size() == 0) {
             return null;
@@ -592,7 +592,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return page.getData().get(0);
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> void find(Class<E> tbl, BaseTable<M> cnd, Consumer<E> consumer) {
+    public <E extends BaseEntity, M extends BaseTable> void find(Class<E> tbl, BaseTable<M> cnd, Consumer<E> consumer) {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return;
@@ -620,7 +620,7 @@ public class DaoHelper implements DDLDao, TransDao {
         });
     }
 
-    public <E extends BaseEntity, M extends BaseEntity.Meta> List<E> findByIds(Class<E> tbl, List<Long> ids) {
+    public <E extends BaseEntity, M extends BaseTable> List<E> findByIds(Class<E> tbl, List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<E>();
         }

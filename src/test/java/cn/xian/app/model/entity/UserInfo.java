@@ -55,19 +55,4 @@ public class UserInfo extends BaseEntity {
         return this;
     }
 
-    public static class Meta extends BaseEntity.Meta<Meta>  {
-        public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(UserInfo.class, "name"));
-        public StringCol<Meta> passwd = new StringCol(this, OReflectUtil.getField(UserInfo.class, "passwd"));
-        public StringCol<Meta> avatar = new StringCol(this, OReflectUtil.getField(UserInfo.class, "avatar"));
-        public BaseCol<Meta> genre = new BaseCol(this, OReflectUtil.getField(UserInfo.class, "genre"));
-        public BaseCol<Meta> age = new BaseCol(this, OReflectUtil.getField(UserInfo.class, "age"));
-        public Meta() {
-            super("user_info");
-            super.bind(this, UserInfo.class);
-        }
-    }
-    public static Meta meta() {
-        return new Meta();
-    }
-
 }

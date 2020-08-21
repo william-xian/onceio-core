@@ -42,19 +42,4 @@ public class Bill extends BaseEntity {
         this.amount = amount;
     }
 
-
-
-    public static class Meta extends BaseEntity.Meta<Meta>  {
-        public BaseCol<Meta> userId = new BaseCol(this, OReflectUtil.getField(Bill.class, "userId"));
-        public BaseCol<Meta> merchantId = new BaseCol(this, OReflectUtil.getField(Bill.class, "merchantId"));
-        public BaseCol<Meta> amount = new BaseCol(this, OReflectUtil.getField(Bill.class, "amount"));
-        public Meta() {
-            super("bill");
-            super.bind(this, Bill.class);
-        }
-    }
-    public static Meta meta() {
-        return new Meta();
-    }
-
 }

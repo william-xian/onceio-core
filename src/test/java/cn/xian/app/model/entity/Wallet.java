@@ -41,23 +41,5 @@ public class Wallet extends BaseEntity {
     public void setIncome(int income) {
         this.income = income;
     }
-    
-    
-    
-    
-
-    public static class Meta extends BaseEntity.Meta<Meta>  {
-        public BaseCol<Meta> id = new BaseCol(this, OReflectUtil.getField(Wallet.class, "id"));
-        public BaseCol<Meta> balance = new BaseCol(this, OReflectUtil.getField(Wallet.class, "balance"));
-        public BaseCol<Meta> expenditure = new BaseCol(this, OReflectUtil.getField(Wallet.class, "expenditure"));
-        public BaseCol<Meta> income = new BaseCol(this, OReflectUtil.getField(Wallet.class, "income"));
-        public Meta() {
-            super("wallet");
-            super.bind(this, Wallet.class);
-        }
-    }
-    public static Meta meta() {
-        return new Meta();
-    }
 
 }

@@ -22,15 +22,11 @@ public class BaseTable<M> {
 
     StringBuilder update = new StringBuilder();
     List<BaseTable<?>> refs = new ArrayList<>();
-
     public BaseCol<?> id;
 
-    public BaseTable(String name) {
-        this.name = name;
+    protected <E> void bind(String name,M meta, Class<E> e) {
         this.alias = "t";
-    }
-
-    protected <E> void bind(M meta, Class<E> e) {
+        this.name = name;
         this.meta = meta;
         id = new BaseCol(this, OReflectUtil.getField(e, "id"));
     }
@@ -211,7 +207,7 @@ public class BaseTable<M> {
     }
 
     public BaseTable<M> copy() {
-        BaseTable<M> other = new BaseTable<>(this.name);
+        BaseTable<M> other = new BaseTable<>();
         other.name = this.name;
         other.meta = this.meta;
         other.select.append(this.select);

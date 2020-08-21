@@ -3,6 +3,8 @@ package top.onceio.core.db.tbl;
 import top.onceio.core.annotation.I18nCfg;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
+import top.onceio.core.db.model.BaseCol;
+import top.onceio.core.db.model.BaseTable;
 import top.onceio.core.db.model.StringCol;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
@@ -52,16 +54,18 @@ public class OI18n extends BaseEntity {
         I18nCfg group = clazz.getAnnotation(I18nCfg.class);
         return "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldName;
     }
-    
-    public static class Meta extends BaseEntity.Meta<Meta>  {
+
+    public static class Meta extends BaseTable<Meta> {
+        public BaseCol<Meta> id = new BaseCol(this, OReflectUtil.getField(OI18n.class, "id"));
         public StringCol<Meta> oid = new StringCol(this, OReflectUtil.getField(OI18n.class, "oid"));
         public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(OI18n.class, "name"));
         public StringCol<Meta> val = new StringCol(this, OReflectUtil.getField(OI18n.class, "val"));
+
         public Meta() {
-            super("public.o_i18n");
-            super.bind(this, OI18n.class);
+            super.bind("public.o_i18n", this, OI18n.class);
         }
     }
+
     public static Meta meta() {
         return new Meta();
     }

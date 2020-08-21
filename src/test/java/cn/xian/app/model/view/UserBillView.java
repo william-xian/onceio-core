@@ -32,17 +32,4 @@ public class UserBillView extends BaseEntity implements DefView {
         return u;
     }
 
-    public static class Meta extends BaseEntity.Meta<Meta>  {
-        public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(UserBillView.class, "name"));
-        public BaseCol<Meta> age = new BaseCol(this, OReflectUtil.getField(UserBillView.class, "age"));
-        public BaseCol<Meta> amount = new BaseCol(this, OReflectUtil.getField(UserBillView.class, "amount"));
-        public Meta() {
-            super("user_bill_view");
-            super.bind(this, UserBillView.class);
-        }
-    }
-    public static Meta meta() {
-        return new Meta();
-    }
-
 }

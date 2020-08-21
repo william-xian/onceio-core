@@ -3,205 +3,277 @@ package top.onceio.core.processor;
 
 import com.google.auto.service.AutoService;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Throwables;
-import com.sun.codemodel.internal.JExpression;
 import com.sun.source.tree.Tree;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.jvm.ClassReader;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
-import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.*;
 import top.onceio.core.db.annotation.Tbl;
+import top.onceio.core.db.model.BaseCol;
+import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.StringCol;
+import top.onceio.core.util.OReflectUtil;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
-//@SupportedSourceVersion(SourceVersion.RELEASE_8)
-//@AutoService(Processor.class)
+@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@AutoService(Processor.class)
 public class TblProcessor extends AbstractProcessor {
     private JavacTrees trees;
     private TreeMaker treeMaker;
     private Names names;
     private Messager messager;
-    private Filer filer;
+    private ClassReader classReader;
+    private Elements elementsUtils;
 
     public synchronized void init(ProcessingEnvironment processingEnvironment) {
         super.init(processingEnvironment);
+        elementsUtils = processingEnvironment.getElementUtils();
         this.trees = JavacTrees.instance(processingEnv);
         Context context = ((JavacProcessingEnvironment) processingEnv).getContext();
         this.treeMaker = TreeMaker.instance(context);
         messager = processingEnvironment.getMessager();
         this.names = Names.instance(context);
-        filer = processingEnvironment.getFiler();
+        classReader = ClassReader.instance(context);
+        classReader.loadClass(names.fromString(BaseTable.class.getName()));
+        classReader.loadClass(names.fromString(BaseCol.class.getName()));
+        classReader.loadClass(names.fromString(StringCol.class.getName()));
+        classReader.loadClass(names.fromString(OReflectUtil.class.getName()));
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> annotation = roundEnv.getElementsAnnotatedWith(Tbl.class);
-        annotation.stream().map(element -> trees.getTree(element)).forEach(tree -> tree.accept(new TreeTranslator() {
 
-            @Override
-            public void visitClassDef(JCClassDecl jcClass) {
-                //过滤属性
-                Map<Name, JCVariableDecl> treeMap =
-                        jcClass.defs.stream().filter(k -> k.getKind().equals(Tree.Kind.VARIABLE))
-                                .map(tree -> (JCVariableDecl) tree)
-                                .collect(Collectors.toMap(JCVariableDecl::getName, Function.identity()));
-                Map<Name, JCMethodDecl> methodMap = jcClass.defs.stream().filter(k->k.getKind().equals(Tree.Kind.METHOD))
-                        .map(tree -> (JCMethodDecl) tree)
-                        .collect(Collectors.toMap(JCMethodDecl::getName, Function.identity()));
+        annotation.stream().map(element -> trees.getTree(element)).collect(Collectors.toList())
+                .forEach(tree -> tree.accept(new TreeTranslator() {
 
-                //处理变量
-                treeMap.forEach((k, jcVariable) -> {
-                    messager.printMessage(Diagnostic.Kind.NOTE, String.format("fields:%s", k));
-                    try {
-                        Name getMethodName = handleMethodSignature(jcVariable.getName(), "get");
-                        //增加get方法
-                        if(!methodMap.containsKey(getMethodName)) {
-                            jcClass.defs = jcClass.defs.prepend(generateGetterMethod(jcVariable));
-                        }
-                        Name setMethodName = handleMethodSignature(jcVariable.getName(), "set");
-                        //增加set方法
-                        if(!methodMap.containsKey(setMethodName)) {
-                            jcClass.defs = jcClass.defs.prepend(generateSetterMethod(jcVariable));
-                        }
-                    } catch (Exception e) {
-                        messager.printMessage(Diagnostic.Kind.ERROR, Throwables.getStackTraceAsString(e));
+                    @Override
+                    public void visitClassDef(JCTree.JCClassDecl jcClass) {
+                        super.visitClassDef(jcClass);
+
+
+                        Map<String, TypeMirror> fieldToType = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m->m.getKind().isField())
+                                .collect(Collectors.toMap(k->k.getSimpleName().toString(), v->v.asType()));
+
+
+                        Map<Name, JCTree.JCMethodDecl> methodMap = jcClass.defs.stream().filter(k -> k.getKind().equals(Tree.Kind.METHOD))
+                                .map(tree -> (JCTree.JCMethodDecl) tree)
+                                .collect(Collectors.toMap(JCTree.JCMethodDecl::getName, Function.identity()));
+
+                        JCTree.JCClassDecl metaClass = generateMetaClass(jcClass, fieldToType);
+                        jcClass.defs = jcClass.defs.append(metaClass);
+
+                        jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
+                        messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
+
                     }
-                });
-                //增加toString方法
-                //jcClass.defs = jcClass.defs.prepend(generateMetaBuilderMethod());
-                super.visitClassDef(jcClass);
-            }
 
-            @Override
-            public void visitMethodDef(JCMethodDecl jcMethod) {
-                //打印所有方法
-                messager.printMessage(Diagnostic.Kind.NOTE, jcMethod.toString());
-                //修改方法
-                if ("getTest".equals(jcMethod.getName().toString())) {
-                    result = treeMaker
-                            .MethodDef(jcMethod.getModifiers(), getNameFromString("testMethod"), jcMethod.restype,
-                                    jcMethod.getTypeParameters(), jcMethod.getParameters(), jcMethod.getThrows(),
-                                    jcMethod.getBody(), jcMethod.defaultValue);
-                }
-                super.visitMethodDef(jcMethod);
-            }
-        }));
+                    @Override
+                    public void visitImport(JCTree.JCImport jcImport) {
+                        super.visitImport(jcImport);
+                    }
+
+                }));
         return true;
     }
 
-    private JCMethodDecl generateGetterMethod(JCVariableDecl jcVariable) {
+    private JCTree.JCMethodDecl generateGetterMethod(JCTree.JCVariableDecl jcVariable) {
 
-        //修改方法级别
-        JCModifiers jcModifiers = treeMaker.Modifiers(Flags.PUBLIC);
+        JCTree.JCModifiers jcModifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
-        //添加方法名称
         Name methodName = handleMethodSignature(jcVariable.getName(), "get");
 
-        //添加方法内容
-        ListBuffer<JCStatement> jcStatements = new ListBuffer<>();
+        ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
         jcStatements.append(
                 treeMaker.Return(treeMaker.Select(treeMaker.Ident(getNameFromString("this")), jcVariable.getName())));
-        JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
+        JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
 
-        //添加返回值类型
-        JCExpression returnType = jcVariable.vartype;
+        JCTree.JCExpression returnType = jcVariable.vartype;
 
-        //参数类型
-        List<JCTypeParameter> typeParameters = List.nil();
+        List<JCTree.JCTypeParameter> typeParameters = List.nil();
 
-        //参数变量
-        List<JCVariableDecl> parameters = List.nil();
+        List<JCTree.JCVariableDecl> parameters = List.nil();
 
-        //声明异常
-        List<JCExpression> throwsClauses = List.nil();
-        //构建方法
+        List<JCTree.JCExpression> throwsClauses = List.nil();
         return treeMaker
                 .MethodDef(jcModifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
 
-    private JCMethodDecl generateSetterMethod(JCVariableDecl jcVariable) throws ReflectiveOperationException {
+    private JCTree.JCMethodDecl generateSetterMethod(JCTree.JCVariableDecl jcVariable) throws ReflectiveOperationException {
 
-        //修改方法级别
-        JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
+        JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
-        //添加方法名称
         Name variableName = jcVariable.getName();
         Name methodName = handleMethodSignature(variableName, "set");
 
-        //设置方法体
-        ListBuffer<JCStatement> jcStatements = new ListBuffer<>();
+        ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
         jcStatements.append(treeMaker.Exec(treeMaker
                 .Assign(treeMaker.Select(treeMaker.Ident(getNameFromString("this")), variableName),
                         treeMaker.Ident(variableName))));
-        //定义方法体
-        JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
+        JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
 
-        //添加返回值类型
-        JCExpression returnType =
+        JCTree.JCExpression returnType =
                 treeMaker.Type((Type) (Class.forName("com.sun.tools.javac.code.Type$JCVoidType").newInstance()));
 
-        List<JCTypeParameter> typeParameters = List.nil();
+        List<JCTree.JCTypeParameter> typeParameters = List.nil();
 
-        //定义参数
-        JCVariableDecl variableDecl = treeMaker
+        JCTree.JCVariableDecl variableDecl = treeMaker
                 .VarDef(treeMaker.Modifiers(Flags.PARAMETER, List.nil()), jcVariable.name, jcVariable.vartype, null);
-        List<JCVariableDecl> parameters = List.of(variableDecl);
+        List<JCTree.JCVariableDecl> parameters = List.of(variableDecl);
 
-        //声明异常
-        List<JCExpression> throwsClauses = List.nil();
+        List<JCTree.JCExpression> throwsClauses = List.nil();
         return treeMaker
                 .MethodDef(modifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
 
     }
-    /*
-    private JCMethodDecl generateMetaBuilderMethod() {
 
-        //修改方法级别
-        JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
+    /**
+     * @param metaClassName
+     * @return public top.onceio.core.db.model.BaseCol<Meta> age = new top.onceio.core.db.model.BaseCol(this, OReflectUtil.getField(User.class, "age"));
+     */
+    private JCTree.JCVariableDecl generateColField(JCTree.JCFieldAccess entityClass, Name metaClassName, String fieldName,TypeMirror fieldType) {
 
-        //添加方法名称
+        JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
+
+        Name variableName = names.fromString(fieldName);
+        JCTree.JCTypeApply typeApply;
+        if(fieldType.getKind().equals(TypeKind.BOOLEAN) || fieldType.getKind().equals(TypeKind.BYTE)
+                || fieldType.getKind().equals(TypeKind.SHORT) || fieldType.getKind().equals(TypeKind.INT) || fieldType.getKind().equals(TypeKind.LONG)
+                || fieldType.getKind().equals(TypeKind.FLOAT) || fieldType.getKind().equals(TypeKind.DOUBLE)) {
+            typeApply = treeMaker.TypeApply(memberAccess(BaseCol.class.getName()), List.of(treeMaker.Ident(metaClassName)));
+        }else {
+            typeApply = treeMaker.TypeApply(memberAccess(StringCol.class.getName()), List.of(treeMaker.Ident(metaClassName)));
+        }
+
+        JCTree.JCExpression fn = memberAccess(OReflectUtil.class.getName() + ".getField");
+        JCTree.JCMethodInvocation m = treeMaker.Apply(List.nil(), fn, List.of(entityClass, treeMaker.Literal(variableName.toString())));
+
+
+        JCTree.JCNewClass metaVal = treeMaker.NewClass(
+                null,
+                List.nil(),
+                typeApply,
+                List.of(treeMaker.Ident(getNameFromString("this")), m),
+                null
+        );
+
+        return treeMaker.VarDef(modifiers, variableName, typeApply, metaVal);
+
+    }
+
+    /**
+     * public static class Meta extends top.onceio.core.db.model.BaseTable<Meta>  {
+     * public top.onceio.core.db.model.BaseCol<Meta> age = new top.onceio.core.db.model.BaseCol(this, OReflectUtil.getField(User.class, "age"));
+     * public top.onceio.core.db.model.StringCol<Meta> name = new top.onceio.core.db.model.StringCol(this, OReflectUtil.getField(User.class, "name"));
+     * public Meta() {
+     * super("user");
+     * super.bind(this, User.class);
+     * }
+     * }
+     *
+     * @return
+     */
+    private JCTree.JCClassDecl generateMetaClass(JCTree.JCClassDecl jcEntityClass, Map<String, TypeMirror> fieldToType) {
+        JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.STATIC | Flags.PUBLIC);
+        JCTree.JCFieldAccess entityClass = treeMaker.Select(treeMaker.Ident(jcEntityClass.name), names.fromString("class"));
+
+        Name metaClassName = getNameFromString("Meta");
+        List<JCTree.JCTypeParameter> typeParameters = List.nil();
+        JCTree.JCExpression extending = treeMaker.TypeApply(memberAccess(BaseTable.class.getName()), List.of(treeMaker.Ident(metaClassName)));
+        List<JCTree.JCExpression> implementing = List.nil();
+        final ArrayList<JCTree> defs = new ArrayList<>();
+
+
+        JCTree.JCMethodDecl m = generateMetaConstructionMethod(jcEntityClass,entityClass, metaClassName);
+        defs.add(m);
+        fieldToType.forEach((fieldName, fieldType) -> {
+            defs.add(generateColField(entityClass, metaClassName, fieldName,fieldType));
+        });
+        JCTree.JCClassDecl metaClassDecl = treeMaker.ClassDef(modifiers, metaClassName, typeParameters, extending, implementing, List.from(defs));
+
+
+
+        return metaClassDecl;
+    }
+
+    private JCTree.JCMethodDecl generateMetaConstructionMethod(JCTree.JCClassDecl jcEntityClass,JCTree.JCFieldAccess entityClass, Name methodName) {
+        JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
+
+        ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
+
+        JCTree.JCExpression fn = memberAccess("super.bind");
+
+        JCTree.JCMethodInvocation m = treeMaker.Apply(List.nil(), fn, List.of(treeMaker.Literal(jcEntityClass.name.toString()),memberAccess("this"),entityClass));
+
+        jcStatements.append(treeMaker.Exec(m));
+        JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
+        JCTree.JCExpression returnType = null;
+        List<JCTree.JCTypeParameter> typeParameters = List.nil();
+        List<JCTree.JCVariableDecl> parameters = List.nil();
+        List<JCTree.JCExpression> throwsClauses = List.nil();
+
+        return treeMaker
+                .MethodDef(modifiers, names.fromString("<init>"), returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
+    }
+
+    private JCTree.JCMethodDecl generateMetaMethod(JCTree.JCClassDecl metaClass) {
+
+        JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.STATIC | Flags.PUBLIC);
+
         Name methodName = getNameFromString("meta");
 
-        //设置调用方法函数类型和调用函数
-        JCExpressionStatement statement = treeMaker.Exec(treeMaker.Ident(getNameFromString("this.toString()")));
-        ListBuffer<JCStatement> jcStatements = new ListBuffer<>();
-        jcStatements.append(treeMaker.Return(statement.getExpression()));
-        //设置方法体
-        JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
+        JCTree.JCNewClass metaVal = treeMaker.NewClass(
+                null,
+                com.sun.tools.javac.util.List.nil(),
+                treeMaker.Ident(metaClass.name),
+                com.sun.tools.javac.util.List.nil(),
+                null
+        );
+        JCTree.JCVariableDecl metaValDecl = treeMaker.VarDef(
+                treeMaker.Modifiers(Flags.PARAMETER),
+                names.fromString("metaVal"),
+                treeMaker.Ident(metaClass.name),
+                metaVal
+        );
 
-        //添加返回值类型
-        JCExpression returnType = memberAccess("java.lang.String");
+        ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
+        jcStatements.append(treeMaker.Return(metaValDecl.getInitializer()));
+        JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
 
-        //参数类型
-        List<JCTypeParameter> typeParameters = List.nil();
+        JCTree.JCExpression returnType = treeMaker.Ident(metaClass.name);
 
-        //参数变量
-        List<JCVariableDecl> parameters = List.nil();
+        List<JCTree.JCTypeParameter> typeParameters = List.nil();
 
-        //声明异常
-        List<JCExpression> throwsClauses = List.nil();
+        List<JCTree.JCVariableDecl> parameters = List.nil();
+
+        List<JCTree.JCExpression> throwsClauses = List.nil();
 
         return treeMaker
                 .MethodDef(modifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
-*/
 
-    private JCExpression memberAccess(String components) {
+    private JCTree.JCExpression memberAccess(String components) {
         String[] componentArray = components.split("\\.");
-        JCExpression expr = treeMaker.Ident(getNameFromString(componentArray[0]));
+        JCTree.JCExpression expr = treeMaker.Ident(getNameFromString(componentArray[0]));
         for (int i = 1; i < componentArray.length; i++) {
             expr = treeMaker.Select(expr, getNameFromString(componentArray[i]));
         }
@@ -215,5 +287,4 @@ public class TblProcessor extends AbstractProcessor {
     private Name getNameFromString(String s) {
         return names.fromString(s);
     }
-
 }

@@ -13,7 +13,7 @@ import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
-public abstract class DaoHolder<T extends BaseEntity, M extends BaseEntity.Meta> implements Dao<T, M> {
+public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> implements Dao<T, M> {
     @Using
     protected DaoHelper daoHelper;
 
