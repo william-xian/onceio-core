@@ -3,7 +3,7 @@ package top.onceio.core.db.jdbc;
 /**
  * 列出了支持的数据库类型
  *
- * @author
+ * @author Xian
  */
 public enum DBType {
 

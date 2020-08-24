@@ -41,7 +41,7 @@ public final class OUtils {
      * @param e 元素
      * @param s 分割符号
      * @param cnt 个数
-     * @return
+     * @return 打桩字符串
      */
     public static String genStub(String e, String s, int cnt) {
         StringBuffer sb = new StringBuffer((e.length() + s.length()) * cnt);

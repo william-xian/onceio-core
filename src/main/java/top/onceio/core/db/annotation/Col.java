@@ -51,7 +51,7 @@ public @interface Col {
     /**
      * 该字段的值引用自某类字段
      *
-     * @return
+     * @return 值引用类
      */
     Class<?> valRef() default void.class;
 

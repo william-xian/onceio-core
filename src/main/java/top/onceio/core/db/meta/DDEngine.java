@@ -42,7 +42,7 @@ public class DDEngine {
      *
      * @param resultSet A {id aid,name AName,bid}; A.bid-B {name BName,CId};
      *                  A.bid-B.cid-C {name CName}
-     * @return
+     * @return 返回自己
      */
     public DDEngine append(String resultSet) {
         String[] sets = resultSet.split(";");
@@ -204,11 +204,10 @@ public class DDEngine {
     }
 
     /**
-     * 根据主表和相关参数 推导出依赖的相关表
      *
      * @param mainPath
      * @param params
-     * @return
+     * @return 根据主表和相关参数 推导出依赖的相关表
      */
     public String genericJoinSqlByParams(String mainPath, Set<String> select, Set<String> params) {
         DDMeta mainMeta = pathToMeta.get(mainPath);

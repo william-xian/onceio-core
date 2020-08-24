@@ -429,7 +429,7 @@ public class TableMeta {
      * 升级数据库，返回需要执行的sql
      *
      * @param other
-     * @return
+     * @return SQL执行计划
      */
     public SqlPlanBuilder upgradeTo(TableMeta other) {
         if (!table.equals(other.table)) {
@@ -453,7 +453,7 @@ public class TableMeta {
      * 升级数据库，返回需要执行的sql
      *
      * @param other
-     * @return
+     * @return SQL执行计划
      */
     public SqlPlanBuilder upgradeTableTo(TableMeta other) {
         List<String> comments = new ArrayList<>();

@@ -12,7 +12,7 @@ public interface Dao<T, M> {
      * <b>即使数据已经被逻辑删除依然能够获取到。</b>
      *
      * @param id
-     * @return
+     * @return 单个记录
      */
     T get(Long id);
 
@@ -30,7 +30,7 @@ public interface Dao<T, M> {
      * <b>如果entity的id为null，会自动回填id</b>
      *
      * @param entities
-     * @return
+     * @return 成功插入的个数
      */
     int batchInsert(List<T> entities);
 
@@ -91,7 +91,7 @@ public interface Dao<T, M> {
      * 返回没有被逻辑删除的，给定ids范围内的数据
      *
      * @param ids
-     * @return
+     * @return 列表
      */
     List<T> findByIds(List<Long> ids);
 
@@ -118,7 +118,7 @@ public interface Dao<T, M> {
     /**
      * 所有数据
      *
-     * @return
+     * @return 记录总数
      */
     long count();
 

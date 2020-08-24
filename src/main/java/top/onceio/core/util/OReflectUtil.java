@@ -169,7 +169,8 @@ public class OReflectUtil {
     /**
      * 回溯到类Object，依次迭代衍生过程的类
      *
-     * @param c
+     * @param clazz
+     * @param superclass
      * @param consumer
      */
     public static void tracebackSuperclass(Class<?> clazz, Class<?> superclass, Consumer<Class<?>> consumer) {
