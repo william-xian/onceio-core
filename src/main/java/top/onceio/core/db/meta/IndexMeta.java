@@ -24,7 +24,7 @@ public class IndexMeta {
     String refTable;
     List<String> columns;
 
-    private static String indexName(String table) {
+    public static String indexName(String table) {
         return table.replace('.','_');
     }
 
@@ -128,7 +128,9 @@ public class IndexMeta {
     public String addSql() {
         String cName = (name == null ? genName() : name);
         String def = genDef();
-        if (type == IndexType.INDEX) {
+        if (type == IndexType.PRIMARY_KEY) {
+            return String.format("ALTER TABLE %s ADD CONSTRAINT %s %s;", table, cName, def);
+        } else if (type == IndexType.INDEX) {
             return String.format("CREATE INDEX %s %s;", cName, def);
         } else if (type == IndexType.UNIQUE_INDEX) {
             return String.format("CREATE UNIQUE INDEX %s %s;", cName, def);

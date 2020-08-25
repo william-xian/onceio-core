@@ -19,7 +19,6 @@ import top.onceio.core.util.OUtils;
 public class TableMeta {
     private static final Logger LOGGER = Logger.getLogger(TableMeta.class);
     String table;
-    IndexMeta primaryKey;
     BaseTable viewDef;
     TblType type;
 
@@ -110,7 +109,6 @@ public class TableMeta {
                 cm.setComment(col.comment());
                 cm.setNullable(col.nullable());
                 if (getColumnName(field).equals("id")) {
-                    tm.setPrimaryKey("id");
                     cm.setPrimaryKey(true);
                     cm.setUnique(true);
                     cm.setNullable(false);
@@ -235,23 +233,6 @@ public class TableMeta {
         return viewDef;
     }
 
-    public IndexMeta getPrimaryKey() {
-        return primaryKey;
-    }
-
-    public void setPrimaryKey(IndexMeta primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    public void setPrimaryKey(String primaryKey) {
-        IndexMeta pk = new IndexMeta();
-        pk.setTable(this.table);
-        pk.setName(String.format("%s%s_%s", IndexMeta.INDEX_NAME_PREFIX_PK, pk.table.replace('.','_'), primaryKey));
-        pk.setColumns(Arrays.asList(primaryKey));
-        pk.setType(IndexType.PRIMARY_KEY);
-        pk.setUsing("BTREE");
-        this.primaryKey = pk;
-    }
 
     public List<IndexMeta> getFieldConstraint() {
         return fieldConstraint;
@@ -322,13 +303,23 @@ public class TableMeta {
             nameToColumnMeta.clear();
             fieldConstraint = new ArrayList<>(columnMetas.size());
             for (ColumnMeta cm : columnMetas) {
-                if (cm.unique) {
+                if (cm.isPrimaryKey()) {
                     IndexMeta cnsMeta = new IndexMeta();
                     List<String> cols = new ArrayList<>();
                     cols.add(cm.getName());
                     cnsMeta.setColumns(new ArrayList<String>(cols));
                     cnsMeta.setTable(this.getTable());
-                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_UN + cnsMeta.getTable() + "_" + cm.name);
+                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_PK + IndexMeta.indexName(cnsMeta.table) + "_" + cm.name);
+                    cnsMeta.setUsing(cm.using);
+                    cnsMeta.setType(IndexType.PRIMARY_KEY);
+                    fieldConstraint.add(cnsMeta);
+                } else if (cm.unique) {
+                    IndexMeta cnsMeta = new IndexMeta();
+                    List<String> cols = new ArrayList<>();
+                    cols.add(cm.getName());
+                    cnsMeta.setColumns(new ArrayList<String>(cols));
+                    cnsMeta.setTable(this.getTable());
+                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_UN + IndexMeta.indexName(cnsMeta.table) + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
                     cnsMeta.setType(IndexType.UNIQUE_FIELD);
                     fieldConstraint.add(cnsMeta);
@@ -338,7 +329,7 @@ public class TableMeta {
                     cols.add(cm.getName());
                     cnsMeta.setColumns(new ArrayList<String>(cols));
                     cnsMeta.setTable(this.getTable());
-                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_FK + cnsMeta.getTable() + "_" + cm.name);
+                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_FK + IndexMeta.indexName(cnsMeta.table) + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
                     cnsMeta.setType(IndexType.FOREIGN_KEY);
                     cnsMeta.setRefTable(cm.refTable);
@@ -411,9 +402,6 @@ public class TableMeta {
             tbl.delete(tbl.length() - 1, tbl.length());
             tbl.append(");");
             planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
-            if (primaryKey != null) {
-                planBuilder.append(SqlPlanBuilder.ALTER, this, primaryKey.addSql());
-            }
             /** 添加字段约束 */
             planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(fieldConstraint));
 
@@ -559,12 +547,6 @@ public class TableMeta {
         }
 
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
-        if (primaryKey != null && !primaryKey.equals(other.primaryKey)) {
-            planBuilder.append(SqlPlanBuilder.DROP, other, primaryKey.dropSql());
-        }
-        if (other.primaryKey != null && !other.primaryKey.equals(primaryKey)) {
-            planBuilder.append(SqlPlanBuilder.ALTER, other, other.primaryKey.addSql());
-        }
 
         planBuilder.append(SqlPlanBuilder.ALTER, other, addColumnSql(newColumns));
         planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropIndexs));
@@ -585,7 +567,6 @@ public class TableMeta {
         if (o == null || getClass() != o.getClass()) return false;
         TableMeta tableMeta = (TableMeta) o;
         return Objects.equals(table, tableMeta.table) &&
-                Objects.equals(primaryKey, tableMeta.primaryKey) &&
                 Objects.equals(viewDef, tableMeta.viewDef) &&
                 Objects.equals(indexes, tableMeta.indexes) &&
                 Objects.equals(columnMetas, tableMeta.columnMetas) &&
@@ -594,7 +575,7 @@ public class TableMeta {
 
     @Override
     public int hashCode() {
-        return Objects.hash(table, primaryKey, viewDef, indexes, columnMetas, nameToColumnMeta);
+        return Objects.hash(table, viewDef, indexes, columnMetas, nameToColumnMeta);
     }
 
     public void validate(Object obj, boolean ignoreNull) {

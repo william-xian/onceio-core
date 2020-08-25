@@ -220,7 +220,6 @@ public class DaoHelper implements DDLDao, TransDao {
             tm.setTable(table);
             tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
             tm.setIndexes(constraints);
-            tm.setPrimaryKey("id");
             tm.freshConstraintMetaTable();
             result.put(schemaTable.toLowerCase().replace("public.",""), tm);
         });

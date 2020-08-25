@@ -72,7 +72,6 @@ public class SqlPlanBuilder {
             sortedAdd(nameToMeta, order, meta.getViewDef());
         } else {
             List<IndexMeta> all = new ArrayList<>();
-            all.add(meta.getPrimaryKey());
             all.addAll(meta.getFieldConstraint());
             all.addAll(meta.getIndexes());
 
