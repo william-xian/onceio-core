@@ -1,7 +1,5 @@
 package top.onceio.core.db.model;
 
-import top.onceio.core.util.OReflectUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,13 +20,11 @@ public class BaseTable<M> {
 
     StringBuilder update = new StringBuilder();
     List<BaseTable<?>> refs = new ArrayList<>();
-    public BaseCol<?> id;
 
     protected <E> void bind(String name,M meta, Class<E> e) {
         this.alias = "t";
         this.name = name;
         this.meta = meta;
-        id = new BaseCol(this, OReflectUtil.getField(e, "id"));
     }
 
     public M as(String alias) {
