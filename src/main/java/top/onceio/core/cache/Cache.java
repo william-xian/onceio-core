@@ -15,16 +15,16 @@ package top.onceio.core.cache;
 public interface Cache {
 
     /**
-     * Return the cache name.
+     * @return the cache name.
      */
     String getName();
 
 
     /**
      *
-     * @param key
-     * @param type
-     * @param <T>
+     * @param key 对象唯一标识
+     * @param type 对象的类型
+     * @param <T> 泛型
      * @return 返回指定类型的指定Key的缓存对象，如果没有则返回null值
      */
     <T> T get(Object key, Class<T> type);

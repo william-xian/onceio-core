@@ -169,9 +169,9 @@ public class OReflectUtil {
     /**
      * 回溯到类Object，依次迭代衍生过程的类
      *
-     * @param clazz
-     * @param superclass
-     * @param consumer
+     * @param clazz 类型
+     * @param superclass 回溯截止的祖宗
+     * @param consumer 每一层执行的动作
      */
     public static void tracebackSuperclass(Class<?> clazz, Class<?> superclass, Consumer<Class<?>> consumer) {
         if (!superclass.isAssignableFrom(clazz)) {

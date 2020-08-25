@@ -158,7 +158,10 @@ public class TableMeta {
     }
 
     /**
-     * 以postgresql為准
+     * Java类型转换成postgres字段类型
+     * @param type Java类型
+     * @param col 字段属性
+     * @return  postgres字段类型
      */
     public static String transType(Class<?> type, Col col) {
         if (type.equals(Long.class) || type.equals(long.class)) {
@@ -379,7 +382,7 @@ public class TableMeta {
     }
 
     /**
-     * drop table if exists tbl_a;
+     * @return SQL执行计划Builder
      */
     public SqlPlanBuilder createTableSql() {
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
@@ -428,7 +431,7 @@ public class TableMeta {
     /**
      * 升级数据库，返回需要执行的sql
      *
-     * @param other
+     * @param other 其他实例
      * @return SQL执行计划
      */
     public SqlPlanBuilder upgradeTo(TableMeta other) {
@@ -452,7 +455,7 @@ public class TableMeta {
     /**
      * 升级数据库，返回需要执行的sql
      *
-     * @param other
+     * @param other 其他实例
      * @return SQL执行计划
      */
     public SqlPlanBuilder upgradeTableTo(TableMeta other) {

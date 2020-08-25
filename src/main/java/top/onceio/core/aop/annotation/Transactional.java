@@ -16,6 +16,7 @@ public @interface Transactional {
      * <code>Connection.TRANSACTION_READ_COMMITTED</code>,
      * <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
      * <code>Connection.TRANSACTION_SERIALIZABLE</code>.
+     * @return 隔离级别
      */
     int isolation() default Connection.TRANSACTION_READ_COMMITTED;
 

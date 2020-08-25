@@ -14,7 +14,7 @@ public class FieldPathPicker {
     /**
      * 根据路径将clazz类型的内置方法需要的反射域保存下来。
      *
-     * @param clazz
+     * @param clazz 类型
      * @param path  如果是数组用方括号包起来
      *              如 [0].cars[1].name
      */

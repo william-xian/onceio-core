@@ -55,10 +55,8 @@ public class JdbcHelper {
      *              <code>Connection.TRANSACTION_SERIALIZABLE</code>. (Note that
      *              <code>Connection.TRANSACTION_NONE</code> cannot be used
      *              because it specifies that transactions are not supported.)
+     * @param readOnly 是否是只读
      * @return isCreated
-     * @throws SQLException if a database access error occurs, this method is called
-     *                      on a closed connection or the given parameter is not one
-     *                      of the <code>Connection</code> constants
      * @see DatabaseMetaData#supportsTransactionIsolationLevel
      */
     public boolean beginTransaction(int level, boolean readOnly) {
@@ -139,9 +137,10 @@ public class JdbcHelper {
     }
 
     /**
-     * @param sql
-     * @param args
-     * @return list[?>0]:row data
+     * 返回数据中list[0] 是字段名，list[1-n]是字段所对应的数据
+     * @param sql 使用替代符的SQL语句
+     * @param args SQL参数列表
+     * @return list[n]:row data list[0] is the columnNames,list[1] is the first row data of thus columns.
      */
     public List<Object[]> call(String sql, Object[] args) {
         List<Object[]> result = new LinkedList<>();

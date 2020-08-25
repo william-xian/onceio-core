@@ -17,6 +17,7 @@ public @interface Def {
 
     /**
      * 定义bean名的时候，使用接口
+     * @return 是否使用接口
      */
     boolean nameByInterface() default false;
 }

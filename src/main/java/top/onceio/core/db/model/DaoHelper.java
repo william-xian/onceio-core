@@ -301,6 +301,7 @@ public class DaoHelper implements DDLDao, TransDao {
         this.classToTableMeta = tableToTableMeta;
     }
 
+    @Override
     public <E extends BaseEntity> boolean drop(Class<E> tbl) {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
@@ -310,11 +311,11 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.batchUpdate(sql);
         return true;
     }
-
+    @Override
     public int[] batchUpdate(final String... sql) {
         return jdbcHelper.batchExec(sql);
     }
-
+    @Override
     public int[] batchUpdate(final String sql, List<Object[]> batchArgs) {
         return jdbcHelper.batchUpdate(sql, batchArgs);
     }
@@ -351,10 +352,12 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     /**
-     * @param sql
-     * @param args
-     * @return list[?>0]:row data
+     * 返回数据中list[0] 是字段名，list[1-n]是字段所对应的数据
+     * @param sql 使用替代符的SQL语句
+     * @param args SQL参数列表
+     * @return list[n]:row data list[0] is the columnNames,list[1] is the first row data of thus columns.
      */
+    @Override
     public List<Object[]> call(String sql, Object[] args) {
         return jdbcHelper.call(sql, args);
     }

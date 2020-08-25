@@ -11,7 +11,7 @@ public interface Dao<T, M> {
      * 根据id获取对象
      * <b>即使数据已经被逻辑删除依然能够获取到。</b>
      *
-     * @param id
+     * @param id 主键
      * @return 单个记录
      */
     T get(Long id);
@@ -20,7 +20,7 @@ public interface Dao<T, M> {
      * 插入数据
      * <b>如果entity的id为null，会自动回填id</b>
      *
-     * @param entity
+     * @param entity 实体
      * @return 插入数据的数目
      */
     T insert(T entity);
@@ -29,7 +29,7 @@ public interface Dao<T, M> {
      * 批量插入数据
      * <b>如果entity的id为null，会自动回填id</b>
      *
-     * @param entities
+     * @param entities 实体列表
      * @return 成功插入的个数
      */
     int batchInsert(List<T> entities);
@@ -38,7 +38,7 @@ public interface Dao<T, M> {
      * 更新数据
      * <b>entity的id不可为null</b>
      *
-     * @param entity
+     * @param entity 实体
      * @return 更新的数目
      */
     int update(T entity);
@@ -47,7 +47,7 @@ public interface Dao<T, M> {
      * 将非null数据更新到数据哭
      * <b>entity的id不可为null</b>
      *
-     * @param entity
+     * @param entity 实体
      * @return 更新的数目
      */
     int updateIgnoreNull(T entity);
@@ -65,7 +65,7 @@ public interface Dao<T, M> {
     /**
      * 根据主键物理删除数据
      *
-     * @param ids
+     * @param ids 主键列表
      * @return 删除的条数
      */
     int deleteByIds(List<Long> ids);
@@ -90,7 +90,7 @@ public interface Dao<T, M> {
     /**
      * 返回没有被逻辑删除的，给定ids范围内的数据
      *
-     * @param ids
+     * @param ids 主键列表
      * @return 列表
      */
     List<T> findByIds(List<Long> ids);
@@ -110,7 +110,7 @@ public interface Dao<T, M> {
     /**
      * 根据筛选条件，将数据依次传给consumer处理
      *
-     * @param cnd
+     * @param cnd 条件
      * @param consumer 回调处理
      */
     void find(BaseTable<M> cnd, Consumer<T> consumer);
@@ -125,7 +125,7 @@ public interface Dao<T, M> {
     /**
      * 根据筛选条件查询数据个数
      *
-     * @param cnd
+     * @param cnd 条件
      * @return 筛选到的数据个数
      */
     long count(BaseTable<M> cnd);

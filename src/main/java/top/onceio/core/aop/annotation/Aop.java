@@ -10,8 +10,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Aop {
+
     /**
-     * 被拦截的方法pattern
+     * @return 被拦截的方法pattern
      */
     String[] value() default {};
 

@@ -17,7 +17,8 @@ public @interface Tbl {
     Index[] indexes() default {};
 
     /**
-     * 根据关联表自动创建
+     * 根据关联表【组件值相同】自动添加数值
+     * @return 是否自动创建关联表
      */
     boolean autoCreate() default false;
 
