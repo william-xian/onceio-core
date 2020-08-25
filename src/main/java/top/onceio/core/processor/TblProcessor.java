@@ -12,6 +12,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.*;
+import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.model.BaseCol;
 import top.onceio.core.db.model.BaseTable;
@@ -25,6 +26,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.tools.Diagnostic;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +75,7 @@ public class TblProcessor extends AbstractProcessor {
             super.visitClassDef(jcClass);
             this.jcClass = jcClass;
 
-            if(jcClass.name.toString().equals(META_CLASS_NAME)) {
+            if (jcClass.name.toString().equals(META_CLASS_NAME)) {
                 hasMetaClass = true;
             }
 
@@ -93,21 +95,30 @@ public class TblProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Set<? extends Element> annotation = roundEnv.getElementsAnnotatedWith(Tbl.class);
 
-        final Map<String, JCTree.JCClassDecl> nameToEntity = new HashMap<>();
         java.util.List<JCTree> entities = annotation.stream().map(element -> trees.getTree(element)).collect(Collectors.toList());
 
         for (JCTree tree : entities) {
-            EntityTranslator entityTranslator = new EntityTranslator();
-            tree.accept(entityTranslator);
-            if(entityTranslator.hasMetaClass) continue;
-            JCTree.JCClassDecl jcClass = entityTranslator.jcClass;
-            Map<String, TypeMirror> fieldToType = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m -> m.getKind().isField())
-                    .collect(Collectors.toMap(k -> k.getSimpleName().toString(), v -> v.asType()));
+            try {
+                EntityTranslator entityTranslator = new EntityTranslator();
+                tree.accept(entityTranslator);
+                if (entityTranslator.hasMetaClass) continue;
+                JCTree.JCClassDecl jcClass = entityTranslator.jcClass;
 
-            JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
-            jcClass.defs = jcClass.defs.append(metaClass);
-            jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
-            // messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
+                java.util.List<? extends Element> fields = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m -> m.getKind().isField() && m.getAnnotation(Col.class) != null)
+                        .collect(Collectors.toList());
+
+                Map<String, TypeMirror> fieldToType = new HashMap<>();
+                for (Element e : fields) {
+                    fieldToType.put(e.getSimpleName().toString(), e.asType());
+                }
+
+                JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
+                jcClass.defs = jcClass.defs.append(metaClass);
+                jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
+                //messager.printMessage(Diagnostic.Kind.NOTE, tree.toString());
+            } catch (Exception e) {
+                messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+            }
         }
         return true;
     }

@@ -114,7 +114,11 @@ public class TableMeta {
                     cm.setPrimaryKey(true);
                     cm.setUnique(true);
                     cm.setNullable(false);
-
+                    if (tbl.extend() != void.class) {
+                        cm.setUseFK(col.useFK());
+                        String table = getTableName(tbl.extend());
+                        cm.setRefTable(table);
+                    }
                 }
                 cm.setPattern(col.pattern());
                 if (col.type().equals("")) {
@@ -123,11 +127,10 @@ public class TableMeta {
                         if (field.getType() == Object.class) {
                             javaBaseType = OReflectUtil.searchGenType(clazz, classes.get(classes.size() - 1),
                                     field.getGenericType());
-                            cm.setJavaBaseType(javaBaseType);
                         } else {
                             javaBaseType = field.getType();
-                            cm.setJavaBaseType(javaBaseType);
                         }
+                        cm.setJavaBaseType(javaBaseType);
                     }
                     String type = transType(javaBaseType, col);
                     cm.setType(type);

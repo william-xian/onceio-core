@@ -17,10 +17,15 @@ public @interface Tbl {
     Index[] indexes() default {};
 
     /**
-     * 根据关联表【组件值相同】自动添加数值
+     * @return 扩展表
+     */
+    Class<?> extend() default void.class;
+    /**
+     * 根据扩展表【主键值相同】自动添加数值
      * @return 是否自动创建关联表
      */
     boolean autoCreate() default false;
 
     TblType type() default TblType.TABLE;
+
 }
