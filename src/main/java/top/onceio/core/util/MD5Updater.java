@@ -4,10 +4,10 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class MD5Updator {
+public class MD5Updater {
     private MessageDigest md = null;
 
-    public MD5Updator() {
+    public MD5Updater() {
         try {
             md = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {

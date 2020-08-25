@@ -154,7 +154,6 @@ public class DaoHelperTest extends DaoBaseTest {
         cnd3.select().from().where().avatar.like("avatar%00");
         Assert.assertEquals(2, daoHelper.count(UserInfo.class, cnd3));
 
-
         UserInfo.Meta cnd4 = UserInfo.meta();
         cnd4.genre.eq(2).or().genre.ne(3);
         UserInfo.Meta cnd5 = UserInfo.meta();

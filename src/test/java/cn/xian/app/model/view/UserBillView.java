@@ -7,7 +7,6 @@ import top.onceio.core.db.annotation.Tbl;
 import top.onceio.core.db.annotation.TblType;
 import top.onceio.core.db.model.*;
 import top.onceio.core.db.tbl.BaseEntity;
-import top.onceio.core.util.OReflectUtil;
 
 @Tbl(type = TblType.WITH)
 public class UserBillView extends BaseEntity implements DefView {
@@ -21,8 +20,8 @@ public class UserBillView extends BaseEntity implements DefView {
 
     @Override
     public BaseTable def() {
-        UserInfo.Meta u = UserInfo.meta().alias("u");
-        Bill.Meta b = Bill.meta().alias("b");
+        UserInfo.Meta u = UserInfo.meta().as("u");
+        Bill.Meta b = Bill.meta().as("b");
         u.select(u.name, u.age, Func.sum(b.amount))
                 .from()
                 .join(b).on(u.id, b.userId)

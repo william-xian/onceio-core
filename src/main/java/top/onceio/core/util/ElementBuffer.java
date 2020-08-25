@@ -25,7 +25,7 @@ public class ElementBuffer<E> {
         writeLock.lock();
         try {
             if (buffer.size() >= this.size) {
-                flash();
+                flush();
             }
             buffer.add(element);
         } catch (Exception e) {
@@ -44,7 +44,7 @@ public class ElementBuffer<E> {
                 List<E> sub = arrayList.subList(0, subFirst);
                 buffer.addAll(sub);
                 arrayList = arrayList.subList(subFirst, arrayList.size());
-                flash();
+                flush();
             }
             buffer.addAll(arrayList);
         } catch (Exception e) {
@@ -55,7 +55,7 @@ public class ElementBuffer<E> {
         }
     }
 
-    public void flash() {
+    public void flush() {
         readLock.lock();
         try {
             consumer.accept(buffer);

@@ -6,8 +6,8 @@ import java.lang.reflect.Field;
 
 public class BaseCol<T extends BaseTable> implements Queryable {
     T table;
-    public String name;
-    private Field field;
+    String name;
+    Field field;
 
     public BaseCol(T table, Field field) {
         this.table = table;

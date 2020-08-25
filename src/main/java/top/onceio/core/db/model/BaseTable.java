@@ -31,16 +31,12 @@ public class BaseTable<M> {
         id = new BaseCol(this, OReflectUtil.getField(e, "id"));
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public M alias(String alias) {
+    public M as(String alias) {
         this.alias = alias;
         return meta;
     }
 
-    public List<Object> getArgs() {
+    List<Object> getArgs() {
         return args;
     }
 
@@ -58,7 +54,7 @@ public class BaseTable<M> {
 
     public <O extends BaseTable> M from(O... tables) {
         if (tables.length == 0) {
-            from.append(" " + name + " as " + alias);
+            from.append(" " + name + " AS " + alias);
         } else {
             for (O t : tables) {
                 from.append(" " + t.name + " AS " + t.alias + ",");
@@ -105,7 +101,7 @@ public class BaseTable<M> {
 
     public <C extends BaseCol> M orderByDesc(C... cs) {
         for (C c : cs) {
-            order.append(String.format(" %s.%s desc,", c.table.alias, c.name));
+            order.append(String.format(" %s.%s DESC,", c.table.alias, c.name));
         }
         order.deleteCharAt(order.length() - 1);
         return meta;
@@ -116,10 +112,6 @@ public class BaseTable<M> {
         return meta;
     }
 
-    public M as(String alias) {
-        this.alias = alias;
-        return meta;
-    }
 
     public M and() {
         where.append(" AND ");
@@ -159,7 +151,7 @@ public class BaseTable<M> {
         }
         if (update.length() > 0) {
             if (from.length() <= 0) {
-                sql.append("UPDATE " + name + " as " + alias);
+                sql.append("UPDATE " + name + " AS " + alias);
             } else {
                 sql.append("UPDATE" + from);
             }
@@ -202,10 +194,6 @@ public class BaseTable<M> {
         return sql.toString();
     }
 
-    public List<BaseTable<?>> getRefs() {
-        return refs;
-    }
-
     public BaseTable<M> copy() {
         BaseTable<M> other = new BaseTable<>();
         other.name = this.name;
@@ -218,8 +206,7 @@ public class BaseTable<M> {
         other.order.append(this.order);
         other.limit.append(this.limit);
         other.args.addAll(this.args);
-
-        // other.refs.addAll(this.refs);
+        //other.refs.addAll(this.refs);
         return other;
     }
 
