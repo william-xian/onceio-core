@@ -1,4 +1,4 @@
-package top.onceio.core.db.tbl;
+package top.onceio.core.db.model;
 
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.util.OUtils;
@@ -8,11 +8,11 @@ import java.io.Serializable;
 /**
  * @author Administrator
  */
-public abstract class BaseEntity<ID extends Serializable> {
+public abstract class BaseModel<ID extends Serializable> {
     @Col(nullable = false)
     protected ID id;
 
-    public BaseEntity() {
+    public BaseModel() {
     }
 
     public ID getId() {

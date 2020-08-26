@@ -10,7 +10,7 @@ import java.util.*;
 import org.apache.log4j.Logger;
 
 import top.onceio.core.db.annotation.*;
-import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.DefView;
 import top.onceio.core.exception.VolidateFailed;
 import top.onceio.core.util.OAssert;
@@ -20,8 +20,8 @@ import top.onceio.core.util.OUtils;
 public class TableMeta {
     private static final Logger LOGGER = Logger.getLogger(TableMeta.class);
     String table;
-    BaseTable viewDef;
-    TblType type;
+    BaseMeta viewDef;
+    ModelType type;
 
     transient List<IndexMeta> fieldConstraint = new ArrayList<>(0);
     List<IndexMeta> indexes = new ArrayList<>();
@@ -40,9 +40,9 @@ public class TableMeta {
         if (defaultName.startsWith("_")) {
             defaultName = defaultName.substring(1);
         }
-        Tbl tbl = clazz.getAnnotation(Tbl.class);
-        if (tbl != null && !tbl.name().equals("")) {
-            return tbl.name().toLowerCase().replace("public.", "");
+        Model model = clazz.getAnnotation(Model.class);
+        if (model != null && !model.name().equals("")) {
+            return model.name().toLowerCase().replace("public.", "");
         } else {
             return defaultName;
         }
@@ -61,12 +61,12 @@ public class TableMeta {
     public static TableMeta createBy(Class<?> entity) {
         TableMeta tm = new TableMeta();
         tm.entity = entity;
-        Tbl tbl = entity.getAnnotation(Tbl.class);
+        Model model = entity.getAnnotation(Model.class);
         tm.table = getTableName(entity);
-        tm.type = tbl.type();
-        if (tbl.type().equals(TblType.TABLE)) {
+        tm.type = model.type();
+        if (model.type().equals(ModelType.TABLE)) {
             List<IndexMeta> constraints = new ArrayList<>();
-            for (Index c : tbl.indexes()) {
+            for (Index c : model.indexes()) {
                 IndexMeta cm = new IndexMeta();
                 constraints.add(cm);
                 cm.setColumns(Arrays.asList(c.columns()));
@@ -113,9 +113,9 @@ public class TableMeta {
                     cm.setPrimaryKey(true);
                     cm.setUnique(true);
                     cm.setNullable(false);
-                    if (tbl.extend() != void.class) {
+                    if (model.extend() != void.class) {
                         cm.setUseFK(col.useFK());
-                        String table = getTableName(tbl.extend());
+                        String table = getTableName(model.extend());
                         cm.setRefTable(table);
                     }
                 }
@@ -231,7 +231,7 @@ public class TableMeta {
         return columnMetas;
     }
 
-    public BaseTable getViewDef() {
+    public BaseMeta getViewDef() {
         return viewDef;
     }
 
@@ -389,7 +389,7 @@ public class TableMeta {
             String schema = name().substring(0, comaIndex);
             planBuilder.append(SqlPlanBuilder.CREATE_SCHEMA, this, String.format("CREATE SCHEMA IF NOT EXISTS %s;", schema));
         }
-        if (type.equals(TblType.TABLE)) {
+        if (type.equals(ModelType.TABLE)) {
             tbl.append(String.format("CREATE TABLE %s (", table));
 
             for (ColumnMeta cm : columnMetas) {
@@ -416,13 +416,13 @@ public class TableMeta {
             planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(indexes));
 
             planBuilder.append(SqlPlanBuilder.COMMENT, this, comments);
-        } else if (type.equals(TblType.VIEW)) {
+        } else if (type.equals(ModelType.VIEW)) {
             planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", table));
             tbl.append(String.format("CREATE VIEW %s AS (", table));
             tbl.append(viewDef.toSql());
             tbl.append(");");
             planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
-        } else if (type.equals(TblType.MATERIALIZED)) {
+        } else if (type.equals(ModelType.MATERIALIZED)) {
             planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", table));
             tbl.append(String.format("CREATE MATERIALIZED VIEW %s AS (", table));
             tbl.append(viewDef.toSql());
@@ -442,9 +442,9 @@ public class TableMeta {
         if (!table.equals(old.table)) {
             return null;
         }
-        if (this.type.equals(TblType.TABLE)) {
+        if (this.type.equals(ModelType.TABLE)) {
             return upgradeTableBy(old);
-        } else if (this.type.equals(TblType.VIEW)) {
+        } else if (this.type.equals(ModelType.VIEW)) {
             SqlPlanBuilder planBuilder = new SqlPlanBuilder();
             planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", this.table));
             StringBuffer tbl = new StringBuffer();
@@ -453,7 +453,7 @@ public class TableMeta {
             tbl.append(");");
             planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
             return planBuilder;
-        } else if (this.type.equals(TblType.MATERIALIZED)) {
+        } else if (this.type.equals(ModelType.MATERIALIZED)) {
             SqlPlanBuilder planBuilder = new SqlPlanBuilder();
             planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", this.table));
             StringBuffer tbl = new StringBuffer();
@@ -630,11 +630,11 @@ public class TableMeta {
 
     }
 
-    public TblType getType() {
+    public ModelType getType() {
         return type;
     }
 
-    public void setType(TblType type) {
+    public void setType(ModelType type) {
         this.type = type;
     }
 }

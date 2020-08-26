@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target(TYPE)
 @Retention(RUNTIME)
-public @interface Tbl {
+public @interface Model {
 
     String name() default "";
 
@@ -26,6 +26,6 @@ public @interface Tbl {
      */
     boolean autoCreate() default false;
 
-    TblType type() default TblType.TABLE;
+    ModelType type() default ModelType.TABLE;
 
 }

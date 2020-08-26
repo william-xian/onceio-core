@@ -7,14 +7,14 @@ import java.util.function.Consumer;
 
 import top.onceio.core.annotation.Using;
 import top.onceio.core.beans.ApiMethod;
-import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.DaoHelper;
-import top.onceio.core.db.tbl.BaseEntity;
+import top.onceio.core.db.model.BaseModel;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
-public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> implements Dao<T, M> {
+public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> implements Dao<T, M> {
     @Using
     protected DaoHelper daoHelper;
 
@@ -79,7 +79,7 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
 
     @Api(value = "/by", method = ApiMethod.PATCH)
     @Override
-    public int updateBy(BaseTable<M> tpl) {
+    public int updateBy(BaseMeta<M> tpl) {
         return daoHelper.updateBy(tbl, tpl);
     }
 
@@ -94,13 +94,13 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
     }
 
     @Override
-    public int delete(BaseTable<M> cnd) {
+    public int delete(BaseMeta<M> cnd) {
         return daoHelper.delete(tbl, cnd);
     }
 
     @Api(value = "/fetch", method = {ApiMethod.GET})
     @Override
-    public T fetch(@Param("tpl") BaseTable<M> tpl) {
+    public T fetch(@Param("tpl") BaseMeta<M> tpl) {
         return daoHelper.fetch(tbl, tpl);
     }
 
@@ -111,18 +111,18 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
     }
 
     @Override
-    public List<T> find(@Param("cnd") BaseTable<M> cnd) {
+    public List<T> find(@Param("cnd") BaseMeta<M> cnd) {
         return daoHelper.find(tbl, cnd);
     }
 
     @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public Page<T> find(@Param("cnd") BaseTable<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
+    public Page<T> find(@Param("cnd") BaseMeta<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
         return daoHelper.find(tbl, cnd, page, pageSize);
     }
 
     @Override
-    public void find(BaseTable<M> cnd, Consumer<T> consumer) {
+    public void find(BaseMeta<M> cnd, Consumer<T> consumer) {
         daoHelper.find(tbl, cnd, consumer);
     }
 
@@ -133,7 +133,7 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
 
     @Api(value = "/count", method = {ApiMethod.GET})
     @Override
-    public long count(@Param("cnd") BaseTable<M> cnd) {
+    public long count(@Param("cnd") BaseMeta<M> cnd) {
         return daoHelper.count(tbl, cnd);
     }
 

@@ -1,14 +1,12 @@
 package cn.xian.app.model.entity;
 
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.BaseEntity;
-import top.onceio.core.db.model.*;
-import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.db.annotation.Model;
+import top.onceio.core.db.model.BaseModel;
 
 
-@Tbl(autoCreate = true)
-public class Wallet extends BaseEntity<Long> {
+@Model(autoCreate = true)
+public class Wallet extends BaseModel<Long> {
     @Col(nullable = false, ref = UserInfo.class)
     private Long id;
     @Col(nullable = true)

@@ -3,13 +3,13 @@ package cn.xian.app.model.view;
 import cn.xian.app.model.entity.Bill;
 import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.annotation.TblType;
+import top.onceio.core.db.annotation.Model;
+import top.onceio.core.db.annotation.ModelType;
 import top.onceio.core.db.model.*;
-import top.onceio.core.db.tbl.BaseEntity;
+import top.onceio.core.db.model.BaseModel;
 
-@Tbl(type = TblType.VIEW)
-public class UserBillView extends BaseEntity<Long> implements DefView {
+@Model(type = ModelType.VIEW)
+public class UserBillView extends BaseModel<Long> implements DefView {
 
     @Col(size = 32)
     protected String name;
@@ -19,7 +19,7 @@ public class UserBillView extends BaseEntity<Long> implements DefView {
     protected Integer amount;
 
     @Override
-    public BaseTable def() {
+    public BaseMeta def() {
         UserInfo.Meta u = UserInfo.meta().as("u");
         Bill.Meta b = Bill.meta().as("b");
         u.select(u.name, u.age, Func.sum(b.amount))

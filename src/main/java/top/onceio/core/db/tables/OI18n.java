@@ -1,16 +1,14 @@
-package top.onceio.core.db.tbl;
+package top.onceio.core.db.tables;
 
 import top.onceio.core.annotation.I18nCfg;
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.model.BaseCol;
-import top.onceio.core.db.model.BaseTable;
-import top.onceio.core.db.model.StringCol;
-import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.db.annotation.Model;
+import top.onceio.core.db.model.BaseMeta;
+import top.onceio.core.db.model.BaseModel;
 import top.onceio.core.util.OUtils;
 
-@Tbl
-public class OI18n extends BaseEntity<String> {
+@Model
+public class OI18n extends BaseModel<String> {
     @Col(size = 64, nullable = false)
     protected String id;
     @Col(size = 255, nullable = false)
@@ -55,7 +53,7 @@ public class OI18n extends BaseEntity<String> {
 
 
 
-    public static class Meta extends top.onceio.core.db.model.BaseTable<Meta>  {
+    public static class Meta extends BaseMeta<Meta> {
         public top.onceio.core.db.model.StringCol<Meta> id = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "id"));
         public top.onceio.core.db.model.StringCol<Meta> name = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "name"));
         public top.onceio.core.db.model.StringCol<Meta> val = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "val"));

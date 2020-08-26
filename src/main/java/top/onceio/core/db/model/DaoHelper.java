@@ -2,7 +2,7 @@ package top.onceio.core.db.model;
 
 import org.apache.log4j.Logger;
 import top.onceio.core.db.annotation.IndexType;
-import top.onceio.core.db.annotation.TblType;
+import top.onceio.core.db.annotation.ModelType;
 import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.dao.Page;
@@ -12,7 +12,6 @@ import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.IndexMeta;
 import top.onceio.core.db.meta.SqlPlanBuilder;
 import top.onceio.core.db.meta.TableMeta;
-import top.onceio.core.db.tbl.BaseEntity;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OLog;
@@ -42,7 +41,7 @@ public class DaoHelper implements DDLDao, TransDao {
     private Map<Class<?>, TableMeta> classToTableMeta;
     private Map<String, TableMeta> nameToMeta;
     private IdGenerator idGenerator;
-    private List<Class<? extends BaseEntity>> entities;
+    private List<Class<? extends BaseModel>> entities;
 
     public DaoHelper() {
     }
@@ -222,7 +221,7 @@ public class DaoHelper implements DDLDao, TransDao {
             tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
             tm.setIndexes(constraints);
             tm.freshConstraintMetaTable();
-            tm.setType(TblType.TABLE);
+            tm.setType(ModelType.TABLE);
             result.put(schemaTable.toLowerCase().replace("public.", ""), tm);
         });
 
@@ -238,9 +237,9 @@ public class DaoHelper implements DDLDao, TransDao {
                 TableMeta tm = new TableMeta();
                 tm.setTable(schemaTable);
                 if (definition.toUpperCase().contains(" MATERIALIZED ")) {
-                    tm.setType(TblType.MATERIALIZED);
+                    tm.setType(ModelType.MATERIALIZED);
                 } else {
-                    tm.setType(TblType.VIEW);
+                    tm.setType(ModelType.VIEW);
                 }
                 result.put(schemaTable.toLowerCase().replace("public.", ""), tm);
             } catch (Exception e) {
@@ -260,12 +259,12 @@ public class DaoHelper implements DDLDao, TransDao {
         return new HashMap<>();
     }
 
-    public void init(List<Class<? extends BaseEntity>> entities) {
+    public void init(List<Class<? extends BaseModel>> entities) {
         this.classToTableMeta = new HashMap<>();
         this.nameToMeta = new HashMap<>();
         if (entities != null) {
             this.entities = entities;
-            for (Class<? extends BaseEntity> tbl : entities) {
+            for (Class<? extends BaseModel> tbl : entities) {
                 TableMeta tm = TableMeta.createBy(tbl);
                 tm.freshNameToField(tbl);
                 tm.freshConstraintMetaTable();
@@ -294,7 +293,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    public List<Class<? extends BaseEntity>> getEntities() {
+    public List<Class<? extends BaseModel>> getEntities() {
         return entities;
     }
 
@@ -323,7 +322,7 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     @Override
-    public <E extends BaseEntity> boolean drop(Class<E> tbl) {
+    public <E extends BaseModel> boolean drop(Class<E> tbl) {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return false;
@@ -343,7 +342,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.batchUpdate(sql, batchArgs);
     }
 
-    private static <E extends BaseEntity, M extends BaseTable> E createBy(Class<E> tbl, TableMeta tm, ResultSet rs) throws SQLException {
+    private static <E extends BaseModel, M extends BaseMeta> E createBy(Class<E> tbl, TableMeta tm, ResultSet rs) throws SQLException {
         E row = null;
         try {
             row = tbl.newInstance();
@@ -406,7 +405,7 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.commit();
     }
 
-    public <E extends BaseEntity, M extends BaseTable, ID extends Serializable> E get(Class<E> tbl, ID id) {
+    public <E extends BaseModel, M extends BaseMeta, ID extends Serializable> E get(Class<E> tbl, ID id) {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
@@ -424,12 +423,12 @@ public class DaoHelper implements DDLDao, TransDao {
         return rows.get(0);
     }
 
-    public <E extends BaseEntity, M extends BaseTable> E insert(E entity) {
+    public <E extends BaseModel, M extends BaseMeta> E insert(E entity) {
         batchInsert(Arrays.asList(entity));
         return entity;
     }
 
-    public <E extends BaseEntity, M extends BaseTable> int batchInsert(List<E> entities) {
+    public <E extends BaseModel, M extends BaseMeta> int batchInsert(List<E> entities) {
         if (entities == null || entities.isEmpty()) {
             return 0;
         }
@@ -458,7 +457,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return cnt;
     }
 
-    private <E extends BaseEntity> Object[] initEntity(TableMeta tm, List<String> names, E entity) {
+    private <E extends BaseModel> Object[] initEntity(TableMeta tm, List<String> names, E entity) {
         if (entity.getId() == null) {
             Serializable id = idGenerator.next(entity.getClass());
             entity.setId(id);
@@ -476,7 +475,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return val;
     }
 
-    private <E extends BaseEntity, M extends BaseTable> int update(E entity, boolean ignoreNull) {
+    private <E extends BaseModel, M extends BaseMeta> int update(E entity, boolean ignoreNull) {
         OAssert.warnning(entity != null, "不可以插入null");
         Class<?> tbl = entity.getClass();
         TableMeta tm = classToTableMeta.get(tbl);
@@ -515,15 +514,15 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, args.toArray());
     }
 
-    public <E extends BaseEntity, M extends BaseTable> int update(E entity) {
+    public <E extends BaseModel, M extends BaseMeta> int update(E entity) {
         return update(entity, false);
     }
 
-    public <E extends BaseEntity, M extends BaseTable> int updateIgnoreNull(E entity) {
+    public <E extends BaseModel, M extends BaseMeta> int updateIgnoreNull(E entity) {
         return update(entity, true);
     }
 
-    public <E extends BaseEntity, M extends BaseTable> int updateBy(Class<E> tbl, BaseTable<M> tpl) {
+    public <E extends BaseModel, M extends BaseMeta> int updateBy(Class<E> tbl, BaseMeta<M> tpl) {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
@@ -544,7 +543,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, ids.toArray());
     }
 
-    public <E extends BaseEntity, M extends BaseTable> int delete(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> int delete(Class<E> tbl, BaseMeta<M> cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("DELETE FROM %s;", tm.getTable());
@@ -556,11 +555,11 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    public <E extends BaseEntity, M extends BaseTable> long count(Class<E> tbl) {
+    public <E extends BaseModel, M extends BaseMeta> long count(Class<E> tbl) {
         return count(tbl, null);
     }
 
-    public <E extends BaseEntity, M extends BaseTable> long count(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> long count(Class<E> tbl, BaseMeta<M> cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
@@ -575,7 +574,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     }
 
-    public <E extends BaseEntity, M extends BaseTable> List<E> find(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> List<E> find(Class<E> tbl, BaseMeta<M> cnd) {
         List<E> data = new ArrayList<>();
         find(tbl, cnd, e -> {
             data.add(e);
@@ -583,7 +582,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return data;
     }
 
-    public <E extends BaseEntity, M extends BaseTable> Page<E> find(Class<E> tbl, BaseTable<M> cnd, int page, int pageSize) {
+    public <E extends BaseModel, M extends BaseMeta> Page<E> find(Class<E> tbl, BaseMeta<M> cnd, int page, int pageSize) {
         if (cnd.select.length() == 0) {
             cnd.select();
         }
@@ -602,7 +601,7 @@ public class DaoHelper implements DDLDao, TransDao {
             page = Math.abs(page) - 1;
         }
         result.setPage(page + 1);
-        BaseTable<M> limitCnd = cnd.copy();
+        BaseMeta<M> limitCnd = cnd.copy();
 
         limitCnd.limit(pageSize, pageSize * page);
         find(tbl, limitCnd, e -> {
@@ -611,7 +610,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return result;
     }
 
-    public <E extends BaseEntity, M extends BaseTable> E fetch(Class<E> tbl, BaseTable<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> E fetch(Class<E> tbl, BaseMeta<M> cnd) {
         Page<E> page = find(tbl, cnd, 1, 1);
         if (page.getData().size() == 0) {
             return null;
@@ -619,7 +618,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return page.getData().get(0);
     }
 
-    public <E extends BaseEntity, M extends BaseTable> void find(Class<E> tbl, BaseTable<M> cnd, Consumer<E> consumer) {
+    public <E extends BaseModel, M extends BaseMeta> void find(Class<E> tbl, BaseMeta<M> cnd, Consumer<E> consumer) {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return;
@@ -631,9 +630,9 @@ public class DaoHelper implements DDLDao, TransDao {
             cnd.from();
         }
         String sql = null;
-        if (TblType.TABLE.equals(tm.getType()) || TblType.VIEW.equals(tm.getType()) || TblType.MATERIALIZED.equals(tm.getType())) {
+        if (ModelType.TABLE.equals(tm.getType()) || ModelType.VIEW.equals(tm.getType()) || ModelType.MATERIALIZED.equals(tm.getType())) {
             sql = cnd.toString();
-        } else if (TblType.WITH.equals(tm.getType())) {
+        } else if (ModelType.WITH.equals(tm.getType())) {
             sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toSql(), cnd.toString());
         }
         jdbcHelper.query(sql, cnd.getArgs().toArray(new Object[0]), rs -> {
@@ -647,7 +646,7 @@ public class DaoHelper implements DDLDao, TransDao {
         });
     }
 
-    public <E extends BaseEntity, M extends BaseTable, ID extends Serializable> List<E> findByIds(Class<E> tbl, List<ID> ids) {
+    public <E extends BaseModel, M extends BaseMeta, ID extends Serializable> List<E> findByIds(Class<E> tbl, List<ID> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<E>();
         }

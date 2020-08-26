@@ -13,9 +13,9 @@ import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.*;
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Tbl;
+import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseCol;
-import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.StringCol;
 import top.onceio.core.util.OReflectUtil;
 
@@ -33,10 +33,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Tbl"})
+@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Model"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
-public class TblProcessor extends AbstractProcessor {
+public class ModelProcessor extends AbstractProcessor {
     private static final String META_CLASS_NAME = "Meta";
     private static final String META_METHOD_NAME = "meta";
     private static final String CLASS_INIT_METHOD_NAME = "<init>";
@@ -58,7 +58,7 @@ public class TblProcessor extends AbstractProcessor {
         messager = processingEnvironment.getMessager();
         this.names = Names.instance(context);
         classReader = ClassReader.instance(context);
-        classReader.loadClass(names.fromString(BaseTable.class.getName()));
+        classReader.loadClass(names.fromString(BaseMeta.class.getName()));
         classReader.loadClass(names.fromString(BaseCol.class.getName()));
         classReader.loadClass(names.fromString(StringCol.class.getName()));
         classReader.loadClass(names.fromString(OReflectUtil.class.getName()));
@@ -84,7 +84,7 @@ public class TblProcessor extends AbstractProcessor {
         public void visitAnnotation(JCTree.JCAnnotation var1) {
             var1.annotationType = this.translate(var1.annotationType);
             var1.args = this.translate(var1.args);
-            if (treeMaker.Type(var1.type).toString().equals(Tbl.class.getName())) {
+            if (treeMaker.Type(var1.type).toString().equals(Model.class.getName())) {
                 this.tbl = var1;
             }
             this.result = var1;
@@ -93,7 +93,7 @@ public class TblProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<? extends Element> annotation = roundEnv.getElementsAnnotatedWith(Tbl.class);
+        Set<? extends Element> annotation = roundEnv.getElementsAnnotatedWith(Model.class);
 
         java.util.List<JCTree> entities = annotation.stream().map(element -> trees.getTree(element)).collect(Collectors.toList());
 
@@ -225,7 +225,7 @@ public class TblProcessor extends AbstractProcessor {
 
         Name metaClassName = getNameFromString(META_CLASS_NAME);
         List<JCTree.JCTypeParameter> typeParameters = List.nil();
-        JCTree.JCExpression extending = treeMaker.TypeApply(memberAccess(BaseTable.class.getName()), List.of(treeMaker.Ident(metaClassName)));
+        JCTree.JCExpression extending = treeMaker.TypeApply(memberAccess(BaseMeta.class.getName()), List.of(treeMaker.Ident(metaClassName)));
         List<JCTree.JCExpression> implementing = List.nil();
         final ArrayList<JCTree> defs = new ArrayList<>();
 

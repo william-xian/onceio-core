@@ -2,7 +2,7 @@ package top.onceio.core.db.model;
 
 import java.lang.reflect.Field;
 
-public class StringCol<T extends BaseTable> extends BaseCol<T> {
+public class StringCol<T extends BaseMeta> extends BaseCol<T> {
 
     public StringCol(T table, Field field) {
         super(table, field);

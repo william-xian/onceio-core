@@ -1,13 +1,11 @@
 package cn.xian.app.model.entity;
 
 import top.onceio.core.db.annotation.Col;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.BaseEntity;
-import top.onceio.core.db.model.*;
-import top.onceio.core.util.OReflectUtil;
+import top.onceio.core.db.annotation.Model;
+import top.onceio.core.db.model.BaseModel;
 
-@Tbl
-public class UserInfo extends BaseEntity<Long> {
+@Model
+public class UserInfo extends BaseModel<Long> {
     @Col(nullable = false, size = 32, unique = true)
     private String name;
     @Col(nullable = true, size = 64)

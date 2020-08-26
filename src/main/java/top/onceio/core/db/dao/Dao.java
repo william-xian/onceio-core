@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.function.Consumer;
 
-import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.mvc.annocations.Param;
 
 public interface Dao<T, M> {
@@ -59,7 +59,7 @@ public interface Dao<T, M> {
      * @param tpl 更新模板
      * @return 更新的数目
      */
-    int updateBy(BaseTable<M> tpl);
+    int updateBy(BaseMeta<M> tpl);
 
     <ID extends Serializable> int deleteById(ID id);
 
@@ -77,7 +77,7 @@ public interface Dao<T, M> {
      * @param cnd <b>null值代表不删除</b>
      * @return 删除的条数
      */
-    int delete(BaseTable<M> cnd);
+    int delete(BaseMeta<M> cnd);
 
     /**
      * 返回匹配到第一条符合条件的数据
@@ -86,7 +86,7 @@ public interface Dao<T, M> {
      * @param cnd null值代表不限定条件
      * @return 返回第一条数据
      */
-    T fetch(BaseTable<M> cnd);
+    T fetch(BaseMeta<M> cnd);
 
     /**
      * 返回没有被逻辑删除的，给定ids范围内的数据
@@ -103,10 +103,10 @@ public interface Dao<T, M> {
      * @param cnd null值代表不限制
      * @return 返回分页数据
      */
-    List<T> find(BaseTable<M> cnd);
+    List<T> find(BaseMeta<M> cnd);
 
 
-    Page<T> find(@Param("cnd")BaseTable<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize);
+    Page<T> find(@Param("cnd") BaseMeta<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize);
 
     /**
      * 根据筛选条件，将数据依次传给consumer处理
@@ -114,7 +114,7 @@ public interface Dao<T, M> {
      * @param cnd 条件
      * @param consumer 回调处理
      */
-    void find(BaseTable<M> cnd, Consumer<T> consumer);
+    void find(BaseMeta<M> cnd, Consumer<T> consumer);
 
     /**
      * 所有数据
@@ -129,5 +129,5 @@ public interface Dao<T, M> {
      * @param cnd 条件
      * @return 筛选到的数据个数
      */
-    long count(BaseTable<M> cnd);
+    long count(BaseMeta<M> cnd);
 }

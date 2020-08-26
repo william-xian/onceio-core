@@ -44,13 +44,13 @@ import top.onceio.core.aop.proxies.CacheEvictProxy;
 import top.onceio.core.aop.proxies.CachePutProxy;
 import top.onceio.core.aop.proxies.CacheableProxy;
 import top.onceio.core.aop.proxies.TransactionalProxy;
-import top.onceio.core.db.annotation.Tbl;
+import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.jdbc.JdbcHelper;
-import top.onceio.core.db.tbl.BaseEntity;
-import top.onceio.core.db.tbl.OI18n;
+import top.onceio.core.db.model.BaseModel;
+import top.onceio.core.db.tables.OI18n;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.AutoApi;
@@ -67,7 +67,7 @@ public class BeansEden {
     private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
     private ApiResover apiResover = new ApiResover();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
-            Using.class, Tbl.class, I18nMsg.class, I18nCfg.class, Aop.class);
+            Using.class, Model.class, I18nMsg.class, I18nCfg.class, Aop.class);
     private static BeansEden instance = null;
 
     private BeansEden() {
@@ -91,11 +91,11 @@ public class BeansEden {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Class<? extends BaseEntity>> matchTblTblView() {
-        List<Class<? extends BaseEntity>> entities = new LinkedList<>();
-        for (Class<?> clazz : scanner.getClasses(Tbl.class)) {
-            if (BaseEntity.class.isAssignableFrom(clazz)) {
-                entities.add((Class<? extends BaseEntity>) clazz);
+    public List<Class<? extends BaseModel>> matchTblTblView() {
+        List<Class<? extends BaseModel>> entities = new LinkedList<>();
+        for (Class<?> clazz : scanner.getClasses(Model.class)) {
+            if (BaseModel.class.isAssignableFrom(clazz)) {
+                entities.add((Class<? extends BaseModel>) clazz);
             }
         }
         return entities;
@@ -117,7 +117,7 @@ public class BeansEden {
     }
 
     private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator,
-                                      List<Class<? extends BaseEntity>> entities) {
+                                      List<Class<? extends BaseModel>> entities) {
         DaoHelper daoHelper = new DaoHelper(jdbcHelper, idGenerator);
         daoHelper.init(entities);
         return daoHelper;
@@ -462,7 +462,7 @@ public class BeansEden {
     public void resolve(String[] confDir, String[] packages) {
         conf = JsonConfLoader.loadConf(confDir);
         scanner.scanPackages(packages);
-        scanner.putClass(Tbl.class, OI18n.class);
+        scanner.putClass(Model.class, OI18n.class);
         scanner.putClass(AutoApi.class, OI18nHolder.class);
         nameToBean.putAll(conf.resolveBeans());
 

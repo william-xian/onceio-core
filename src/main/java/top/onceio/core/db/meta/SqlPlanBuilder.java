@@ -1,7 +1,7 @@
 package top.onceio.core.db.meta;
 
 import top.onceio.core.db.model.AccessHelper;
-import top.onceio.core.db.model.BaseTable;
+import top.onceio.core.db.model.BaseMeta;
 
 import java.util.*;
 
@@ -61,14 +61,14 @@ public class SqlPlanBuilder {
     }
 
 
-    private void sortedAdd(Map<String, TableMeta> nameToMeta, List<TableMeta> order, BaseTable def) {
+    private void sortedAdd(Map<String, TableMeta> nameToMeta, List<TableMeta> order, BaseMeta def) {
         TableMeta meta = nameToMeta.get(AccessHelper.getName(def));
         if (order.contains(meta)) {
             return;
         }
 
-        List<BaseTable<?>> refs = AccessHelper.getRefs(def);
-        for (BaseTable ref : refs) {
+        List<BaseMeta<?>> refs = AccessHelper.getRefs(def);
+        for (BaseMeta ref : refs) {
             sortedAdd(nameToMeta, order, ref);
         }
         order.add(meta);

@@ -4,7 +4,7 @@ import top.onceio.core.db.meta.TableMeta;
 
 import java.lang.reflect.Field;
 
-public class BaseCol<T extends BaseTable> implements Queryable {
+public class BaseCol<T extends BaseMeta> implements Queryable {
     T table;
     String name;
     Field field;
@@ -66,7 +66,7 @@ public class BaseCol<T extends BaseTable> implements Queryable {
         return table;
     }
 
-    public T in(BaseTable sub) {
+    public T in(BaseMeta sub) {
         table.where.append(" " + name() + " IN (");
         table.where.append(sub.toString());
         table.args.addAll(sub.args);
@@ -86,7 +86,7 @@ public class BaseCol<T extends BaseTable> implements Queryable {
         return table;
     }
 
-    public T notIn(BaseTable sub) {
+    public T notIn(BaseMeta sub) {
         table.where.append(" " + name() + " NOT IN (");
         table.where.append(sub.toString());
         table.args.addAll(sub.args);

@@ -2,11 +2,11 @@ package cn.xian.app.model.entity;
 
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Index;
-import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.tbl.BaseEntity;
+import top.onceio.core.db.annotation.Model;
+import top.onceio.core.db.model.BaseModel;
 
-@Tbl(indexes = {@Index(columns = {"user_id", "merchant_id"})})
-public class Bill extends BaseEntity<Long> {
+@Model(indexes = {@Index(columns = {"user_id", "merchant_id"})})
+public class Bill extends BaseModel<Long> {
     @Col
     protected Long userId;
     @Col

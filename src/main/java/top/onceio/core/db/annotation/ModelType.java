@@ -1,6 +1,6 @@
 package top.onceio.core.db.annotation;
 
-public enum TblType {
+public enum ModelType {
     TABLE,
     WITH,
     VIEW,

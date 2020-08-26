@@ -2,7 +2,7 @@ package top.onceio.core.beans;
 
 import top.onceio.core.aop.annotation.Cacheable;
 import top.onceio.core.db.dao.DaoHolder;
-import top.onceio.core.db.tbl.OI18n;
+import top.onceio.core.db.tables.OI18n;
 import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.AutoApi;
 import top.onceio.core.mvc.annocations.Param;

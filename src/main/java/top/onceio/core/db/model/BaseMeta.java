@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BaseTable<M> {
+public class BaseMeta<M> {
     protected M meta;
     protected String name;
     protected String alias;
@@ -19,7 +19,7 @@ public class BaseTable<M> {
     private StringBuilder order = new StringBuilder();
 
     StringBuilder update = new StringBuilder();
-    List<BaseTable<?>> refs = new ArrayList<>();
+    List<BaseMeta<?>> refs = new ArrayList<>();
 
     protected <E> void bind(String name,M meta, Class<E> e) {
         this.alias = "t";
@@ -48,7 +48,7 @@ public class BaseTable<M> {
         return meta;
     }
 
-    public <O extends BaseTable> M from(O... tables) {
+    public <O extends BaseMeta> M from(O... tables) {
         if (tables.length == 0) {
             from.append(" " + name + " AS " + alias);
         } else {
@@ -63,7 +63,7 @@ public class BaseTable<M> {
         return meta;
     }
 
-    public M join(BaseTable otherTable) {
+    public M join(BaseMeta otherTable) {
         from.append(" LEFT JOIN " + otherTable.name + " AS " + otherTable.alias);
 
         refs.add(otherTable);
@@ -119,7 +119,7 @@ public class BaseTable<M> {
         return this.meta;
     }
 
-    public M and(BaseTable meta) {
+    public M and(BaseMeta meta) {
         where.append(" AND (" + meta.where + ")");
         args.addAll(meta.args);
 
@@ -127,7 +127,7 @@ public class BaseTable<M> {
         return this.meta;
     }
 
-    public M or(BaseTable meta) {
+    public M or(BaseMeta meta) {
         where.append(" OR (" + meta.where + ")");
         args.addAll(meta.args);
 
@@ -190,8 +190,8 @@ public class BaseTable<M> {
         return sql.toString();
     }
 
-    public BaseTable<M> copy() {
-        BaseTable<M> other = new BaseTable<>();
+    public BaseMeta<M> copy() {
+        BaseMeta<M> other = new BaseMeta<>();
         other.name = this.name;
         other.meta = this.meta;
         other.select.append(this.select);
