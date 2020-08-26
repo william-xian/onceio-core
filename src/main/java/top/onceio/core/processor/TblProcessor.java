@@ -26,6 +26,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.management.ListenerNotFoundException;
 import javax.tools.Diagnostic;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -114,8 +115,9 @@ public class TblProcessor extends AbstractProcessor {
 
                 JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
                 jcClass.defs = jcClass.defs.append(metaClass);
-                jcClass.defs = jcClass.defs.append(generateMetaMethod(metaClass));
-                //messager.printMessage(Diagnostic.Kind.NOTE, tree.toString());
+                JCTree.JCMethodDecl methodDecl = generateMetaMethod(metaClass);
+                jcClass.defs = jcClass.defs.append(methodDecl);
+                //messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
             } catch (Exception e) {
                 messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
             }
@@ -228,14 +230,12 @@ public class TblProcessor extends AbstractProcessor {
         List<JCTree.JCExpression> implementing = List.nil();
         final ArrayList<JCTree> defs = new ArrayList<>();
 
-
         JCTree.JCMethodDecl m = generateMetaConstructionMethod(tblAnn, jcEntityClass, entityClass, metaClassName);
         defs.add(m);
         fieldToType.forEach((fieldName, fieldType) -> {
             defs.add(generateColField(entityClass, metaClassName, fieldName, fieldType));
         });
         JCTree.JCClassDecl metaClassDecl = treeMaker.ClassDef(modifiers, metaClassName, typeParameters, extending, implementing, List.from(defs));
-
 
         return metaClassDecl;
     }

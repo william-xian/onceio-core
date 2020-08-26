@@ -1,5 +1,6 @@
 package cn.xian.app.model.entity;
 
+import com.oracle.webservices.internal.api.databinding.DatabindingMode;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Index;
 import top.onceio.core.db.annotation.Tbl;

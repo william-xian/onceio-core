@@ -132,12 +132,14 @@
 			<artifactId>auto-service</artifactId>
 			<version>1.0-rc4</version>
 			<optional>true</optional>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.google.auto</groupId>
 			<artifactId>auto-common</artifactId>
 			<version>0.10</version>
 			<optional>true</optional>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
