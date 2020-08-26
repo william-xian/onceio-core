@@ -6,39 +6,48 @@ import top.onceio.core.db.model.BaseTable;
 import java.util.*;
 
 public class SqlPlanBuilder {
-    public static int DROP = 0;
-    public static int CREATE_SCHEMA = 1;
-    public static int CREATE = 2;
-    public static int ALTER = 3;
-    public static int COMMENT = 4;
+    public static int DROP_VIEW = 0;
+    public static int DROP = 1;
+    public static int CREATE_SCHEMA = 2;
+    public static int CREATE_TABLE = 3;
+    public static int ALTER = 4;
+    public static int CREATE_VIEW = 5;
+    public static int COMMENT = 6;
 
-    Map<TableMeta, List<String>[]> plan = new HashMap<>();
+    Map<TableMeta, Collection<String>[]> plan = new HashMap<>();
 
-    private List<String>[] createArray() {
-        List<String>[] arr = new List[5];
-        for (int i = 0; i < arr.length; i++) {
+    private Collection<String>[] createArray() {
+        Collection<String>[] arr = new Collection[7];
+        for (int i : Arrays.asList(DROP, CREATE_TABLE, ALTER, COMMENT)) {
             arr[i] = new ArrayList<>();
+        }
+        for (int i : Arrays.asList(DROP_VIEW, CREATE_SCHEMA, CREATE_VIEW)) {
+            arr[i] = new HashSet<>();
+        }
+        return arr;
+    }
+
+    private Collection<String>[] getOrCreate(TableMeta meta) {
+        Collection<String>[] arr = plan.get(meta);
+        if (arr == null) {
+            arr = createArray();
+            plan.put(meta, arr);
         }
         return arr;
     }
 
     public SqlPlanBuilder append(int option, TableMeta meta, String sql) {
-        List<String>[] arr = plan.get(meta);
-        if (arr == null) {
-            arr = createArray();
-            plan.put(meta, arr);
-        }
+        Collection<String>[] arr = getOrCreate(meta);
         arr[option].add(sql);
         return this;
     }
 
-    public SqlPlanBuilder append(int option, TableMeta meta, List<String> sql) {
-        List<String>[] arr = plan.get(meta);
-        if (arr == null) {
-            arr = createArray();
-            plan.put(meta, arr);
+
+    public SqlPlanBuilder append(int option, TableMeta meta, Collection<String> sql) {
+        if (!sql.isEmpty()) {
+            Collection<String>[] arr = getOrCreate(meta);
+            arr[option].addAll(sql);
         }
-        arr[option].addAll(sql);
         return this;
     }
 
@@ -71,6 +80,7 @@ public class SqlPlanBuilder {
         }
         if (meta.getViewDef() != null) {
             sortedAdd(nameToMeta, order, meta.getViewDef());
+            order.add(meta);
         } else {
             List<IndexMeta> all = new ArrayList<>();
             all.addAll(meta.getFieldConstraint());
@@ -87,20 +97,29 @@ public class SqlPlanBuilder {
 
     public List<String> build(Map<String, TableMeta> nameToMeta) {
         List<String> sql = new ArrayList<>();
-
         List<TableMeta> order = new ArrayList<>();
         for (TableMeta meta : plan.keySet()) {
             sortedAdd(nameToMeta, order, meta);
         }
 
+        Set<String> createSchema = new HashSet<>();
+        Set<String> dropView = new HashSet<>();
         for (TableMeta meta : order) {
-            List<String>[] v = plan.get(meta);
+            Collection<String>[] v = plan.get(meta);
             if (v != null) {
                 for (int i = 0; i < v.length; i++) {
-                    sql.addAll(v[i]);
+                    if (i == CREATE_SCHEMA) {
+                        createSchema.addAll(v[i]);
+                    } else if (i == DROP_VIEW) {
+                        dropView.addAll(v[i]);
+                    } else {
+                        sql.addAll(v[i]);
+                    }
                 }
             }
         }
+        sql.addAll(0, dropView);
+        sql.addAll(0, createSchema);
         return sql;
     }
 }

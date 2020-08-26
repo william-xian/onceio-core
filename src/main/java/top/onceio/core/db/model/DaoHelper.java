@@ -73,10 +73,10 @@ public class DaoHelper implements DDLDao, TransDao {
             return result;
         }
         List<String> schemaTables = new ArrayList<>();
-        for(String table:tables) {
-            if(!table.contains(".")){
-                schemaTables.add("public."+table);
-            }else {
+        for (String table : tables) {
+            if (!table.contains(".")) {
+                schemaTables.add("public." + table);
+            } else {
                 schemaTables.add(table);
             }
         }
@@ -138,7 +138,7 @@ public class DaoHelper implements DDLDao, TransDao {
                     refTable = rs.getString("f_schemaname") + "." + rs.getString("f_tablename");
                 }
 
-                String schemaTable = (schema + "." + table).toLowerCase().replace("public.","");
+                String schemaTable = (schema + "." + table).toLowerCase().replace("public.", "");
                 Map<String, ColumnMeta> columnMetaList = tableToColumns.get(schemaTable);
                 if (columnMetaList == null) {
                     columnMetaList = new HashMap<>();
@@ -186,7 +186,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 String table = rs.getString("tablename");
                 String indexname = rs.getString("indexname");
                 String indexDef = rs.getString("indexdef");
-                String schemaTable = (schema + "." + table).toLowerCase().replace("public.","");
+                String schemaTable = (schema + "." + table).toLowerCase().replace("public.", "");
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
                 String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
                 if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_NQ)) {
@@ -222,7 +222,30 @@ public class DaoHelper implements DDLDao, TransDao {
             tm.setColumnMetas(new ArrayList<>(columnNameToCol.values()));
             tm.setIndexes(constraints);
             tm.freshConstraintMetaTable();
-            result.put(schemaTable.toLowerCase().replace("public.",""), tm);
+            tm.setType(TblType.TABLE);
+            result.put(schemaTable.toLowerCase().replace("public.", ""), tm);
+        });
+
+        String qViews = "select * from pg_views v\n" +
+                "where concat(v.schemaname,'.',v.viewname) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
+                " ORDER BY v.schemaname,v.viewname";
+        jdbcHelper.query(qViews, schemaTables.toArray(), (rs) -> {
+            try {
+                String schema = rs.getString("schemaname");
+                String viewname = rs.getString("viewname");
+                String definition = rs.getString("definition");
+                String schemaTable = (schema + "." + viewname).toLowerCase().replace("public.", "");
+                TableMeta tm = new TableMeta();
+                tm.setTable(schemaTable);
+                if (definition.toUpperCase().contains(" MATERIALIZED ")) {
+                    tm.setType(TblType.MATERIALIZED);
+                } else {
+                    tm.setType(TblType.VIEW);
+                }
+                result.put(schemaTable.toLowerCase().replace("public.", ""), tm);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
+            }
         });
         return result;
     }
@@ -260,8 +283,8 @@ public class DaoHelper implements DDLDao, TransDao {
             TableMeta old = oldTableMeta.get(schemaTable);
             if (old == null) {
                 planBuilder.append(tm.createTableSql());
-            } else if (!old.equals(tm)) {
-                planBuilder.append(old.upgradeTo(tm));
+            } else if (!tm.equals(old)) {
+                planBuilder.append(tm.upgradeBy(old));
             }
         }
         List<String> sqlList = planBuilder.build(nameToMeta);
@@ -309,10 +332,12 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.batchUpdate(sql);
         return true;
     }
+
     @Override
     public int[] batchUpdate(final String... sql) {
         return jdbcHelper.batchExec(sql);
     }
+
     @Override
     public int[] batchUpdate(final String sql, List<Object[]> batchArgs) {
         return jdbcHelper.batchUpdate(sql, batchArgs);
@@ -333,10 +358,10 @@ public class DaoHelper implements DDLDao, TransDao {
                 if (cm != null) {
                     try {
                         Object val = rs.getObject(colName);
-                        if(val != null && !val.getClass().equals(cm.getJavaBaseType())) {
+                        if (val != null && !val.getClass().equals(cm.getJavaBaseType())) {
                             Object fieldVal = OReflectUtil.strToBaseType(cm.getField().getType(), val.toString());
                             cm.getField().set(row, fieldVal);
-                        }else {
+                        } else {
                             cm.getField().set(row, val);
                         }
                     } catch (IllegalArgumentException | IllegalAccessException e) {
@@ -351,7 +376,8 @@ public class DaoHelper implements DDLDao, TransDao {
 
     /**
      * 返回数据中list[0] 是字段名，list[1-n]是字段所对应的数据
-     * @param sql 使用替代符的SQL语句
+     *
+     * @param sql  使用替代符的SQL语句
      * @param args SQL参数列表
      * @return list[n]:row data list[0] is the columnNames,list[1] is the first row data of thus columns.
      */
@@ -380,7 +406,7 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.commit();
     }
 
-    public <E extends BaseEntity, M extends BaseTable,ID extends Serializable> E get(Class<E> tbl, ID id) {
+    public <E extends BaseEntity, M extends BaseTable, ID extends Serializable> E get(Class<E> tbl, ID id) {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
@@ -501,7 +527,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
-    public <E, ID extends Serializable>  int deleteById(Class<E> tbl,  ID id) {
+    public <E, ID extends Serializable> int deleteById(Class<E> tbl, ID id) {
         if (id == null)
             return 0;
         TableMeta tm = classToTableMeta.get(tbl);
@@ -509,7 +535,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, new Object[]{id});
     }
 
-    public <E,ID extends Serializable> int deleteByIds(Class<E> tbl, List<ID> ids) {
+    public <E, ID extends Serializable> int deleteByIds(Class<E> tbl, List<ID> ids) {
         if (ids == null || ids.isEmpty())
             return 0;
         TableMeta tm = classToTableMeta.get(tbl);
@@ -605,10 +631,10 @@ public class DaoHelper implements DDLDao, TransDao {
             cnd.from();
         }
         String sql = null;
-        if(TblType.TABLE.equals(tm.getType())) {
+        if (TblType.TABLE.equals(tm.getType()) || TblType.VIEW.equals(tm.getType()) || TblType.MATERIALIZED.equals(tm.getType())) {
             sql = cnd.toString();
-        } else if(TblType.WITH.equals(tm.getType())) {
-            sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toSql() , cnd.toString());
+        } else if (TblType.WITH.equals(tm.getType())) {
+            sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toSql(), cnd.toString());
         }
         jdbcHelper.query(sql, cnd.getArgs().toArray(new Object[0]), rs -> {
             E row = null;
@@ -621,7 +647,7 @@ public class DaoHelper implements DDLDao, TransDao {
         });
     }
 
-    public <E extends BaseEntity, M extends BaseTable,ID extends Serializable> List<E> findByIds(Class<E> tbl, List<ID> ids) {
+    public <E extends BaseEntity, M extends BaseTable, ID extends Serializable> List<E> findByIds(Class<E> tbl, List<ID> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<E>();
         }

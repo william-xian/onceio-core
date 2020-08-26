@@ -389,7 +389,7 @@ public class TableMeta {
             String schema = name().substring(0, comaIndex);
             planBuilder.append(SqlPlanBuilder.CREATE_SCHEMA, this, String.format("CREATE SCHEMA IF NOT EXISTS %s;", schema));
         }
-        if (viewDef == null) {
+        if (type.equals(TblType.TABLE)) {
             tbl.append(String.format("CREATE TABLE %s (", table));
 
             for (ColumnMeta cm : columnMetas) {
@@ -408,7 +408,7 @@ public class TableMeta {
             }
             tbl.delete(tbl.length() - 1, tbl.length());
             tbl.append(");");
-            planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
+            planBuilder.append(SqlPlanBuilder.CREATE_TABLE, this, tbl.toString());
             /** 添加字段约束 */
             planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(fieldConstraint));
 
@@ -416,12 +416,18 @@ public class TableMeta {
             planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(indexes));
 
             planBuilder.append(SqlPlanBuilder.COMMENT, this, comments);
-        } else {
-            planBuilder.append(SqlPlanBuilder.DROP, this, String.format("DROP VIEW IF EXISTS %s;", table));
+        } else if (type.equals(TblType.VIEW)) {
+            planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", table));
             tbl.append(String.format("CREATE VIEW %s AS (", table));
             tbl.append(viewDef.toSql());
             tbl.append(");");
-            planBuilder.append(SqlPlanBuilder.CREATE, this, tbl.toString());
+            planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
+        } else if (type.equals(TblType.MATERIALIZED)) {
+            planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", table));
+            tbl.append(String.format("CREATE MATERIALIZED VIEW %s AS (", table));
+            tbl.append(viewDef.toSql());
+            tbl.append(");");
+            planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
         }
         return planBuilder;
     }
@@ -429,85 +435,96 @@ public class TableMeta {
     /**
      * 升级数据库，返回需要执行的sql
      *
-     * @param other 其他实例
+     * @param old 其他实例
      * @return SQL执行计划
      */
-    public SqlPlanBuilder upgradeTo(TableMeta other) {
-        if (!table.equals(other.table)) {
+    public SqlPlanBuilder upgradeBy(TableMeta old) {
+        if (!table.equals(old.table)) {
             return null;
         }
-        if (viewDef == null) {
-            return upgradeTableTo(other);
-        } else {
+        if (this.type.equals(TblType.TABLE)) {
+            return upgradeTableBy(old);
+        } else if (this.type.equals(TblType.VIEW)) {
             SqlPlanBuilder planBuilder = new SqlPlanBuilder();
-            planBuilder.append(SqlPlanBuilder.DROP, other, String.format("DROP VIEW IF EXISTS %s;", table));
+            planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", this.table));
             StringBuffer tbl = new StringBuffer();
-            tbl.append(String.format("CREATE VIEW %s AS (", table));
-            tbl.append(viewDef);
+            tbl.append(String.format("CREATE VIEW %s AS (", this.table));
+            tbl.append(this.viewDef.toSql());
             tbl.append(");");
-            planBuilder.append(SqlPlanBuilder.CREATE, other, tbl.toString());
+            planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
             return planBuilder;
+        } else if (this.type.equals(TblType.MATERIALIZED)) {
+            SqlPlanBuilder planBuilder = new SqlPlanBuilder();
+            planBuilder.append(SqlPlanBuilder.DROP_VIEW, this, String.format("DROP VIEW IF EXISTS %s;", this.table));
+            StringBuffer tbl = new StringBuffer();
+            tbl.append(String.format("CREATE MATERIALIZED VIEW %s AS (", this.table));
+            tbl.append(this.viewDef.toSql());
+            tbl.append(");");
+            planBuilder.append(SqlPlanBuilder.CREATE_VIEW, this, tbl.toString());
+            return planBuilder;
+        } else {
+            return new SqlPlanBuilder();
         }
     }
 
     /**
      * 升级数据库，返回需要执行的sql
      *
-     * @param other 其他实例
+     * @param old 其他实例
      * @return SQL执行计划
      */
-    public SqlPlanBuilder upgradeTableTo(TableMeta other) {
+    public SqlPlanBuilder upgradeTableBy(TableMeta old) {
         List<String> comments = new ArrayList<>();
-        List<ColumnMeta> otherColumn = other.columnMetas;
         List<ColumnMeta> newColumns = new ArrayList<>();
         List<IndexMeta> dropIndexs = new ArrayList<>();
         List<IndexMeta> dropForeignKeys = new ArrayList<>();
         List<ColumnMeta> alterColumns = new ArrayList<>();
         List<IndexMeta> addForeignKeys = new ArrayList<>();
 
-        for (ColumnMeta ocm : otherColumn) {
-            ColumnMeta cm = nameToColumnMeta.get(ocm.name);
-            if (cm == null) {
-                newColumns.add(ocm);
-                if (ocm.comment != null && !ocm.comment.equals("")) {
-                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, ocm.name, ocm.comment));
+
+        for (ColumnMeta newCm : columnMetas) {
+            ColumnMeta oldCm = old.nameToColumnMeta.get(newCm.name);
+            if (oldCm == null) {
+                newColumns.add(newCm);
+                if (newCm.comment != null && !newCm.comment.equals("")) {
+                    comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, newCm.name, newCm.comment));
                 }
             } else {
-                if (cm.unique && !ocm.unique) {
+                if (oldCm.unique && !newCm.unique) {
                     IndexMeta cnstMeta = new IndexMeta();
-                    cnstMeta.setColumns(Arrays.asList(ocm.getName()));
+                    cnstMeta.setColumns(Arrays.asList(newCm.getName()));
                     cnstMeta.setTable(table);
                     cnstMeta.setType(IndexType.UNIQUE_FIELD);
-                    cnstMeta.setUsing(ocm.getUsing());
+                    cnstMeta.setUsing(newCm.getUsing());
                     dropIndexs.add(cnstMeta);
                 }
                 /** 删除外键 */
-                if (cm.useFK && !ocm.useFK) {
+                if (oldCm.useFK && !newCm.useFK) {
                     IndexMeta cnstMeta = new IndexMeta();
-                    cnstMeta.setColumns(Arrays.asList(cm.getName()));
+                    cnstMeta.setColumns(Arrays.asList(oldCm.getName()));
                     cnstMeta.setTable(table);
                     cnstMeta.setType(IndexType.FOREIGN_KEY);
-                    cnstMeta.setRefTable(cm.getRefTable());
-                    cnstMeta.setUsing(cm.getUsing());
+                    cnstMeta.setRefTable(oldCm.getRefTable());
+                    cnstMeta.setUsing(oldCm.getUsing());
                     dropForeignKeys.add(cnstMeta);
                 }
-                if (!Objects.equals(cm.type, ocm.type) || !Objects.equals(cm.defaultValue, ocm.defaultValue) || cm.nullable != ocm.nullable) {
-                    alterColumns.add(ocm);
+                if (!Objects.equals(oldCm.type, newCm.type) || !Objects.equals(oldCm.defaultValue, newCm.defaultValue) || oldCm.nullable != newCm.nullable) {
+                    alterColumns.add(newCm);
                 }
-                if (!cm.useFK && ocm.useFK) {
-                    if (ocm.useFK && ocm.refTable != null) {
+                if (!oldCm.useFK && newCm.useFK) {
+                    if (newCm.useFK && newCm.refTable != null) {
                         IndexMeta cnstMeta = new IndexMeta();
-                        cnstMeta.setColumns(Arrays.asList(cm.getName()));
+                        cnstMeta.setColumns(Arrays.asList(oldCm.getName()));
                         cnstMeta.setTable(table);
                         cnstMeta.setType(IndexType.FOREIGN_KEY);
-                        cnstMeta.setRefTable(ocm.getRefTable());
-                        cnstMeta.setUsing(ocm.getUsing());
+                        cnstMeta.setRefTable(newCm.getRefTable());
+                        cnstMeta.setUsing(newCm.getUsing());
                         addForeignKeys.add(cnstMeta);
                     }
                 }
-                if (!Objects.equals(cm.comment, ocm.comment)) {
-                    if (ocm.comment != null && !ocm.comment.equals("")) {
-                        comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, ocm.name, ocm.comment));
+                if (!Objects.equals(oldCm.comment, newCm.comment)) {
+                    if (newCm.comment != null && !newCm.comment.equals("")) {
+                        comments.add(String.format("COMMENT ON COLUMN \"%s\".\"%s\" IS '%s';", table, newCm.name, newCm.comment));
                     }
                 }
             }
@@ -516,18 +533,18 @@ public class TableMeta {
         Set<String> oldConstraintSet = new HashSet<String>();
         Set<String> currentSet = new HashSet<String>();
 
-        for (IndexMeta tuple : fieldConstraint) {
+        for (IndexMeta tuple : old.fieldConstraint) {
             oldConstraintSet.add(String.join(",", tuple.columns));
         }
         List<IndexMeta> addUniqueConstraint = new ArrayList<>();
-        for (IndexMeta tuple : other.fieldConstraint) {
+        for (IndexMeta tuple : fieldConstraint) {
             currentSet.add(String.join(",", tuple.columns));
             if (!oldConstraintSet.contains(String.join(",", tuple.columns))) {
                 addUniqueConstraint.add(tuple);
             }
         }
         List<IndexMeta> dropUniqueConstraint = new ArrayList<>();
-        for (IndexMeta tuple : fieldConstraint) {
+        for (IndexMeta tuple : old.fieldConstraint) {
             if (!currentSet.contains(String.join(",", tuple.columns))) {
                 dropUniqueConstraint.add(tuple);
             }
@@ -536,18 +553,18 @@ public class TableMeta {
         oldConstraintSet.clear();
         currentSet.clear();
 
-        for (IndexMeta tuple : indexes) {
+        for (IndexMeta tuple : old.indexes) {
             oldConstraintSet.add(String.join(",", tuple.columns));
         }
         List<IndexMeta> addCustomizedConstraint = new ArrayList<>();
-        for (IndexMeta tuple : other.indexes) {
+        for (IndexMeta tuple : indexes) {
             currentSet.add(String.join(",", tuple.columns));
             if (!oldConstraintSet.contains(String.join(",", tuple.columns))) {
                 addCustomizedConstraint.add(tuple);
             }
         }
         List<IndexMeta> dropCustomizedConstraint = new ArrayList<>();
-        for (IndexMeta tuple : indexes) {
+        for (IndexMeta tuple : old.indexes) {
             if (!currentSet.contains(String.join(",", tuple.columns))) {
                 dropCustomizedConstraint.add(tuple);
             }
@@ -555,15 +572,15 @@ public class TableMeta {
 
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
 
-        planBuilder.append(SqlPlanBuilder.ALTER, other, addColumnSql(newColumns));
-        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropIndexs));
-        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropForeignKeys));
-        planBuilder.append(SqlPlanBuilder.ALTER, other, alterColumnSql(alterColumns));
-        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addForeignKeys));
-        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropUniqueConstraint));
-        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addUniqueConstraint));
-        planBuilder.append(SqlPlanBuilder.DROP, other, IndexMeta.dropConstraintSql(dropCustomizedConstraint));
-        planBuilder.append(SqlPlanBuilder.ALTER, other, IndexMeta.addConstraintSql(addCustomizedConstraint));
+        planBuilder.append(SqlPlanBuilder.ALTER, this, addColumnSql(newColumns));
+        planBuilder.append(SqlPlanBuilder.DROP, this, IndexMeta.dropConstraintSql(dropIndexs));
+        planBuilder.append(SqlPlanBuilder.DROP, this, IndexMeta.dropConstraintSql(dropForeignKeys));
+        planBuilder.append(SqlPlanBuilder.ALTER, this, alterColumnSql(alterColumns));
+        planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(addForeignKeys));
+        planBuilder.append(SqlPlanBuilder.DROP, this, IndexMeta.dropConstraintSql(dropUniqueConstraint));
+        planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(addUniqueConstraint));
+        planBuilder.append(SqlPlanBuilder.DROP, this, IndexMeta.dropConstraintSql(dropCustomizedConstraint));
+        planBuilder.append(SqlPlanBuilder.ALTER, this, IndexMeta.addConstraintSql(addCustomizedConstraint));
         return planBuilder;
     }
 
@@ -615,5 +632,9 @@ public class TableMeta {
 
     public TblType getType() {
         return type;
+    }
+
+    public void setType(TblType type) {
+        this.type = type;
     }
 }

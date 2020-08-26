@@ -8,7 +8,7 @@ import top.onceio.core.db.annotation.TblType;
 import top.onceio.core.db.model.*;
 import top.onceio.core.db.tbl.BaseEntity;
 
-@Tbl(type = TblType.WITH)
+@Tbl(type = TblType.VIEW)
 public class UserBillView extends BaseEntity<Long> implements DefView {
 
     @Col(size = 32)
