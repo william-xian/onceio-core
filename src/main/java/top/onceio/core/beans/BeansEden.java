@@ -118,8 +118,8 @@ public class BeansEden {
 
     private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator,
                                       List<Class<? extends BaseEntity>> entities) {
-        DaoHelper daoHelper = new DaoHelper();
-        daoHelper.init(jdbcHelper, idGenerator, entities);
+        DaoHelper daoHelper = new DaoHelper(jdbcHelper, idGenerator);
+        daoHelper.init(entities);
         return daoHelper;
     }
 
@@ -454,7 +454,7 @@ public class BeansEden {
             store(DaoHelper.class, null, daoHelper);
         } else {
             if (daoHelper.getEntities() == null) {
-                daoHelper.init(jdbcHelper, idGenerator, matchTblTblView());
+                daoHelper.init(matchTblTblView());
             }
         }
     }

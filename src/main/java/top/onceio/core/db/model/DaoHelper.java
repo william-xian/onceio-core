@@ -46,9 +46,9 @@ public class DaoHelper implements DDLDao, TransDao {
     public DaoHelper() {
     }
 
-    public DaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator, List<Class<? extends BaseEntity>> entitys) {
-        super();
-        init(jdbcHelper, idGenerator, entitys);
+    public DaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator) {
+        this.jdbcHelper = jdbcHelper;
+        this.idGenerator = idGenerator;
     }
 
     public boolean exist(Class<?> tbl) {
@@ -236,9 +236,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return new HashMap<>();
     }
 
-    public void init(JdbcHelper jdbcHelper, IdGenerator idGenerator, List<Class<? extends BaseEntity>> entities) {
-        this.jdbcHelper = jdbcHelper;
-        this.idGenerator = idGenerator;
+    public void init(List<Class<? extends BaseEntity>> entities) {
         this.classToTableMeta = new HashMap<>();
         this.nameToMeta = new HashMap<>();
         if (entities != null) {
