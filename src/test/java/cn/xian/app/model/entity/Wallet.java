@@ -8,7 +8,7 @@ import top.onceio.core.util.OReflectUtil;
 
 
 @Tbl(autoCreate = true)
-public class Wallet extends BaseEntity {
+public class Wallet extends BaseEntity<Long> {
     @Col(nullable = false, ref = UserInfo.class)
     private Long id;
     @Col(nullable = true)

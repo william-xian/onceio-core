@@ -17,8 +17,8 @@ import com.google.gson.LongSerializationPolicy;
 
 public final class OUtils {
 
-    public final static Gson gson = new GsonBuilder().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().create();
-    private final static Gson prettyGson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+    public final static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().create();
+    private final static Gson prettyGson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().disableHtmlEscaping().setPrettyPrinting().create();
 
     public static String encodeMD5(String str) {
         try {

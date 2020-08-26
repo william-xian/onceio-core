@@ -1,17 +1,12 @@
 package cn.xian.app.model.entity;
 
-import com.oracle.webservices.internal.api.databinding.DatabindingMode;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Index;
 import top.onceio.core.db.annotation.Tbl;
-import top.onceio.core.db.model.BaseCol;
 import top.onceio.core.db.tbl.BaseEntity;
-import top.onceio.core.util.OReflectUtil;
-import top.onceio.core.db.model.*;
-import top.onceio.core.util.OReflectUtil;
 
 @Tbl(indexes = {@Index(columns = {"user_id", "merchant_id"})})
-public class Bill extends BaseEntity {
+public class Bill extends BaseEntity<Long> {
     @Col
     protected Long userId;
     @Col

@@ -559,10 +559,10 @@ public class BeansEden {
                 try {
                     String name = field.get(null).toString();
                     String key = "msg/" + group.value() + "_" + OUtils.encodeMD5(name);
-                    OI18n i18n = dao.fetch(OI18n.meta().oid.eq(key));
+                    OI18n i18n = dao.fetch(OI18n.meta().id.eq(key));
                     if (i18n == null) {
                         i18n = new OI18n();
-                        i18n.setOid(key);
+                        i18n.setId(key);
                         i18n.setName(name);
                         i18ns.add(i18n);
                     }
@@ -586,19 +586,19 @@ public class BeansEden {
                 field.setAccessible(true);
                 I18nCfgBrief cons = field.getAnnotation(I18nCfgBrief.class);
                 try {
-                    String fieldname = field.getName();
+                    String fieldName = field.getName();
                     String val = field.get(null).toString();
-                    String key = "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldname;
+                    String key = "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldName;
                     String name = null;
                     if (cons != null) {
                         name = cons.value();
                     } else {
-                        name = fieldname;
+                        name = fieldName;
                     }
-                    OI18n i18n = dao.fetch(OI18n.meta().oid.eq(key));
+                    OI18n i18n = dao.fetch(OI18n.meta().id.eq(key));
                     if (i18n == null) {
                         i18n = new OI18n();
-                        i18n.setOid(key);
+                        i18n.setId(key);
                         i18n.setName(name);
                         i18n.setVal(val);
                         LOGGER.debug("add: " + i18n);

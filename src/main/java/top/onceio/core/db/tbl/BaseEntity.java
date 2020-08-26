@@ -3,21 +3,23 @@ package top.onceio.core.db.tbl;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.util.OUtils;
 
+import java.io.Serializable;
+
 /**
  * @author Administrator
  */
-public abstract class BaseEntity {
+public abstract class BaseEntity<ID extends Serializable> {
     @Col(nullable = false)
-    protected Long id;
+    protected ID id;
 
     public BaseEntity() {
     }
 
-    public Long getId() {
+    public ID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(ID id) {
         this.id = id;
     }
 

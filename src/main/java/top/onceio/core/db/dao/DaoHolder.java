@@ -1,5 +1,6 @@
 package top.onceio.core.db.dao;
 
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Consumer;
@@ -38,7 +39,7 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
 
     @Api(value = "/{id}", method = ApiMethod.GET)
     @Override
-    public T get(@Param("id") Long id) {
+    public T get(@Param("id") Serializable id) {
         return daoHelper.get(tbl, id);
     }
 
@@ -83,12 +84,12 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
     }
 
     @Override
-    public int deleteById(Long id) {
+    public int deleteById(Serializable id) {
         return daoHelper.deleteById(tbl, id);
     }
 
     @Override
-    public int deleteByIds(List<Long> ids) {
+    public <ID extends Serializable> int deleteByIds(List<ID> ids) {
         return daoHelper.deleteByIds(tbl, ids);
     }
 
@@ -105,7 +106,7 @@ public abstract class DaoHolder<T extends BaseEntity, M extends BaseTable> imple
 
     @Api(value = "/byIds", method = {ApiMethod.GET})
     @Override
-    public List<T> findByIds(@Param("ids") List<Long> ids) {
+    public <ID extends Serializable> List<T> findByIds(@Param("ids") List<ID> ids) {
         return daoHelper.findByIds(tbl, ids);
     }
 

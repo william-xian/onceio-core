@@ -1,5 +1,6 @@
 package top.onceio.core.db.dao;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -14,7 +15,7 @@ public interface Dao<T, M> {
      * @param id 主键
      * @return 单个记录
      */
-    T get(Long id);
+    <ID extends Serializable> T get(ID id);
 
     /**
      * 插入数据
@@ -60,7 +61,7 @@ public interface Dao<T, M> {
      */
     int updateBy(BaseTable<M> tpl);
 
-    int deleteById(Long id);
+    <ID extends Serializable> int deleteById(ID id);
 
     /**
      * 根据主键物理删除数据
@@ -68,7 +69,7 @@ public interface Dao<T, M> {
      * @param ids 主键列表
      * @return 删除的条数
      */
-    int deleteByIds(List<Long> ids);
+    <ID extends Serializable> int deleteByIds(List<ID> ids);
 
     /**
      * 根据条件物理删除数据
@@ -93,7 +94,7 @@ public interface Dao<T, M> {
      * @param ids 主键列表
      * @return 列表
      */
-    List<T> findByIds(List<Long> ids);
+    <ID extends Serializable> List<T> findByIds(List<ID> ids);
 
     /**
      * 根据条件筛选数据

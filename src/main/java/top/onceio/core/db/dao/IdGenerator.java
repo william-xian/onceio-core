@@ -1,5 +1,7 @@
 package top.onceio.core.db.dao;
 
+import java.io.Serializable;
+
 public interface IdGenerator {
-    Long next(Class<?> entityClass);
+    Serializable next(Class<?> entityClass);
 }

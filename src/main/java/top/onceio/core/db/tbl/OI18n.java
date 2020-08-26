@@ -10,22 +10,20 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 @Tbl
-public class OI18n extends BaseEntity {
+public class OI18n extends BaseEntity<String> {
     @Col(size = 64, nullable = false)
-    private String oid;
+    protected String id;
     @Col(size = 255, nullable = false)
     private String name;
     @Col(size = 32, nullable = true)
     private String val;
 
-    public String getOid() {
-        return oid;
+    public String getId() {
+        return id;
     }
-
-    public void setOid(String oid) {
-        this.oid = oid;
+    public void setId(String id) {
+        this.id = id;
     }
-
     public String getName() {
         return name;
     }
@@ -55,17 +53,16 @@ public class OI18n extends BaseEntity {
         return "const/" + group.value() + "_" + clazz.getSimpleName() + "_" + fieldName;
     }
 
-    public static class Meta extends BaseTable<Meta> {
-        public BaseCol<Meta> id = new BaseCol(this, OReflectUtil.getField(OI18n.class, "id"));
-        public StringCol<Meta> oid = new StringCol(this, OReflectUtil.getField(OI18n.class, "oid"));
-        public StringCol<Meta> name = new StringCol(this, OReflectUtil.getField(OI18n.class, "name"));
-        public StringCol<Meta> val = new StringCol(this, OReflectUtil.getField(OI18n.class, "val"));
 
+
+    public static class Meta extends top.onceio.core.db.model.BaseTable<Meta>  {
+        public top.onceio.core.db.model.StringCol<Meta> id = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "id"));
+        public top.onceio.core.db.model.StringCol<Meta> name = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "name"));
+        public top.onceio.core.db.model.StringCol<Meta> val = new top.onceio.core.db.model.StringCol(this, top.onceio.core.util.OReflectUtil.getField(OI18n.class, "val"));
         public Meta() {
-            super.bind("public.o_i18n", this, OI18n.class);
+            super.bind("o_i18n",this, OI18n.class);
         }
     }
-
     public static Meta meta() {
         return new Meta();
     }

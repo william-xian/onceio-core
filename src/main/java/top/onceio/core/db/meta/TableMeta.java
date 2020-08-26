@@ -1,5 +1,6 @@
 package top.onceio.core.db.meta;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -122,7 +123,7 @@ public class TableMeta {
                 if (col.type().equals("")) {
                     Class<?> javaBaseType = cm.getJavaBaseType();
                     if (javaBaseType == null) {
-                        if (field.getType() == Object.class) {
+                        if (field.getType() == Serializable.class) {
                             javaBaseType = OReflectUtil.searchGenType(clazz, classes.get(classes.size() - 1),
                                     field.getGenericType());
                         } else {

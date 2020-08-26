@@ -9,7 +9,7 @@ import top.onceio.core.db.model.*;
 import top.onceio.core.db.tbl.BaseEntity;
 
 @Tbl(type = TblType.WITH)
-public class UserBillView extends BaseEntity implements DefView {
+public class UserBillView extends BaseEntity<Long> implements DefView {
 
     @Col(size = 32)
     protected String name;

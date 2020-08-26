@@ -7,7 +7,7 @@ import top.onceio.core.db.model.*;
 import top.onceio.core.util.OReflectUtil;
 
 @Tbl
-public class UserInfo extends BaseEntity {
+public class UserInfo extends BaseEntity<Long> {
     @Col(nullable = false, size = 32, unique = true)
     private String name;
     @Col(nullable = true, size = 64)

@@ -19,6 +19,7 @@ import top.onceio.core.util.OLog;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -379,7 +380,7 @@ public class DaoHelper implements DDLDao, TransDao {
         jdbcHelper.commit();
     }
 
-    public <E extends BaseEntity, M extends BaseTable> E get(Class<E> tbl, Long id) {
+    public <E extends BaseEntity, M extends BaseTable,ID extends Serializable> E get(Class<E> tbl, ID id) {
         TableMeta tm = classToTableMeta.get(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
         String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
@@ -433,7 +434,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     private <E extends BaseEntity> Object[] initEntity(TableMeta tm, List<String> names, E entity) {
         if (entity.getId() == null) {
-            Long id = idGenerator.next(entity.getClass());
+            Serializable id = idGenerator.next(entity.getClass());
             entity.setId(id);
         }
         Object[] val = new Object[names.size()];
@@ -457,7 +458,7 @@ public class DaoHelper implements DDLDao, TransDao {
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
 
         List<String> names = new ArrayList<>();
-        long id = entity.getId();
+        Serializable id = entity.getId();
         for (ColumnMeta cm : tm.getColumnMetas()) {
             if (!cm.isPrimaryKey()) {
                 names.add(cm.getName());
@@ -500,7 +501,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
-    public <E> int deleteById(Class<E> tbl, Long id) {
+    public <E, ID extends Serializable>  int deleteById(Class<E> tbl,  ID id) {
         if (id == null)
             return 0;
         TableMeta tm = classToTableMeta.get(tbl);
@@ -508,7 +509,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, new Object[]{id});
     }
 
-    public <E> int deleteByIds(Class<E> tbl, List<Long> ids) {
+    public <E,ID extends Serializable> int deleteByIds(Class<E> tbl, List<ID> ids) {
         if (ids == null || ids.isEmpty())
             return 0;
         TableMeta tm = classToTableMeta.get(tbl);
@@ -620,7 +621,7 @@ public class DaoHelper implements DDLDao, TransDao {
         });
     }
 
-    public <E extends BaseEntity, M extends BaseTable> List<E> findByIds(Class<E> tbl, List<Long> ids) {
+    public <E extends BaseEntity, M extends BaseTable,ID extends Serializable> List<E> findByIds(Class<E> tbl, List<ID> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<E>();
         }
