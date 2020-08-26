@@ -7,14 +7,15 @@ import java.util.*;
 
 public class SqlPlanBuilder {
     public static int DROP = 0;
-    public static int CREATE = 1;
-    public static int ALTER = 2;
-    public static int COMMENT = 3;
+    public static int CREATE_SCHEMA = 1;
+    public static int CREATE = 2;
+    public static int ALTER = 3;
+    public static int COMMENT = 4;
 
     Map<TableMeta, List<String>[]> plan = new HashMap<>();
 
     private List<String>[] createArray() {
-        List<String>[] arr = new List[4];
+        List<String>[] arr = new List[5];
         for (int i = 0; i < arr.length; i++) {
             arr[i] = new ArrayList<>();
         }

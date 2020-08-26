@@ -41,7 +41,7 @@ public class TableMeta {
         }
         Tbl tbl = clazz.getAnnotation(Tbl.class);
         if (tbl != null && !tbl.name().equals("")) {
-            return tbl.name().toLowerCase().replace("public.","");
+            return tbl.name().toLowerCase().replace("public.", "");
         } else {
             return defaultName;
         }
@@ -160,9 +160,10 @@ public class TableMeta {
 
     /**
      * Java类型转换成postgres字段类型
+     *
      * @param type Java类型
-     * @param col 字段属性
-     * @return  postgres字段类型
+     * @param col  字段属性
+     * @return postgres字段类型
      */
     public static String transType(Class<?> type, Col col) {
         if (type.equals(Long.class) || type.equals(long.class)) {
@@ -382,6 +383,11 @@ public class TableMeta {
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         StringBuffer tbl = new StringBuffer();
         List<String> comments = new ArrayList<>();
+        int comaIndex = name().indexOf('.');
+        if (comaIndex > -1) {
+            String schema = name().substring(0, comaIndex);
+            planBuilder.append(SqlPlanBuilder.CREATE_SCHEMA, this, String.format("CREATE SCHEMA IF NOT EXISTS %s;", schema));
+        }
         if (viewDef == null) {
             tbl.append(String.format("CREATE TABLE %s (", table));
 
