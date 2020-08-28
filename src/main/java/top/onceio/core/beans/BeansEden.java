@@ -18,7 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -62,7 +63,7 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 public class BeansEden {
-    private final static Logger LOGGER = Logger.getLogger(BeansEden.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(BeansEden.class);
     private final static String CLASS_FROM_CG_LIB = "$$EnhancerByCGLIB$$";
     private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
     private ApiResover apiResover = new ApiResover();
@@ -498,7 +499,10 @@ public class BeansEden {
             beanName = clazz.getName();
         }
         nameToBean.put(beanName, bean);
-        LOGGER.debug("store beanName=" + beanName);
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("store beanName=" + beanName);
+        }
+
     }
 
     public <T> T load(Class<T> clazz) {
@@ -601,18 +605,24 @@ public class BeansEden {
                         i18n.setId(key);
                         i18n.setName(name);
                         i18n.setVal(val);
-                        LOGGER.debug("add: " + i18n);
+                        if(LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("add: " + i18n);
+                        }
                         i18ns.add(i18n);
                     } else {
                         /** The val depend on database */
                         if (!val.equals(i18n.getVal())) {
                             field.set(null, OReflectUtil.strToBaseType(field.getType(), i18n.getVal()));
-                            LOGGER.debug("reload: " + i18n);
+                            if(LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("reload: " + i18n);
+                            }
                         }
                         if (!i18n.getName().equals(name)) {
                             i18n.setName(name);
                             dao.insert(i18n);
-                            LOGGER.debug("update: " + i18n);
+                            if(LOGGER.isDebugEnabled()) {
+                                LOGGER.debug("update: " + i18n);
+                            }
                         }
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {

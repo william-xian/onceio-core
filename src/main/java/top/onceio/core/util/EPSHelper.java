@@ -21,7 +21,7 @@ public class EPSHelper<T> {
         this.defaultMaxEPS = defaultMaxEPS;
     }
 
-    public void waiting(T name) {
+    public void waiting(T name) throws InterruptedException {
         do {
             ConcurrentHashMap<Long, AtomicInteger> empty = new ConcurrentHashMap<>();
             ConcurrentHashMap<Long, AtomicInteger> eps = null;
@@ -39,9 +39,10 @@ public class EPSHelper<T> {
                     //Thread.sleep((((waitingCnt - maxEPS) / maxEPS) * TIME_WINDOW) + (TIME_WINDOW + time - currentTime));
                     Thread.sleep(TIME_WINDOW + time - currentTime);
                 } catch (InterruptedException e) {
-                    OLog.error(e.toString());
+                    throw e;
+                }finally {
+                    nameToEPS.remove(time);
                 }
-                nameToEPS.remove(time);
             } else {
                 break;
             }

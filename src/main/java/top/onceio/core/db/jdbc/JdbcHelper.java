@@ -14,13 +14,14 @@ import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import top.onceio.core.exception.Failed;
 
 public class JdbcHelper {
 
-    private static final Logger LOGGER = Logger.getLogger(JdbcHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcHelper.class);
 
     private static ThreadLocal<Connection> trans = new ThreadLocal<Connection>();
 
@@ -48,13 +49,13 @@ public class JdbcHelper {
      * <B>Note:</B> If this method is called during a transaction, the result is
      * implementation-defined.
      *
-     * @param level one of the following <code>Connection</code> constants:
-     *              <code>Connection.TRANSACTION_READ_UNCOMMITTED</code>,
-     *              <code>Connection.TRANSACTION_READ_COMMITTED</code>,
-     *              <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
-     *              <code>Connection.TRANSACTION_SERIALIZABLE</code>. (Note that
-     *              <code>Connection.TRANSACTION_NONE</code> cannot be used
-     *              because it specifies that transactions are not supported.)
+     * @param level    one of the following <code>Connection</code> constants:
+     *                 <code>Connection.TRANSACTION_READ_UNCOMMITTED</code>,
+     *                 <code>Connection.TRANSACTION_READ_COMMITTED</code>,
+     *                 <code>Connection.TRANSACTION_REPEATABLE_READ</code>, or
+     *                 <code>Connection.TRANSACTION_SERIALIZABLE</code>. (Note that
+     *                 <code>Connection.TRANSACTION_NONE</code> cannot be used
+     *                 because it specifies that transactions are not supported.)
      * @param readOnly 是否是只读
      * @return isCreated
      * @see DatabaseMetaData#supportsTransactionIsolationLevel
@@ -138,7 +139,8 @@ public class JdbcHelper {
 
     /**
      * 返回数据中list[0] 是字段名，list[1-n]是字段所对应的数据
-     * @param sql 使用替代符的SQL语句
+     *
+     * @param sql  使用替代符的SQL语句
      * @param args SQL参数列表
      * @return list[n]:row data list[0] is the columnNames,list[1] is the first row data of thus columns.
      */
@@ -392,7 +394,9 @@ public class JdbcHelper {
         }
         try {
             stat = conn.prepareStatement(sql, ResultSet.FETCH_UNKNOWN, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-            LOGGER.debug(sql);
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
+            }
             if (args != null) {
                 for (int i = 0; i < args.length; i++) {
                     stat.setObject(i + 1, args[i]);

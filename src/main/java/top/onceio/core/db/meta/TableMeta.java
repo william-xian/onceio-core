@@ -7,7 +7,8 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import top.onceio.core.db.annotation.*;
 import top.onceio.core.db.model.BaseMeta;
@@ -18,7 +19,7 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 public class TableMeta {
-    private static final Logger LOGGER = Logger.getLogger(TableMeta.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TableMeta.class);
     String table;
     BaseMeta viewDef;
     ModelType type;

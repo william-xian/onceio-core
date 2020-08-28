@@ -19,7 +19,8 @@ import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,7 +30,7 @@ import top.onceio.OnceIO;
 
 public class JsonConfLoader {
 
-    private final static Logger LOGGER = Logger.getLogger(JsonConfLoader.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(JsonConfLoader.class);
 
     private JsonObject conf = new JsonObject();
     private JsonObject beans = new JsonObject();
@@ -113,7 +114,9 @@ public class JsonConfLoader {
             Enumeration<URL> files = OnceIO.getClassLoader().getResources(dir);
             while (files.hasMoreElements()) {
                 URL u = files.nextElement();
-                OLog.debug(u.toString());
+                if(LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(u.toString());
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -208,16 +211,19 @@ public class JsonConfLoader {
                                             OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
                                 }
                             } else {
-                                OLog.warn("not exist : " + t.getKey());
+                                LOGGER.warn("not exist : " + t.getKey());
                             }
                         } catch (IllegalArgumentException | IllegalAccessException | SecurityException
                                 | InvocationTargetException e) {
                             e.printStackTrace();
+                            LOGGER.error(e.getMessage());
                         }
                     }
 
                 });
-                OLog.debug(t.getKey() + " -> " + bean);
+                if(LOGGER.isDebugEnabled()){
+                    LOGGER.debug(t.getKey() + " -> " + bean);
+                }
             }
         });
         return name2Bean;

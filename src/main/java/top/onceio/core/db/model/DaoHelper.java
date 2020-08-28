@@ -1,6 +1,7 @@
 package top.onceio.core.db.model;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.annotation.ModelType;
 import top.onceio.core.db.dao.DDLDao;
@@ -14,7 +15,6 @@ import top.onceio.core.db.meta.SqlPlanBuilder;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.exception.Failed;
 import top.onceio.core.util.OAssert;
-import top.onceio.core.util.OLog;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  **/
 public class DaoHelper implements DDLDao, TransDao {
 
-    private static final Logger LOGGER = Logger.getLogger(DaoHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DaoHelper.class);
 
     private JdbcHelper jdbcHelper;
     private Map<Class<?>, TableMeta> classToTableMeta;
@@ -364,7 +364,7 @@ public class DaoHelper implements DDLDao, TransDao {
                             cm.getField().set(row, val);
                         }
                     } catch (IllegalArgumentException | IllegalAccessException e) {
-                        OLog.error(e.getMessage());
+                        LOGGER.error(e.getMessage());
                     }
                 }
             }
@@ -469,7 +469,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 Object v = tm.getColumnMetaByName(name).getField().get(entity);
                 val[i] = v;
             } catch (IllegalAccessException e) {
-                OLog.error(e.getMessage());
+                LOGGER.error(e.getMessage());
             }
         }
         return val;
