@@ -30,19 +30,15 @@ public class AnnotationScanner {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("scanning :" + String.join(",", packages));
         }
-        ClassScanner.findBy(new Consumer<Class<?>>() {
-            @Override
-            public void accept(Class<?> clazz) {
-                for (Annotation a : clazz.getAnnotations()) {
-                    if (filter.contains(a.annotationType())) {
-                        putClass(a.annotationType(), clazz);
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug(String.format("%s:%s", a.annotationType().getName(), clazz.getName()));
-                        }
+        ClassScanner.findBy((clazz) -> {
+            for (Annotation a : clazz.getAnnotations()) {
+                if (filter.contains(a.annotationType())) {
+                    putClass(a.annotationType(), clazz);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(String.format("%s:%s", a.annotationType().getName(), clazz.getName()));
                     }
                 }
             }
-
         }, packages);
     }
 

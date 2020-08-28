@@ -87,21 +87,17 @@ public class JsonConfLoader {
         try {
             JsonReader reader = OUtils.gson.newJsonReader(new InputStreamReader(inputStream));
             JsonObject jn = OUtils.gson.fromJson(reader, JsonObject.class);
-            jn.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
-                @Override
-                public void accept(Entry<String, JsonElement> arg) {
-                    if ("beans".equals(arg.getKey())) {
-                        arg.getValue().getAsJsonObject().entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
-                            @Override
-                            public void accept(Entry<String, JsonElement> bean) {
-                                beans.add(bean.getKey(), bean.getValue());
-                            }
-                        });
-                    } else {
-                        conf.add(arg.getKey(), arg.getValue());
+            jn.entrySet().forEach((arg) -> {
+                        if ("beans".equals(arg.getKey())) {
+                            arg.getValue().getAsJsonObject().entrySet().forEach((bean) -> {
+                                        beans.add(bean.getKey(), bean.getValue());
+                                    }
+                            );
+                        } else {
+                            conf.add(arg.getKey(), arg.getValue());
+                        }
                     }
-                }
-            });
+            );
             reader.close();
         } catch (IOException e) {
             LOGGER.warn(e.getMessage());
@@ -114,7 +110,7 @@ public class JsonConfLoader {
             Enumeration<URL> files = OnceIO.getClassLoader().getResources(dir);
             while (files.hasMoreElements()) {
                 URL u = files.nextElement();
-                if(LOGGER.isDebugEnabled()) {
+                if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(u.toString());
                 }
             }
@@ -170,8 +166,7 @@ public class JsonConfLoader {
         Map<String, Object> name2Bean = new HashMap<>();
 
         /** 初始分配内存 */
-        beans.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
-            public void accept(Entry<String, JsonElement> t) {
+        beans.entrySet().forEach((t)-> {
                 JsonObject clsFields = t.getValue().getAsJsonObject();
                 JsonElement type = clsFields.get("@TYPE");
                 String clsName = (type != null) ? type.getAsString() : t.getKey();
@@ -183,22 +178,19 @@ public class JsonConfLoader {
                     LOGGER.warn(e.getMessage());
                 }
             }
-        });
-        beans.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
-            public void accept(Entry<String, JsonElement> t) {
+        );
+        beans.entrySet().forEach((Entry<String, JsonElement> t) ->{
                 JsonObject clsFields = t.getValue().getAsJsonObject();
                 Object bean = name2Bean.get(t.getKey());
                 Class<?> cls = bean.getClass();
-                clsFields.entrySet().forEach(new Consumer<Entry<String, JsonElement>>() {
-                    @Override
-                    public void accept(Entry<String, JsonElement> t) {
-                        if (t.getKey().equals("@TYPE")) {
+                clsFields.entrySet().forEach((Entry<String, JsonElement> fieldType) -> {
+                        if (fieldType.getKey().equals("@TYPE")) {
                             return;
                         }
                         try {
-                            Method method = OReflectUtil.getSetMethod(cls, t.getKey());
+                            Method method = OReflectUtil.getSetMethod(cls, fieldType.getKey());
                             if (method != null) {
-                                String strV = t.getValue().getAsString();
+                                String strV = fieldType.getValue().getAsString();
                                 if (strV != null) {
                                     if (strV.startsWith("@")) {
                                         method.invoke(bean, name2Bean.get(strV.substring(1)));
@@ -211,7 +203,7 @@ public class JsonConfLoader {
                                             OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
                                 }
                             } else {
-                                LOGGER.warn("not exist : " + t.getKey());
+                                LOGGER.warn("not exist : " + fieldType.getKey());
                             }
                         } catch (IllegalArgumentException | IllegalAccessException | SecurityException
                                 | InvocationTargetException e) {
@@ -220,12 +212,12 @@ public class JsonConfLoader {
                         }
                     }
 
-                });
-                if(LOGGER.isDebugEnabled()){
+                );
+                if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(t.getKey() + " -> " + bean);
                 }
             }
-        });
+        );
         return name2Bean;
     }
 
