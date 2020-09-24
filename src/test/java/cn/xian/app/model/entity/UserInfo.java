@@ -1,5 +1,6 @@
 package cn.xian.app.model.entity;
 
+import cn.xian.app.model.Gender;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseModel;
@@ -13,9 +14,9 @@ public class UserInfo extends BaseModel<Long> {
     @Col(nullable = true, size = 255)
     private String avatar;
     @Col(nullable = true, size = 255)
-    private Integer genre;
+    private Gender genre;
     @Col
-    protected int age;
+    private int age;
 
     public String getName() {
         return name;
@@ -45,12 +46,19 @@ public class UserInfo extends BaseModel<Long> {
     }
 
     public Integer getGenre() {
-        return genre;
+        return genre.val;
     }
 
     public UserInfo setGenre(Integer genre) {
-        this.genre = genre;
+        this.genre = Gender.MALE;
         return this;
     }
 
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
 }

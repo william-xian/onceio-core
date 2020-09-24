@@ -138,7 +138,7 @@ public class TableMeta {
                     cm.setType(col.type().toLowerCase());
                 }
 
-                if (col.ref() != void.class) {
+                if (col.ref() != void.class && col.ref().getAnnotation(Model.class) != null) {
                     cm.setUseFK(col.useFK());
                     String table = getTableName(col.ref());
                     cm.setRefTable(table);
@@ -186,6 +186,8 @@ public class TableMeta {
             return "float8";
         } else if (type.equals(Timestamp.class)) {
             return "timestamptz";
+        } else if (type.isEnum()) {
+            return "varchar(64)";
         } else {
             OAssert.fatal("不支持的数据类型:%s", type);
         }
@@ -253,14 +255,8 @@ public class TableMeta {
         this.indexes = indexes;
     }
 
-    // TODO O1
     public ColumnMeta getColumnMetaByName(String colName) {
-        for (String name : nameToColumnMeta.keySet()) {
-            if (name.equalsIgnoreCase(colName)) {
-                return nameToColumnMeta.get(name);
-            }
-        }
-        return null;
+        return nameToColumnMeta.get(colName);
     }
 
     public void setColumnMetas(List<ColumnMeta> columnMetas) {
@@ -377,14 +373,12 @@ public class TableMeta {
     private List<String> addColumnSql(List<ColumnMeta> columnMetas) {
         List<String> sqls = new ArrayList<>();
         for (ColumnMeta ocm : columnMetas) {
-            String sql = String.format("ALTER TABLE %%s ADD COLUMN %s %s", table, ocm.name, ocm.type);
+            String sql = String.format("ALTER TABLE %s ADD COLUMN %s %s", table, ocm.name, ocm.type);
             if (!ocm.nullable) {
                 sql = sql + String.format(" NOT NULL");
             }
-            if (ocm.defaultValue != null && !ocm.defaultValue.equals("")) {
-                String dft = dftExp(ocm);
-                sql = sql + dft;
-            }
+            String dft = dftExp(ocm);
+            sql = sql + dft;
             sql = sql + ";";
             sqls.add(sql);
         }

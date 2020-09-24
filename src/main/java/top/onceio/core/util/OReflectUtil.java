@@ -97,6 +97,9 @@ public class OReflectUtil {
             return (T) BigDecimal.valueOf(Double.valueOf(val));
         } else if (type.equals(Date.class)) {
             return (T) Date.valueOf(val);
+        }else if(type.isEnum()) {
+            Enum<?> e = Enum.valueOf((Class<Enum>)type,val);
+            return (T)e;
         }
         return null;
     }

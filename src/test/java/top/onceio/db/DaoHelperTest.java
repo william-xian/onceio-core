@@ -114,6 +114,7 @@ public class DaoHelperTest extends DaoBaseTest {
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setGenre(i);
+            uc.setAge(i);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
             ucs.add(uc);
@@ -123,10 +124,10 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo uc1 = ucs.get(0);
         UserInfo uc2 = ucs.get(1);
         UserInfo.Meta tpl = UserInfo.meta();
-        tpl.genre.setExp("1").id.eq(uc1.getId());
+        tpl.age.setExp("1").id.eq(uc1.getId());
         daoHelper.updateBy(UserInfo.class, tpl);
         UserInfo db1 = daoHelper.get(UserInfo.class, uc1.getId());
-        Assert.assertEquals(1, db1.getGenre().intValue());
+        Assert.assertEquals(1, db1.getAge());
         UserInfo db2 = daoHelper.get(UserInfo.class, uc2.getId());
         Assert.assertEquals(uc2.toString(), db2.toString());
         daoHelper.deleteByIds(UserInfo.class, ids);
@@ -236,7 +237,7 @@ public class DaoHelperTest extends DaoBaseTest {
         avg.select(Func.avg(avg.genre));
         UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg);
         System.out.println(ucAvg);
-        
+
         daoHelper.deleteByIds(UserInfo.class, ids);
     }
 }

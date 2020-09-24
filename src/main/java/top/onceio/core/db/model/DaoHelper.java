@@ -20,6 +20,7 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -482,8 +483,13 @@ public class DaoHelper implements DDLDao, TransDao {
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
             try {
-                Object v = tm.getColumnMetaByName(name).getField().get(entity);
-                val[i] = v;
+                Field field = tm.getColumnMetaByName(name).getField();
+                Object v = field.get(entity);
+                if(field.getType().isEnum() && v != null) {
+                    val[i] = v.toString();
+                } else {
+                    val[i] = v;
+                }
             } catch (IllegalAccessException e) {
                 LOGGER.error(e.getMessage());
             }

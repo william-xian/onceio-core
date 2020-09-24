@@ -70,13 +70,8 @@ public @interface Col {
     int scale() default 0;
 
     /**
-     * 该字段的值引用自某类字段
-     * 引用的ID可能来源某个表。 注意枚举中的表都会被连接
-     * @return 值引用类
-     */
-    Class<?> valRef() default void.class;
-    /**
      *
+     * 如果该类标注@Model则说明表示。
      * @return 引用的类
      */
     Class<?> ref() default void.class;
