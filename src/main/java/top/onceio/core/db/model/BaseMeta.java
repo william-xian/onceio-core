@@ -205,4 +205,9 @@ public class BaseMeta<M> {
         //other.refs.addAll(this.refs);
         return other;
     }
+
+    public String getTable() {
+        return table;
+    }
+
 }

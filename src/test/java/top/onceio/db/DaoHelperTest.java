@@ -236,7 +236,7 @@ public class DaoHelperTest extends DaoBaseTest {
         avg.select(Func.avg(avg.genre));
         UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg);
         System.out.println(ucAvg);
-
+        
         daoHelper.deleteByIds(UserInfo.class, ids);
     }
 }
