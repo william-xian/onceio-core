@@ -356,6 +356,24 @@ public class TableMeta {
         return sqls;
     }
 
+    private String dftExp(ColumnMeta cm) {
+        String dft = "";
+        if (cm.getJavaBaseType().equals(String.class)) {
+            dft = " DEFAULT '" + cm.defaultValue + "'";
+        } else {
+            if (cm.defaultValue == null || cm.defaultValue.equals("")) {
+                if (cm.getJavaBaseType().equals(Boolean.class) || cm.getJavaBaseType().equals(boolean.class)) {
+                    dft = " DEFAULT false";
+                } else if (Number.class.isAssignableFrom(cm.getJavaBaseType())) {
+                    dft = " DEFAULT 0";
+                }
+            } else {
+                dft = " DEFAULT " + cm.defaultValue;
+            }
+        }
+        return dft;
+    }
+
     private List<String> addColumnSql(List<ColumnMeta> columnMetas) {
         List<String> sqls = new ArrayList<>();
         for (ColumnMeta ocm : columnMetas) {
@@ -364,12 +382,7 @@ public class TableMeta {
                 sql = sql + String.format(" NOT NULL");
             }
             if (ocm.defaultValue != null && !ocm.defaultValue.equals("")) {
-                String dft = "";
-                if (ocm.getJavaBaseType().equals(String.class)) {
-                    dft = " DEFAULT '" + ocm.defaultValue + "'";
-                } else {
-                    dft = " DEFAULT " + ocm.defaultValue;
-                }
+                String dft = dftExp(ocm);
                 sql = sql + dft;
             }
             sql = sql + ";";
@@ -396,11 +409,7 @@ public class TableMeta {
             for (ColumnMeta cm : columnMetas) {
                 String dft = "";
                 if (cm.defaultValue != null && !cm.defaultValue.equals("")) {
-                    if (cm.getJavaBaseType().equals(String.class)) {
-                        dft = " DEFAULT '" + cm.defaultValue + "'";
-                    } else {
-                        dft = " DEFAULT " + cm.defaultValue;
-                    }
+                    dft = dftExp(cm);
                 }
                 tbl.append(String.format("%s %s%s%s,", cm.name, cm.type, cm.nullable ? "" : " NOT NULL", dft));
                 if (cm.comment != null && !cm.comment.equals("")) {
