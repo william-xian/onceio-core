@@ -48,7 +48,7 @@ public @interface Col {
     /**
      * @return 是否可为null约束
      */
-    boolean nullable() default true;
+    boolean nullable() default false;
     /**
      * @return 字段符合模式
      */
@@ -85,5 +85,5 @@ public @interface Col {
      * depends on ref    /
      * @return 是否使用外键
      */
-    boolean useFK() default true;
+    boolean useFK() default false;
 }

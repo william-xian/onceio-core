@@ -5,8 +5,10 @@ import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.annotation.ModelType;
-import top.onceio.core.db.model.*;
+import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.BaseModel;
+import top.onceio.core.db.model.DefView;
+import top.onceio.core.db.model.Func;
 
 @Model(type = ModelType.VIEW)
 public class UserBillView extends BaseModel<Long> implements DefView {

@@ -3,17 +3,7 @@ package top.onceio.core.beans;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.sql.DataSource;
@@ -45,6 +35,7 @@ import top.onceio.core.aop.proxies.CacheEvictProxy;
 import top.onceio.core.aop.proxies.CachePutProxy;
 import top.onceio.core.aop.proxies.CacheableProxy;
 import top.onceio.core.aop.proxies.TransactionalProxy;
+import top.onceio.core.db.annotation.DefSQL;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.dao.DaoHolder;
@@ -68,7 +59,7 @@ public class BeansEden {
     private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
     private ApiResover apiResover = new ApiResover();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
-            Using.class, Model.class, I18nMsg.class, I18nCfg.class, Aop.class);
+            Using.class, Model.class, DefSQL.class, I18nMsg.class, I18nCfg.class, Aop.class);
     private static BeansEden instance = null;
 
     private BeansEden() {
@@ -92,7 +83,7 @@ public class BeansEden {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Class<? extends BaseModel>> matchTblTblView() {
+    public List<Class<? extends BaseModel>> matchTblView() {
         List<Class<? extends BaseModel>> entities = new LinkedList<>();
         for (Class<?> clazz : scanner.getClasses(Model.class)) {
             if (BaseModel.class.isAssignableFrom(clazz)) {
@@ -118,9 +109,9 @@ public class BeansEden {
     }
 
     private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator,
-                                      List<Class<? extends BaseModel>> entities) {
+                                      List<Class<? extends BaseModel>> entities, Collection<Class<?>> defClasses) {
         DaoHelper daoHelper = new DaoHelper(jdbcHelper, idGenerator);
-        daoHelper.init(entities);
+        daoHelper.init(entities, defClasses);
         return daoHelper;
     }
 
@@ -451,11 +442,11 @@ public class BeansEden {
         }
         DaoHelper daoHelper = load(DaoHelper.class, null);
         if (daoHelper == null) {
-            daoHelper = createDaoHelper(jdbcHelper, idGenerator, matchTblTblView());
+            daoHelper = createDaoHelper(jdbcHelper, idGenerator, matchTblView(), scanner.getClasses(DefSQL.class));
             store(DaoHelper.class, null, daoHelper);
         } else {
             if (daoHelper.getEntities() == null) {
-                daoHelper.init(matchTblTblView());
+                daoHelper.init(matchTblView(), scanner.getClasses(DefSQL.class));
             }
         }
     }
@@ -499,7 +490,7 @@ public class BeansEden {
             beanName = clazz.getName();
         }
         nameToBean.put(beanName, bean);
-        if(LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("store beanName=" + beanName);
         }
 
@@ -605,7 +596,7 @@ public class BeansEden {
                         i18n.setId(key);
                         i18n.setName(name);
                         i18n.setVal(val);
-                        if(LOGGER.isDebugEnabled()) {
+                        if (LOGGER.isDebugEnabled()) {
                             LOGGER.debug("add: " + i18n);
                         }
                         i18ns.add(i18n);
@@ -613,14 +604,14 @@ public class BeansEden {
                         /** The val depend on database */
                         if (!val.equals(i18n.getVal())) {
                             field.set(null, OReflectUtil.strToBaseType(field.getType(), i18n.getVal()));
-                            if(LOGGER.isDebugEnabled()) {
+                            if (LOGGER.isDebugEnabled()) {
                                 LOGGER.debug("reload: " + i18n);
                             }
                         }
                         if (!i18n.getName().equals(name)) {
                             i18n.setName(name);
                             dao.insert(i18n);
-                            if(LOGGER.isDebugEnabled()) {
+                            if (LOGGER.isDebugEnabled()) {
                                 LOGGER.debug("update: " + i18n);
                             }
                         }

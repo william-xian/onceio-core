@@ -2,6 +2,7 @@ package top.onceio.core.db.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.onceio.core.db.annotation.DefSQL;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.annotation.ModelType;
 import top.onceio.core.db.dao.DDLDao;
@@ -19,6 +20,7 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -259,7 +261,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return new HashMap<>();
     }
 
-    public void init(List<Class<? extends BaseModel>> entities) {
+    public void init(List<Class<? extends BaseModel>> entities, Collection<Class<?>> defClasses) {
         this.classToTableMeta = new HashMap<>();
         this.nameToMeta = new HashMap<>();
         if (entities != null) {
@@ -288,9 +290,23 @@ public class DaoHelper implements DDLDao, TransDao {
         }
         List<String> sqlList = planBuilder.build(nameToMeta);
 
+        for (Class<?> clazz : defClasses) {
+            DefSQL defSQL = clazz.getAnnotation(DefSQL.class);
+            if (defSQL != null) {
+                sqlList.addAll(Arrays.asList(defSQL.value()));
+            }
+            for (Method method : clazz.getDeclaredMethods()) {
+                DefSQL methodDefSQL = method.getAnnotation(DefSQL.class);
+                if (methodDefSQL != null) {
+                    sqlList.addAll(Arrays.asList(methodDefSQL.value()));
+                }
+            }
+        }
+
         if (!sqlList.isEmpty()) {
             jdbcHelper.batchExec(sqlList.toArray(new String[0]));
         }
+
     }
 
     public List<Class<? extends BaseModel>> getEntities() {
