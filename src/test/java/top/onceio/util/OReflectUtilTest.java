@@ -5,6 +5,8 @@ import java.lang.reflect.Type;
 import org.junit.Assert;
 import org.junit.Test;
 
+import top.onceio.core.db.model.BaseMeta;
+import top.onceio.core.db.model.BaseModel;
 import top.onceio.core.util.OReflectUtil;
 
 public class OReflectUtilTest {
@@ -34,4 +36,6 @@ public class OReflectUtilTest {
         Type fieldType = a.getClass().getDeclaredField("id").getGenericType();
         Assert.assertEquals(String.class.getTypeName(), OReflectUtil.searchGenType(A.class, D.class, fieldType).getTypeName());
     }
+
+
 }

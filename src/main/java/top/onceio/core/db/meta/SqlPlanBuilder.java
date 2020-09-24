@@ -62,7 +62,7 @@ public class SqlPlanBuilder {
 
 
     private void sortedAdd(Map<String, TableMeta> nameToMeta, List<TableMeta> order, BaseMeta def) {
-        TableMeta meta = nameToMeta.get(AccessHelper.getName(def));
+        TableMeta meta = nameToMeta.get(AccessHelper.getTable(def));
         if (order.contains(meta)) {
             return;
         }

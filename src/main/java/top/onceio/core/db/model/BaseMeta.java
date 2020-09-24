@@ -6,7 +6,7 @@ import java.util.List;
 
 public class BaseMeta<M> {
     protected M meta;
-    protected String name;
+    protected String table;
     protected String alias;
     protected List<Object> args = new ArrayList<>();
 
@@ -21,9 +21,9 @@ public class BaseMeta<M> {
     StringBuilder update = new StringBuilder();
     List<BaseMeta<?>> refs = new ArrayList<>();
 
-    protected <E> void bind(String name,M meta, Class<E> e) {
+    protected <E> void bind(String table,M meta, Class<E> e) {
         this.alias = "t";
-        this.name = name;
+        this.table = table;
         this.meta = meta;
     }
 
@@ -50,10 +50,10 @@ public class BaseMeta<M> {
 
     public <O extends BaseMeta> M from(O... tables) {
         if (tables.length == 0) {
-            from.append(" " + name + " AS " + alias);
+            from.append(" " + table + " AS " + alias);
         } else {
             for (O t : tables) {
-                from.append(" " + t.name + " AS " + t.alias + ",");
+                from.append(" " + t.table + " AS " + t.alias + ",");
 
                 refs.add(t);
             }
@@ -64,7 +64,7 @@ public class BaseMeta<M> {
     }
 
     public M join(BaseMeta otherTable) {
-        from.append(" LEFT JOIN " + otherTable.name + " AS " + otherTable.alias);
+        from.append(" LEFT JOIN " + otherTable.table + " AS " + otherTable.alias);
 
         refs.add(otherTable);
         return meta;
@@ -147,7 +147,7 @@ public class BaseMeta<M> {
         }
         if (update.length() > 0) {
             if (from.length() <= 0) {
-                sql.append("UPDATE " + name + " AS " + alias);
+                sql.append("UPDATE " + table + " AS " + alias);
             } else {
                 sql.append("UPDATE" + from);
             }
@@ -192,7 +192,7 @@ public class BaseMeta<M> {
 
     public BaseMeta<M> copy() {
         BaseMeta<M> other = new BaseMeta<>();
-        other.name = this.name;
+        other.table = this.table;
         other.meta = this.meta;
         other.select.append(this.select);
         other.from.append(this.from);
@@ -205,5 +205,4 @@ public class BaseMeta<M> {
         //other.refs.addAll(this.refs);
         return other;
     }
-
 }
