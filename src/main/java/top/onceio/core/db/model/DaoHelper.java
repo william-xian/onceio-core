@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.onceio.core.db.annotation.DefSQL;
 import top.onceio.core.db.annotation.IndexType;
+import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.annotation.ModelType;
 import top.onceio.core.db.dao.DDLDao;
 import top.onceio.core.db.dao.IdGenerator;
@@ -262,9 +263,25 @@ public class DaoHelper implements DDLDao, TransDao {
         return new HashMap<>();
     }
 
-    public void init(List<Class<? extends BaseModel>> entities, Collection<Class<?>> defClasses) {
+    /**
+     * @param classes 有效参数分3种类
+     * 1. 表，继承BaseModel且标注Model.class注解的
+     * 2. 视图，继承BaseModel、标注Model.class注解的并且实现DefView接口的
+     * 3. SQL定义，标注DefSQL注解的
+     */
+    public void init(Collection<Class<?>> classes) {
         this.classToTableMeta = new HashMap<>();
         this.nameToMeta = new HashMap<>();
+        List<Class<? extends BaseModel>> entities = new ArrayList<>();
+        Collection<Class<?>> defClasses = new ArrayList<>();
+        for(Class<?> clazz:classes) {
+            if(BaseModel.class.isAssignableFrom(clazz) && clazz.getAnnotation(Model.class)!= null) {
+                entities.add((Class<? extends BaseModel>)clazz);
+            }
+            if(clazz.getAnnotation(DefSQL.class) != null) {
+                defClasses.add(clazz);
+            }
+        }
         if (entities != null) {
             this.entities = entities;
             for (Class<? extends BaseModel> tbl : entities) {

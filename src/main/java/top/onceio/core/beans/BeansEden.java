@@ -82,16 +82,6 @@ public class BeansEden {
         return scanner.getClasses(annotation);
     }
 
-    @SuppressWarnings("unchecked")
-    public List<Class<? extends BaseModel>> matchTblView() {
-        List<Class<? extends BaseModel>> entities = new LinkedList<>();
-        for (Class<?> clazz : scanner.getClasses(Model.class)) {
-            if (BaseModel.class.isAssignableFrom(clazz)) {
-                entities.add((Class<? extends BaseModel>) clazz);
-            }
-        }
-        return entities;
-    }
 
     private IdGenerator createIdGenerator() {
         return new IdGenerator() {
@@ -108,10 +98,9 @@ public class BeansEden {
         return jdbcHelper;
     }
 
-    private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator,
-                                      List<Class<? extends BaseModel>> entities, Collection<Class<?>> defClasses) {
+    private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator, Collection<Class<?>> classes) {
         DaoHelper daoHelper = new DaoHelper(jdbcHelper, idGenerator);
-        daoHelper.init(entities, defClasses);
+        daoHelper.init(classes);
         return daoHelper;
     }
 
@@ -442,11 +431,11 @@ public class BeansEden {
         }
         DaoHelper daoHelper = load(DaoHelper.class, null);
         if (daoHelper == null) {
-            daoHelper = createDaoHelper(jdbcHelper, idGenerator, matchTblView(), scanner.getClasses(DefSQL.class));
+            daoHelper = createDaoHelper(jdbcHelper, idGenerator,scanner.getClasses(Model.class,DefSQL.class));
             store(DaoHelper.class, null, daoHelper);
         } else {
             if (daoHelper.getEntities() == null) {
-                daoHelper.init(matchTblView(), scanner.getClasses(DefSQL.class));
+                daoHelper.init(scanner.getClasses(Model.class,DefSQL.class));
             }
         }
     }
