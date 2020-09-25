@@ -13,7 +13,7 @@ public @interface DefSQL {
     /**
      * 启动执行一次的SQL；
      *
-     * @return
+     * @return 执行sql语句
      */
     String[] value() default {};
 }
