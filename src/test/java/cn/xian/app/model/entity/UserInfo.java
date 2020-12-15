@@ -45,12 +45,12 @@ public class UserInfo extends BaseModel<Long> {
         return this;
     }
 
-    public Integer getGenre() {
-        return genre.val;
+    public Gender getGenre() {
+        return genre;
     }
 
-    public UserInfo setGenre(Integer genre) {
-        this.genre = Gender.MALE;
+    public UserInfo setGenre(Gender genre) {
+        this.genre = genre;
         return this;
     }
 

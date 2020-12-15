@@ -12,7 +12,7 @@ import java.util.Locale;
 
 @AutoApi(OI18n.class)
 @Cacheable
-public class OI18nHolder extends DaoHolder<OI18n, OI18n.Meta> {
+public class OI18nHolder extends DaoHolder<OI18n> {
 
     @Api("/translate")
     public String translate(@Param("msg") String msg, @Param("lang") String lang) {

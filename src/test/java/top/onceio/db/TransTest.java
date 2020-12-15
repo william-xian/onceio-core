@@ -3,6 +3,7 @@ package top.onceio.db;
 import java.sql.Connection;
 import java.sql.Savepoint;
 
+import cn.xian.app.model.Gender;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -20,19 +21,18 @@ public class TransTest extends DaoBaseTest {
         UserInfo uc1 = new UserInfo();
         uc1.setId(IDGenerator.randomID());
         uc1.setName("zhang" + System.currentTimeMillis());
-        uc1.setGenre(1);
+        uc1.setAge(1);
 
         jdbcHelper.beginTransaction(Connection.TRANSACTION_READ_COMMITTED, false);
-        String insertTpl = String.format("INSERT INTO %s(id,rm,name,passwd,avatar,genre) VALUES(?,?,?,?,?,?)", UserInfo.class.getSimpleName());
-        ;
+        String insertTpl = String.format("INSERT INTO %s(id,name,passwd,avatar,genre,age) VALUES(?,?,?,?,?,?)", UserInfo.meta().getTable());
         Long begin = System.currentTimeMillis();
         for (int i = 0; i < 10; i++) {
             Savepoint spb1 = jdbcHelper.setSavepoint();
             jdbcHelper.update(insertTpl,
-                    new Object[]{begin + i, false, "Zhang-" + begin + "-" + i, "2", "avatar", 1});
+                    new Object[]{begin + i, "Zhang-" + begin + "-" + i, "2", "avatar", Gender.MALE.toString(), 1});
             Savepoint spb2 = jdbcHelper.setSavepoint();
             jdbcHelper.update(insertTpl,
-                    new Object[]{begin + 1000L + i, false, " Wang-" + begin + "-" + i, "2", "avatar", 1});
+                    new Object[]{begin + 1000L + i, " Wang-" + begin + "-" + i, "2", "avatar",Gender.FEMALE.toString(), 1});
 
             if (i % 4 == 0) {
                 if (spb2 != null) {

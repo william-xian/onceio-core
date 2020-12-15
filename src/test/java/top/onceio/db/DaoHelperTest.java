@@ -3,6 +3,7 @@ package top.onceio.db;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.xian.app.model.Gender;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -39,7 +40,7 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i % 4);
+            uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd" + i % 3);
             System.out.println(OUtils.toJson(uc));
@@ -52,7 +53,7 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo uc = new UserInfo();
         uc.setId(IDGenerator.randomID());
         uc.setName("name-" + System.currentTimeMillis());
-        uc.setGenre(100);
+        uc.setAge(100);
         uc.setAvatar("avatar");
         uc.setPasswd("passwd");
         daoHelper.insert(uc);
@@ -76,7 +77,7 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i % 4);
+            uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
             ucs.add(uc);
@@ -113,7 +114,7 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i);
+            uc.setAge(i);
             uc.setAge(i);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
@@ -141,7 +142,12 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i % 4);
+            uc.setAge(i % 4);
+            if(i%2==0) {
+                uc.setGenre(Gender.FEMALE);
+            }else {
+                uc.setGenre(Gender.MALE);
+            }
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
             ucs.add(uc);
@@ -150,24 +156,25 @@ public class DaoHelperTest extends DaoBaseTest {
         daoHelper.batchInsert(ucs);
         System.out.println(OUtils.toJson(ucs));
         UserInfo.Meta cnd1 = UserInfo.meta();
-        cnd1.genre.eq(2).or().genre.ne(3);
+        cnd1.genre.eq(Gender.FEMALE).or().genre.ne(Gender.MALE);
         UserInfo.Meta cnd3 = UserInfo.meta();
         cnd3.select().from().where().avatar.like("avatar%00");
         Assert.assertEquals(2, daoHelper.count(UserInfo.class, cnd3));
 
         UserInfo.Meta cnd4 = UserInfo.meta();
-        cnd4.genre.eq(2).or().genre.ne(3);
+        cnd4.genre.eq(Gender.MALE).or().genre.ne(Gender.FEMALE);
         UserInfo.Meta cnd5 = UserInfo.meta();
         cnd5.select().from().where().avatar.notLike("avatar%00").and(cnd4);
         /** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
-        Assert.assertEquals(6, daoHelper.count(UserInfo.class, cnd5));
+        System.out.println(cnd5.toSql());
+        Assert.assertEquals(5, daoHelper.count(UserInfo.class, cnd5));
 
         UserInfo.Meta cnd6 = UserInfo.meta().avatar.notLike("avatar%00").and(cnd4);
 
         //TODO
         Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6, -2, 4);
-        Assert.assertEquals(2, page1.getData().size());
-        Assert.assertEquals(6, page1.getTotal().longValue());
+        Assert.assertEquals(1, page1.getData().size());
+        Assert.assertEquals(5, page1.getTotal().longValue());
         int cnt = daoHelper.deleteByIds(UserInfo.class, ids);
         System.out.println("delete - " + cnt);
     }
@@ -180,7 +187,7 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i % 4);
+            uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
             ucs.add(uc);
@@ -202,7 +209,8 @@ public class DaoHelperTest extends DaoBaseTest {
             UserInfo uc = new UserInfo();
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
-            uc.setGenre(i % 4);
+            uc.setGenre(Gender.MALE);
+            uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
             uc.setPasswd("passwd");
             ucs.add(uc);
@@ -211,30 +219,30 @@ public class DaoHelperTest extends DaoBaseTest {
         daoHelper.batchInsert(ucs);
 
         UserInfo.Meta meta = UserInfo.meta();
-        meta.select(meta.genre);
-        meta.groupBy(meta.genre);
+        meta.select(meta.age);
+        meta.groupBy(meta.age);
 
         List<UserInfo> data = daoHelper.find(UserInfo.class, meta);
-        Assert.assertEquals(data.size(), 4);
+        Assert.assertEquals(4, data.size());
 
         UserInfo.Meta max = UserInfo.meta();
-        max.select(Func.max(max.genre));
+        max.select(Func.max(max.age));
 
         UserInfo ucMax = daoHelper.fetch(UserInfo.class, max);
-        Assert.assertEquals(ucMax.getGenre(), new Integer(3));
+        Assert.assertEquals(3,ucMax.getAge());
 
         UserInfo.Meta min = UserInfo.meta();
-        max.select(Func.min(min.genre));
+        max.select(Func.min(min.age));
         UserInfo ucMin = daoHelper.fetch(UserInfo.class, min);
-        Assert.assertEquals(ucMin.getGenre(), new Integer(0));
+        Assert.assertEquals(0, ucMin.getAge());
 
         UserInfo.Meta sum = UserInfo.meta();
-        sum.select(Func.sum(sum.genre));
+        sum.select(Func.sum(sum.age));
         UserInfo ucSum = daoHelper.fetch(UserInfo.class, sum);
-        Assert.assertEquals(ucSum.getGenre().intValue(), 13);
+        Assert.assertEquals(13, ucSum.getAge());
 
         UserInfo.Meta avg = UserInfo.meta();
-        avg.select(Func.avg(avg.genre));
+        avg.select(Func.avg(avg.age));
         UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg);
         System.out.println(ucAvg);
 

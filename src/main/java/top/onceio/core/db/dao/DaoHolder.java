@@ -14,19 +14,16 @@ import top.onceio.core.mvc.annocations.Api;
 import top.onceio.core.mvc.annocations.Param;
 import top.onceio.core.util.OReflectUtil;
 
-public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> implements Dao<T, M> {
+public class DaoHolder<E extends BaseModel> implements Dao<E> {
     @Using
     protected DaoHelper daoHelper;
 
-    private Class<T> tbl;
-    private Class<M> mode;
+    private Class<E> tbl;
 
     @SuppressWarnings("unchecked")
     public DaoHolder() {
         Type t = DaoHolder.class.getTypeParameters()[0];
-        tbl = (Class<T>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
-        Type m = DaoHolder.class.getTypeParameters()[1];
-        mode = (Class<M>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), m);
+        tbl = (Class<E>) OReflectUtil.searchGenType(DaoHolder.class, this.getClass(), t);
     }
 
     public DaoHelper getDaoHelper() {
@@ -39,30 +36,30 @@ public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> impleme
 
     @Api(value = "/{id}", method = ApiMethod.GET)
     @Override
-    public T get(@Param("id") Serializable id) {
+    public E get(@Param("id") Serializable id) {
         return daoHelper.get(tbl, id);
     }
 
     @Api(value = "/", method = ApiMethod.POST)
     @Override
-    public T insert(@Param T entity) {
+    public E insert(@Param E entity) {
         return daoHelper.insert(entity);
     }
 
     @Api(value = "/batch", method = ApiMethod.POST)
     @Override
-    public int batchInsert(@Param List<T> entities) {
+    public int batchInsert(@Param List<E> entities) {
         return daoHelper.batchInsert(entities);
     }
 
     @Override
-    public int update(@Param T entity) {
+    public int update(@Param E entity) {
         return daoHelper.update(entity);
     }
 
     @Api(value = "/{id}", method = ApiMethod.PUT)
-    public T save(@Param T entity) {
-        T e = this.get(entity.getId());
+    public E save(@Param E entity) {
+        E e = this.get(entity.getId());
         if (e == null) {
             return daoHelper.insert(entity);
         } else {
@@ -73,13 +70,13 @@ public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> impleme
 
     @Api(value = "/", method = ApiMethod.PATCH)
     @Override
-    public int updateIgnoreNull(@Param T entity) {
+    public int updateIgnoreNull(@Param E entity) {
         return daoHelper.updateIgnoreNull(entity);
     }
 
     @Api(value = "/by", method = ApiMethod.PATCH)
     @Override
-    public int updateBy(BaseMeta<M> tpl) {
+    public <M extends BaseMeta<M>> int updateBy(M tpl) {
         return daoHelper.updateBy(tbl, tpl);
     }
 
@@ -94,35 +91,35 @@ public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> impleme
     }
 
     @Override
-    public int delete(BaseMeta<M> cnd) {
+    public <M extends BaseMeta<M>> int delete(M cnd) {
         return daoHelper.delete(tbl, cnd);
     }
 
     @Api(value = "/fetch", method = {ApiMethod.GET})
     @Override
-    public T fetch(@Param("tpl") BaseMeta<M> tpl) {
+    public <M extends BaseMeta<M>> E fetch(@Param("tpl") M tpl) {
         return daoHelper.fetch(tbl, tpl);
     }
 
     @Api(value = "/byIds", method = {ApiMethod.GET})
     @Override
-    public <ID extends Serializable> List<T> findByIds(@Param("ids") List<ID> ids) {
+    public <ID extends Serializable> List<E> findByIds(@Param("ids") List<ID> ids) {
         return daoHelper.findByIds(tbl, ids);
     }
 
     @Override
-    public List<T> find(@Param("cnd") BaseMeta<M> cnd) {
+    public <M extends BaseMeta<M>> List<E> find(@Param("cnd") M cnd) {
         return daoHelper.find(tbl, cnd);
     }
 
     @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public Page<T> find(@Param("cnd") BaseMeta<M> cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
+    public <M extends BaseMeta<M>> Page<E> find(@Param("cnd") M cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
         return daoHelper.find(tbl, cnd, page, pageSize);
     }
 
     @Override
-    public void find(BaseMeta<M> cnd, Consumer<T> consumer) {
+    public <M extends BaseMeta<M>> void find(M cnd, Consumer<E> consumer) {
         daoHelper.find(tbl, cnd, consumer);
     }
 
@@ -133,7 +130,7 @@ public abstract class DaoHolder<T extends BaseModel, M extends BaseMeta> impleme
 
     @Api(value = "/count", method = {ApiMethod.GET})
     @Override
-    public long count(@Param("cnd") BaseMeta<M> cnd) {
+    public <M extends BaseMeta<M>> long count(@Param("cnd") M cnd) {
         return daoHelper.count(tbl, cnd);
     }
 

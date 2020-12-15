@@ -10,7 +10,7 @@ import top.onceio.core.mvc.annocations.Param;
 
 @AutoApi(UserInfo.class)
 @Cacheable
-public class UserHolder extends DaoHolder<UserInfo,UserInfo.Meta> {
+public class UserHolder extends DaoHolder<UserInfo> {
     @Cacheable
     @Api
     public UserInfo fetchByName(@Param("name") String name) {
@@ -18,7 +18,7 @@ public class UserHolder extends DaoHolder<UserInfo,UserInfo.Meta> {
     }
 
     @Override
-    public int updateBy(BaseMeta<UserInfo.Meta> cnd) {
+    public <M extends BaseMeta<M>> int updateBy(M cnd) {
         return 0;
     }
 }

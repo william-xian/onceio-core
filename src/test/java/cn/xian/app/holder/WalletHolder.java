@@ -7,7 +7,7 @@ import top.onceio.core.exception.Failed;
 import top.onceio.core.mvc.annocations.AutoApi;
 
 @AutoApi(Wallet.class)
-public class WalletHolder extends DaoHolder<Wallet, Wallet.Meta> {
+public class WalletHolder extends DaoHolder<Wallet> {
 
     @Transactional
     public void transfer(Long from, Long to, Integer v) {

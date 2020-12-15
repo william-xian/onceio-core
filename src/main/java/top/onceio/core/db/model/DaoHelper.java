@@ -561,7 +561,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return update(entity, true);
     }
 
-    public <E extends BaseModel, M extends BaseMeta> int updateBy(Class<E> tbl, BaseMeta<M> tpl) {
+    public <E extends BaseModel, M extends BaseMeta> int updateBy(Class<E> tbl, M tpl) {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
@@ -582,7 +582,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(sql, ids.toArray());
     }
 
-    public <E extends BaseModel, M extends BaseMeta> int delete(Class<E> tbl, BaseMeta<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> int delete(Class<E> tbl, M cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("DELETE FROM %s;", tm.getTable());
@@ -598,7 +598,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return count(tbl, null);
     }
 
-    public <E extends BaseModel, M extends BaseMeta> long count(Class<E> tbl, BaseMeta<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> long count(Class<E> tbl, M cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = classToTableMeta.get(tbl);
             String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
@@ -613,7 +613,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
     }
 
-    public <E extends BaseModel, M extends BaseMeta> List<E> find(Class<E> tbl, BaseMeta<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> List<E> find(Class<E> tbl, M cnd) {
         List<E> data = new ArrayList<>();
         find(tbl, cnd, e -> {
             data.add(e);
@@ -621,7 +621,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return data;
     }
 
-    public <E extends BaseModel, M extends BaseMeta> Page<E> find(Class<E> tbl, BaseMeta<M> cnd, int page, int pageSize) {
+    public <E extends BaseModel, M extends BaseMeta> Page<E> find(Class<E> tbl, M cnd, int page, int pageSize) {
         if (cnd.select.length() == 0) {
             cnd.select();
         }
@@ -649,7 +649,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return result;
     }
 
-    public <E extends BaseModel, M extends BaseMeta> E fetch(Class<E> tbl, BaseMeta<M> cnd) {
+    public <E extends BaseModel, M extends BaseMeta> E fetch(Class<E> tbl, M cnd) {
         Page<E> page = find(tbl, cnd, 1, 1);
         if (page.getData().size() == 0) {
             return null;
@@ -657,7 +657,7 @@ public class DaoHelper implements DDLDao, TransDao {
         return page.getData().get(0);
     }
 
-    public <E extends BaseModel, M extends BaseMeta> void find(Class<E> tbl, BaseMeta<M> cnd, Consumer<E> consumer) {
+    public <E extends BaseModel, M extends BaseMeta> void find(Class<E> tbl, M cnd, Consumer<E> consumer) {
         TableMeta tm = classToTableMeta.get(tbl);
         if (tm == null) {
             return;

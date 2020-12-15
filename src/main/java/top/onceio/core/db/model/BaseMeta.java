@@ -36,7 +36,7 @@ public class BaseMeta<M> {
         return args;
     }
 
-    public M select(Queryable... cs) {
+    public final M select(Queryable... cs) {
         if (cs.length > 0) {
             for (Queryable c : cs) {
                 select.append(" " + c.name() + ",");
@@ -48,7 +48,7 @@ public class BaseMeta<M> {
         return meta;
     }
 
-    public <O extends BaseMeta> M from(O... tables) {
+    public final <O extends BaseMeta> M from(O... tables) {
         if (tables.length == 0) {
             from.append(" " + table + " AS " + alias);
         } else {
@@ -63,23 +63,23 @@ public class BaseMeta<M> {
         return meta;
     }
 
-    public M join(BaseMeta otherTable) {
+    public final M join(BaseMeta otherTable) {
         from.append(" LEFT JOIN " + otherTable.table + " AS " + otherTable.alias);
 
         refs.add(otherTable);
         return meta;
     }
 
-    public M on(BaseCol ac, BaseCol bc) {
+    public final M on(BaseCol ac, BaseCol bc) {
         from.append(String.format(" ON %s.%s = %s.%s", ac.table.alias, ac.name, bc.table.alias, bc.name));
         return meta;
     }
 
-    public M where() {
+    public final M where() {
         return meta;
     }
 
-    public <C extends BaseCol> M groupBy(C... cs) {
+    public final <C extends BaseCol> M groupBy(C... cs) {
         for (C c : cs) {
             group.append(String.format(" %s.%s,", c.table.alias, c.name));
         }
@@ -87,7 +87,7 @@ public class BaseMeta<M> {
         return meta;
     }
 
-    public <C extends BaseCol> M orderBy(C... cs) {
+    public final <C extends BaseCol> M orderBy(C... cs) {
         for (C c : cs) {
             order.append(String.format(" %s.%s,", c.table.alias, c.name));
         }
@@ -95,7 +95,7 @@ public class BaseMeta<M> {
         return meta;
     }
 
-    public <C extends BaseCol> M orderByDesc(C... cs) {
+    public final <C extends BaseCol> M orderByDesc(C... cs) {
         for (C c : cs) {
             order.append(String.format(" %s.%s DESC,", c.table.alias, c.name));
         }
@@ -103,23 +103,23 @@ public class BaseMeta<M> {
         return meta;
     }
 
-    public M limit(int s, int e) {
+    public final M limit(int s, int e) {
         limit.append(String.format(" %d OFFSET %d", s, e));
         return meta;
     }
 
 
-    public M and() {
+    public final M and() {
         where.append(" AND ");
         return meta;
     }
 
-    public M or() {
+    public final M or() {
         where.append(" OR ");
         return this.meta;
     }
 
-    public M and(BaseMeta meta) {
+    public final M and(BaseMeta meta) {
         where.append(" AND (" + meta.where + ")");
         args.addAll(meta.args);
 
@@ -127,7 +127,7 @@ public class BaseMeta<M> {
         return this.meta;
     }
 
-    public M or(BaseMeta meta) {
+    public final M or(BaseMeta meta) {
         where.append(" OR (" + meta.where + ")");
         args.addAll(meta.args);
 

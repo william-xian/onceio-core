@@ -42,20 +42,20 @@ public class ModelProcessor extends AbstractProcessor {
     private static final String CLASS_INIT_METHOD_NAME = "<init>";
     private static final String META_BIND_METHOD_NAME = "super.bind";
 
+    private Messager messager;
     private JavacTrees trees;
     private TreeMaker treeMaker;
     private Names names;
-    private Messager messager;
     private ClassReader classReader;
     private Elements elementsUtils;
 
     public synchronized void init(ProcessingEnvironment processingEnvironment) {
+        messager = processingEnvironment.getMessager();
         super.init(processingEnvironment);
         elementsUtils = processingEnvironment.getElementUtils();
         this.trees = JavacTrees.instance(processingEnv);
         Context context = ((JavacProcessingEnvironment) processingEnv).getContext();
         this.treeMaker = TreeMaker.instance(context);
-        messager = processingEnvironment.getMessager();
         this.names = Names.instance(context);
         classReader = ClassReader.instance(context);
         classReader.loadClass(names.fromString(BaseMeta.class.getName()));
