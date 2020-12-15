@@ -2,22 +2,23 @@ package top.onceio.core.util;
 
 public class IDGenerator {
     private static final long zero = 946684800000L;
-    private static long lasttime = 0L;
+    private static long lastTime = 0L;
     private static int sequence = 0;
     private static int code = 0;
 
     public static synchronized long randomID() {
         long time = System.currentTimeMillis();
-        if (time == lasttime) {
+        if (time == lastTime) {
             sequence++;
             if (sequence >= 4096) {
-                while (lasttime <= System.currentTimeMillis())
-                    ;
-                lasttime = time = System.currentTimeMillis();
+                while (lastTime >= time){
+                    time = System.currentTimeMillis();
+                }
+                lastTime = time;
                 sequence = 1;
             }
         } else {
-            lasttime = time;
+            lastTime = time;
             sequence = 1;
         }
         return (time - zero) << 22 | (sequence) << 10 | (code);
