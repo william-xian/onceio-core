@@ -70,24 +70,26 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    private Map<String, TableMeta> findPGTableMeta(JdbcHelper jdbcHelper, Collection<String> tables) {
+    private Map<String, TableMeta> findPGTableMeta(Collection<String> tables) {
         Map<String, TableMeta> result = new HashMap<>();
-        if (tables.isEmpty()) {
-            return result;
-        }
         List<String> schemaTables = new ArrayList<>();
-        for (String table : tables) {
-            if (!table.contains(".")) {
-                schemaTables.add("public." + table);
-            } else {
-                schemaTables.add(table);
+        if(tables != null) {
+            if (tables.isEmpty()) {
+                return result;
+            }
+            for (String table : tables) {
+                if (!table.contains(".")) {
+                    schemaTables.add("public." + table);
+                } else {
+                    schemaTables.add(table);
+                }
             }
         }
 
 
-        String qColumns = "select\n" +
-                "ns.nspname as schemaname,\n" +
-                "c.relname as tablename,\n" +
+        String qColumns = "SELECT\n" +
+                "ns.nspname AS schemaname,\n" +
+                "c.relname AS tablename,\n" +
                 "a.attnum,\n" +
                 "a.attname AS field,\n" +
                 "t.typname AS type,\n" +
@@ -95,30 +97,35 @@ public class DaoHelper implements DDLDao, TransDao {
                 "isc.numeric_precision,\n" +
                 "isc.numeric_scale,\n" +
                 "isc.column_default,\n" +
-                "isc.is_nullable = 'YES' as nullable,\n" +
+                "isc.is_nullable = 'YES' AS nullable,\n" +
                 "b.description AS comment,\n" +
                 "pk.conname pk_conname,\n" +
                 "uk.conname uk_conname,\n" +
                 "fk.conname fk_conname,\n" +
                 "fc.relname f_tablename,\n" +
                 "fns.nspname f_schemaname\n" +
-                "from pg_attribute a \n" +
-                "left join pg_type t on a.atttypid = t.oid\n" +
-                "left join pg_class c on a.attrelid = c.oid\n" +
-                "left join pg_namespace ns on ns.oid = c.relnamespace\n" +
-                "left join pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid\n" +
-                "left join pg_constraint pk on pk.conrelid = c.oid and pk.contype='p' and a.attnum = pk.conkey[1]\n" +
-                "left join pg_constraint uk on uk.conrelid = c.oid and uk.contype='u' and a.attnum = uk.conkey[1]\n" +
-                "left join pg_constraint fk on fk.conrelid = c.oid and fk.contype='f' and a.attnum = fk.conkey[1] \n" +
-                "left join pg_class fc on fk.confrelid = fc.oid\n" +
-                "left join pg_namespace fns on fns.oid = fc.relnamespace\n" +
-                "left join information_schema.columns isc on isc.table_schema = ns.nspname and isc.table_name = c.relname and isc.column_name =  a.attname\n" +
+                "FROM pg_attribute a \n" +
+                "LEFT JOIN pg_type t ON a.atttypid = t.oid\n" +
+                "LEFT JOIN pg_class c ON a.attrelid = c.oid\n" +
+                "LEFT JOIN pg_namespace ns ON ns.oid = c.relnamespace\n" +
+                "LEFT JOIN pg_description b ON a.attrelid=b.objoid AND a.attnum = b.objsubid\n" +
+                "LEFT JOIN pg_constraint pk ON pk.conrelid = c.oid AND pk.contype='p' AND a.attnum = pk.conkey[1]\n" +
+                "LEFT JOIN pg_constraint uk ON uk.conrelid = c.oid AND uk.contype='u' AND a.attnum = uk.conkey[1]\n" +
+                "LEFT JOIN pg_constraint fk ON fk.conrelid = c.oid AND fk.contype='f' AND a.attnum = fk.conkey[1] \n" +
+                "LEFT JOIN pg_class fc ON fk.confrelid = fc.oid\n" +
+                "LEFT JOIN pg_namespace fns ON fns.oid = fc.relnamespace\n" +
+                "LEFT JOIN information_schema.columns isc ON isc.table_schema = ns.nspname AND isc.table_name = c.relname AND isc.column_name =  a.attname\n" +
                 "WHERE a.attnum > 0\n" +
-                "and a.attrelid = c.oid\n" +
-                "and a.atttypid = t.oid\n" +
-                "and ns.oid = c.relnamespace\n" +
-                "and concat(ns.nspname,'.',c.relname) IN " + String.format("(%s)\n", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
-                "ORDER BY ns.nspname,c.relname,a.attnum";
+                "AND a.attrelid = c.oid\n" +
+                "AND a.atttypid = t.oid\n" +
+                "AND c.reltype != 0\n" +
+                "AND ns.oid = c.relnamespace\n";
+                if(tables != null) {
+                    qColumns += "AND concat(ns.nspname,'.',c.relname) IN " + String.format("(%s)\n", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
+                } else {
+                    qColumns += "AND ns.nspname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
+                }
+                qColumns += "ORDER BY ns.nspname,c.relname,a.attnum";
         Map<String, Map<String, ColumnMeta>> tableToColumns = new HashMap<>();
 
         jdbcHelper.query(qColumns, schemaTables.toArray(), (rs) -> {
@@ -177,9 +184,14 @@ public class DaoHelper implements DDLDao, TransDao {
         });
 
         Map<String, List<IndexMeta>> tableToConstraintMeta = new HashMap<>();
-        String qIndexes = "select * from pg_indexes i\n" +
-                "where i.indexname like ? and concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
-                " ORDER BY i.schemaname,i.tablename";
+        String qIndexes = "SELECT * FROM pg_indexes i\n" +
+                "WHERE i.indexname LIKE ?\n";
+        if(tables != null) {
+            qIndexes += "AND concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +"\n";
+        } else {
+            qIndexes += "AND i.schemaname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
+        }
+        qIndexes+="ORDER BY i.schemaname,i.tablename";
         List<String> args = new ArrayList<>(schemaTables.size() + 1);
         args.add(IndexMeta.INDEX_NAME_PREFIX_NQ + "%");
         args.addAll(schemaTables);
@@ -229,9 +241,15 @@ public class DaoHelper implements DDLDao, TransDao {
             result.put(schemaTable.toLowerCase().replace("public.", ""), tm);
         });
 
-        String qViews = "select * from pg_views v\n" +
-                "where concat(v.schemaname,'.',v.viewname) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +
-                " ORDER BY v.schemaname,v.viewname";
+        String qViews = "SELECT * FROM pg_views v\n";
+        if(tables != null) {
+            qViews += "WHERE concat(v.schemaname,'.',v.viewname) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +"\n";
+        }else {
+
+            qViews += "WHERE v.schemaname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
+        }
+        qViews += "ORDER BY v.schemaname,v.viewname";
+
         jdbcHelper.query(qViews, schemaTables.toArray(), (rs) -> {
             try {
                 String schema = rs.getString("schemaname");
@@ -253,10 +271,15 @@ public class DaoHelper implements DDLDao, TransDao {
         return result;
     }
 
-    private Map<String, TableMeta> findTableMeta(JdbcHelper jdbcHelper, Collection<String> schemaTables) {
+    /**
+     *
+     * @param schemaTables 如果schemaTables是null值则不限制
+     * @return
+     */
+    public Map<String, TableMeta> findTableMeta(Collection<String> schemaTables) {
         switch (jdbcHelper.getDBType()) {
             case POSTGRESQL:
-                return findPGTableMeta(jdbcHelper, schemaTables);
+                return findPGTableMeta(schemaTables);
             default:
                 OAssert.err("不支持数据库类型：%s", jdbcHelper.getDBType());
         }
@@ -293,7 +316,7 @@ public class DaoHelper implements DDLDao, TransDao {
             }
         }
 
-        Map<String, TableMeta> oldTableMeta = findTableMeta(jdbcHelper, nameToMeta.keySet());
+        Map<String, TableMeta> oldTableMeta = findTableMeta(nameToMeta.keySet());
 
         SqlPlanBuilder planBuilder = new SqlPlanBuilder();
         for (Class<?> tbl : classToTableMeta.keySet()) {

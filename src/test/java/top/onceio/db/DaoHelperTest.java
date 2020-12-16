@@ -2,8 +2,10 @@ package top.onceio.db;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import cn.xian.app.model.Gender;
+import com.alibaba.druid.support.json.JSONUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -12,6 +14,7 @@ import org.junit.Test;
 
 import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.dao.Page;
+import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.model.Func;
 import top.onceio.core.util.IDGenerator;
 import top.onceio.core.util.OUtils;
@@ -247,5 +250,12 @@ public class DaoHelperTest extends DaoBaseTest {
         System.out.println(ucAvg);
 
         daoHelper.deleteByIds(UserInfo.class, ids);
+    }
+
+    @Test
+    public void findTableMeta() {
+        Map<String, TableMeta> map =  daoHelper.findTableMeta(null);
+        TableMeta m = map.get("o_i18n");
+        System.out.println(m);
     }
 }
