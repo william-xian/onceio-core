@@ -25,9 +25,27 @@ public class AccessHelper {
         String table  = TableMeta.getTableName(entityClass);
         def.bind(table, def, entityClass);
         List<Object> args = new ArrayList<>();
-        String select = (String)nameToArg.getOrDefault("$columns", "*");
+        String select = (String)nameToArg.get("$columns");
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("SELECT %s\n", select.replaceAll("([A-Z])", "_$1").toLowerCase()));
+        if(select == null) {
+            sb.append(String.format("SELECT *\n"));
+        } else {
+            sb.append(String.format("SELECT "));
+            for(String col:select.split(",")) {
+                for(ColumnMeta cm:tm.getColumnMetas()) {
+                    if(cm.getField().getName().equals(col)) {
+                        sb.append(cm.getName() + ",");
+                    }
+                }
+            }
+            if(sb.charAt(sb.length() -1) == ',') {
+                sb.setCharAt(sb.length() -1, '\n');
+            } else {
+               sb.append("*\n");
+            }
+        }
+
+
         sb.append(String.format("FROM %s\nWHERE ", def.table));
         nameToArg.forEach((name,val) -> {
             ColumnMeta cm = tm.getColumnMetaByName(name);
