@@ -103,7 +103,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
 
     @Api(value = "/byIds", method = {ApiMethod.GET})
     @Override
-    public <ID extends Serializable> List<E> findByIds(@Param(":ids") List<ID> ids) {
+    public <ID extends Serializable> List<E> findByIds(@Param("ids") List<ID> ids) {
         return daoHelper.findByIds(tbl, ids);
     }
 

@@ -25,7 +25,7 @@ public class AccessHelper {
         String table  = TableMeta.getTableName(entityClass);
         def.bind(table, def, entityClass);
         List<Object> args = new ArrayList<>();
-        String select = (String)nameToArg.getOrDefault(":columns", "*");
+        String select = (String)nameToArg.getOrDefault("$columns", "*");
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("SELECT %s\n", select.replaceAll("([A-Z])", "_$1").toLowerCase()));
         sb.append(String.format("FROM %s\nWHERE ", def.table));
