@@ -16,12 +16,16 @@ public class OI18n extends BaseModel<String> {
     @Col(size = 32, nullable = true)
     private String val;
 
+    @Override
     public String getId() {
         return id;
     }
+
+    @Override
     public void setId(String id) {
         this.id = id;
     }
+
     public String getName() {
         return name;
     }
@@ -36,10 +40,6 @@ public class OI18n extends BaseModel<String> {
 
     public void setVal(String val) {
         this.val = val;
-    }
-
-    public String toString() {
-        return OUtils.toJson(this);
     }
 
     public static String msgId(String lang, String format) {

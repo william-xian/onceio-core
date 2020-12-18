@@ -1,11 +1,13 @@
 package top.onceio.core.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import top.onceio.OnceIO;
+
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -15,18 +17,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonReader;
-
-import top.onceio.OnceIO;
 
 public class JsonConfLoader {
 
@@ -175,7 +167,7 @@ public class JsonConfLoader {
                     Object bean = cls.newInstance();
                     name2Bean.put(t.getKey(), bean);
                 } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                    LOGGER.warn(e.getMessage());
+                    LOGGER.error(e.getMessage());
                 }
             }
         );

@@ -97,24 +97,24 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
 
     @Api(value = "/fetch", method = {ApiMethod.GET})
     @Override
-    public <M extends BaseMeta<M>> E fetch(@Param("tpl") M tpl) {
+    public <M extends BaseMeta<M>> E fetch(@Param M tpl) {
         return daoHelper.fetch(tbl, tpl);
     }
 
     @Api(value = "/byIds", method = {ApiMethod.GET})
     @Override
-    public <ID extends Serializable> List<E> findByIds(@Param("ids") List<ID> ids) {
+    public <ID extends Serializable> List<E> findByIds(@Param(":ids") List<ID> ids) {
         return daoHelper.findByIds(tbl, ids);
     }
 
     @Override
-    public <M extends BaseMeta<M>> List<E> find(@Param("cnd") M cnd) {
+    public <M extends BaseMeta<M>> List<E> find(M cnd) {
         return daoHelper.find(tbl, cnd);
     }
 
     @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public <M extends BaseMeta<M>> Page<E> find(@Param("cnd") M cnd, @Param("page") int page, @Param("pageSize") int pageSize) {
+    public <M extends BaseMeta<M>> Page<E> find(@Param M cnd, @Param(":page") int page, @Param(":pageSize") int pageSize) {
         return daoHelper.find(tbl, cnd, page, pageSize);
     }
 
@@ -130,7 +130,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
 
     @Api(value = "/count", method = {ApiMethod.GET})
     @Override
-    public <M extends BaseMeta<M>> long count(@Param("cnd") M cnd) {
+    public <M extends BaseMeta<M>> long count(@Param M cnd) {
         return daoHelper.count(tbl, cnd);
     }
 

@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import top.onceio.core.util.OUtils;
 
 public class TableMeta {
     private static final Logger LOGGER = LoggerFactory.getLogger(TableMeta.class);
+    private static final Map<Class<?>, TableMeta> tableCache = new HashMap<>();
     String table;
     BaseMeta viewDef;
     ModelType type;
@@ -30,7 +32,13 @@ public class TableMeta {
     transient Map<String, ColumnMeta> nameToColumnMeta = new HashMap<>();
     transient Class<?> entity;
 
-    public static final Map<Class<?>, TableMeta> tableCache = new HashMap<>();
+
+    public static final TableMeta getTableMetaBy(Class<?> entity) {
+        return  tableCache.get(entity);
+    }
+    public static final Set<Class<?>> getEntities() {
+        return  tableCache.keySet();
+    }
 
     public String name() {
         return table;
@@ -155,11 +163,16 @@ public class TableMeta {
         tm.setColumnMetas(columnMetas);
         tm.freshNameToField(entity);
         tm.freshConstraintMetaTable();
-
-        tableCache.put(entity, tm);
         return tm;
     }
 
+    public static TableMeta createAndStore(Class<?> entity) {
+        TableMeta tm = TableMeta.createBy(entity);
+        tm.freshNameToField(entity);
+        tm.freshConstraintMetaTable();
+        tableCache.put(entity, tm);
+        return tm;
+    }
     /**
      * Java类型转换成postgres字段类型
      *
