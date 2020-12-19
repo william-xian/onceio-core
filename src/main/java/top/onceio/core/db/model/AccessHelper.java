@@ -18,48 +18,47 @@ public class AccessHelper {
         return def.refs;
     }
 
-    public static BaseMeta createFindBaseMeta(Class<?> entityClass, Map<String,Object> nameToArg) {
+    public static BaseMeta createFindBaseMeta(Class<?> entityClass, Map<String, Object> nameToArg) {
         TableMeta tm = TableMeta.getTableMetaBy(entityClass);
         OAssert.err(tm != null, "%s is not a table.", entityClass.getName());
         BaseMeta def = new BaseMeta();
-        String table  = TableMeta.getTableName(entityClass);
+        String table = TableMeta.getTableName(entityClass);
         def.bind(table, def, entityClass);
         List<Object> args = new ArrayList<>();
-        String select = (String)nameToArg.get("$columns");
-        StringBuilder sb = new StringBuilder();
-        if(select == null) {
-            sb.append(String.format("SELECT *\n"));
+        String select = (String) nameToArg.get("$columns");
+        if (select == null) {
+            def.select.append(String.format("SELECT *\n"));
         } else {
-            sb.append(String.format("SELECT "));
-            for(String col:select.split(",")) {
-                for(ColumnMeta cm:tm.getColumnMetas()) {
-                    if(cm.getField().getName().equals(col)) {
-                        sb.append(cm.getName() + ",");
+            def.select.append(String.format("SELECT "));
+            for (String col : select.split(",")) {
+                for (ColumnMeta cm : tm.getColumnMetas()) {
+                    if (cm.getField().getName().equals(col)) {
+                        def.select.append(cm.getName() + ",");
                     }
                 }
             }
-            if(sb.charAt(sb.length() -1) == ',') {
-                sb.setCharAt(sb.length() -1, '\n');
+            if (def.select.charAt(def.select.length() - 1) == ',') {
+                def.select.setCharAt(def.select.length() - 1, '\n');
             } else {
-               sb.append("*\n");
+                def.select.append("*\n");
             }
         }
 
 
-        sb.append(String.format("FROM %s\nWHERE ", def.table));
-        nameToArg.forEach((name,val) -> {
+        def.from.append(String.format("FROM %s\n", def.table));
+        nameToArg.forEach((name, val) -> {
             ColumnMeta cm = tm.getColumnMetaByName(name);
-            if(cm != null) {
+            if (cm != null) {
                 args.add(val);
-                if(val instanceof String) {
-                    sb.append(String.format("%s LIKE ? AND" , cm.getName()));
+                if (val instanceof String) {
+                    def.where.append(String.format("%s LIKE ? AND", cm.getName()));
                 } else {
-                    sb.append(String.format("%s = ? AND" , cm.getName()));
+                    def.where.append(String.format("%s = ? AND", cm.getName()));
                 }
             }
         });
-        if(sb.length() >0) {
-            sb.deleteCharAt(sb.length() - 4);
+        if (def.where.length() > 0) {
+            def.where.deleteCharAt(def.where.length() - 4);
         }
         return def;
     }
@@ -72,7 +71,7 @@ public class AccessHelper {
         return def.alias;
     }
 
-    public static StringBuilder getSelect(BaseMeta def)  {
+    public static StringBuilder getSelect(BaseMeta def) {
         return def.select;
     }
 
