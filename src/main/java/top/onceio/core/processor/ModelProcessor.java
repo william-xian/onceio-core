@@ -12,6 +12,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.*;
+import com.sun.tools.javac.util.List;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseCol;
@@ -27,10 +28,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @SupportedAnnotationTypes({"top.onceio.core.db.annotation.Model"})
@@ -69,6 +67,8 @@ public class ModelProcessor extends AbstractProcessor {
         private boolean hasMetaClass = false;
         private JCTree.JCAnnotation tbl;
         private JCTree.JCClassDecl jcClass;
+        private Set<String> methodNames = new HashSet<>();
+        private java.util.List<JCTree.JCVariableDecl> variables = new ArrayList<>();
 
         @Override
         public void visitClassDef(JCTree.JCClassDecl jcClass) {
@@ -81,6 +81,7 @@ public class ModelProcessor extends AbstractProcessor {
 
         }
 
+        @Override
         public void visitAnnotation(JCTree.JCAnnotation var1) {
             var1.annotationType = this.translate(var1.annotationType);
             var1.args = this.translate(var1.args);
@@ -88,6 +89,18 @@ public class ModelProcessor extends AbstractProcessor {
                 this.tbl = var1;
             }
             this.result = var1;
+        }
+
+        @Override
+        public void visitMethodDef(JCTree.JCMethodDecl var1) {
+            super.visitMethodDef(var1);
+            methodNames.add(var1.name.toString());
+        }
+
+        @Override
+        public void visitVarDef(JCTree.JCVariableDecl var1) {
+            super.visitVarDef(var1);
+            variables.add(var1);
         }
     }
 
@@ -103,13 +116,32 @@ public class ModelProcessor extends AbstractProcessor {
                 tree.accept(entityTranslator);
                 if (entityTranslator.hasMetaClass) continue;
                 JCTree.JCClassDecl jcClass = entityTranslator.jcClass;
+                Set<String> methodNames = entityTranslator.methodNames;
 
                 java.util.List<? extends Element> fields = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m -> m.getKind().isField() && m.getAnnotation(Col.class) != null)
                         .collect(Collectors.toList());
 
                 Map<String, TypeMirror> fieldToType = new HashMap<>();
                 for (Element e : fields) {
-                    fieldToType.put(e.getSimpleName().toString(), e.asType());
+                    String fieldName = e.getSimpleName().toString();
+                    fieldToType.put(fieldName, e.asType());
+                }
+
+                for (JCTree.JCVariableDecl var : entityTranslator.variables) {
+                    String fieldName = var.name.toString();
+                    if (fieldName.length() > 1) {
+                        fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+                    } else {
+                        fieldName = fieldName.toUpperCase();
+                    }
+                    if (!methodNames.contains("get" + fieldName) && !methodNames.contains("is" + fieldName)) {
+                        JCTree.JCMethodDecl get = generateGetterMethod(var);
+                        jcClass.defs = jcClass.defs.append(get);
+                    }
+                    if (!methodNames.contains("set" + fieldName)) {
+                        JCTree.JCMethodDecl set = generateSetterMethod(var, jcClass);
+                        jcClass.defs = jcClass.defs.append(set);
+                    }
                 }
 
                 JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
@@ -117,6 +149,8 @@ public class ModelProcessor extends AbstractProcessor {
                 JCTree.JCMethodDecl methodDecl = generateMetaMethod(metaClass);
                 jcClass.defs = jcClass.defs.append(methodDecl);
                 //messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
+
+
             } catch (Exception e) {
                 messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
             }
@@ -146,7 +180,7 @@ public class ModelProcessor extends AbstractProcessor {
                 .MethodDef(jcModifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
 
-    private JCTree.JCMethodDecl generateSetterMethod(JCTree.JCVariableDecl jcVariable) throws ReflectiveOperationException {
+    private JCTree.JCMethodDecl generateSetterMethod(JCTree.JCVariableDecl jcVariable, JCTree.JCClassDecl jcClass) throws ReflectiveOperationException {
 
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
@@ -157,12 +191,19 @@ public class ModelProcessor extends AbstractProcessor {
         jcStatements.append(treeMaker.Exec(treeMaker
                 .Assign(treeMaker.Select(treeMaker.Ident(getNameFromString("this")), variableName),
                         treeMaker.Ident(variableName))));
+
+
+        jcStatements.append(treeMaker.Return(treeMaker.Ident(getNameFromString("this"))));
+
         JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
 
-        JCTree.JCExpression returnType =
-                treeMaker.Type((Type) (Class.forName("com.sun.tools.javac.code.Type$JCVoidType").newInstance()));
+//        JCTree.JCExpression returnType = treeMaker.Type((Type) (Class.forName("com.sun.tools.javac.code.Type$JCVoidType").newInstance()));
+
+
+        JCTree.JCExpression returnType = treeMaker.Type(jcClass.sym.type);
 
         List<JCTree.JCTypeParameter> typeParameters = List.nil();
+
 
         JCTree.JCVariableDecl variableDecl = treeMaker
                 .VarDef(treeMaker.Modifiers(Flags.PARAMETER, List.nil()), jcVariable.name, jcVariable.vartype, null);
