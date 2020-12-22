@@ -116,6 +116,7 @@ public class ModelProcessor extends AbstractProcessor {
                 tree.accept(entityTranslator);
                 if (entityTranslator.hasMetaClass) continue;
                 JCTree.JCClassDecl jcClass = entityTranslator.jcClass;
+
                 Set<String> methodNames = entityTranslator.methodNames;
 
                 java.util.List<? extends Element> fields = elementsUtils.getAllMembers(jcClass.sym).stream().filter(m -> m.getKind().isField() && m.getAnnotation(Col.class) != null)
@@ -141,10 +142,12 @@ public class ModelProcessor extends AbstractProcessor {
                         JCTree.JCMethodDecl get = generateGetterMethod(var);
                         jcClass.defs = jcClass.defs.append(get);
                     }
+
                     if (!methodNames.contains("set" + fieldName)) {
                         JCTree.JCMethodDecl set = generateSetterMethod(var, jcClass);
                         jcClass.defs = jcClass.defs.append(set);
                     }
+
                 }
 
                 JCTree.JCClassDecl metaClass = generateMetaClass(entityTranslator.tbl, jcClass, fieldToType);
@@ -184,7 +187,7 @@ public class ModelProcessor extends AbstractProcessor {
     }
 
     private JCTree.JCMethodDecl generateSetterMethod(JCTree.JCVariableDecl jcVariable, JCTree.JCClassDecl jcClass) throws ReflectiveOperationException {
-
+        treeMaker.pos = jcVariable.pos;
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
         Name variableName = jcVariable.getName();
@@ -200,8 +203,7 @@ public class ModelProcessor extends AbstractProcessor {
 
         JCTree.JCBlock jcBlock = treeMaker.Block(0, jcStatements.toList());
 
-//        JCTree.JCExpression returnType = treeMaker.Type((Type) (Class.forName("com.sun.tools.javac.code.Type$JCVoidType").newInstance()));
-
+//        JCTree.JCExpression returnType = treeMaker.Type(Type.JCVoidType.class.newInstance());
         JCTree.JCExpression returnType = treeMaker.Type(jcClass.sym.type);
 
         List<JCTree.JCTypeParameter> typeParameters = List.nil();
