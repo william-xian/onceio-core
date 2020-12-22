@@ -22,8 +22,9 @@ public class OI18n extends BaseModel<String> {
     }
 
     @Override
-    public void setId(String id) {
+    public OI18n setId(String id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {

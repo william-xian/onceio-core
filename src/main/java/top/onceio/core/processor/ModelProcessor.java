@@ -122,13 +122,16 @@ public class ModelProcessor extends AbstractProcessor {
                         .collect(Collectors.toList());
 
                 Map<String, TypeMirror> fieldToType = new HashMap<>();
+                Set<String> fieldNames = new HashSet<>();
                 for (Element e : fields) {
                     String fieldName = e.getSimpleName().toString();
+                    fieldNames.add(fieldName);
                     fieldToType.put(fieldName, e.asType());
                 }
 
                 for (JCTree.JCVariableDecl var : entityTranslator.variables) {
                     String fieldName = var.name.toString();
+                    if(!fieldNames.contains(fieldName)) continue;
                     if (fieldName.length() > 1) {
                         fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
                     } else {
@@ -149,10 +152,10 @@ public class ModelProcessor extends AbstractProcessor {
                 JCTree.JCMethodDecl methodDecl = generateMetaMethod(metaClass);
                 jcClass.defs = jcClass.defs.append(methodDecl);
                 //messager.printMessage(Diagnostic.Kind.NOTE, jcClass.toString());
-
-
             } catch (Exception e) {
+
                 messager.printMessage(Diagnostic.Kind.ERROR, e.getMessage());
+
             }
         }
         return true;
@@ -199,7 +202,6 @@ public class ModelProcessor extends AbstractProcessor {
 
 //        JCTree.JCExpression returnType = treeMaker.Type((Type) (Class.forName("com.sun.tools.javac.code.Type$JCVoidType").newInstance()));
 
-
         JCTree.JCExpression returnType = treeMaker.Type(jcClass.sym.type);
 
         List<JCTree.JCTypeParameter> typeParameters = List.nil();
@@ -220,9 +222,7 @@ public class ModelProcessor extends AbstractProcessor {
      * @return public top.onceio.core.db.model.BaseCol<Meta> age = new top.onceio.core.db.model.BaseCol(this, OReflectUtil.getField(User.class, "age"));
      */
     private JCTree.JCVariableDecl generateColField(JCTree.JCFieldAccess entityClass, Name metaClassName, String fieldName, TypeMirror fieldType) {
-
         JCTree.JCModifiers modifiers = treeMaker.Modifiers(Flags.PUBLIC);
-
         Name variableName = names.fromString(fieldName);
         JCTree.JCTypeApply typeApply;
         if (fieldType.getKind().equals(TypeKind.BOOLEAN) || fieldType.getKind().equals(TypeKind.BYTE)

@@ -33,4 +33,6 @@ public class UserBillView extends BaseModel<Long> implements DefView {
         return u;
     }
 
+
+
 }

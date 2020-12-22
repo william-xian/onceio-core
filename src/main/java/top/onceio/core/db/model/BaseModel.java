@@ -19,8 +19,9 @@ public abstract class BaseModel<ID extends Serializable> {
         return id;
     }
 
-    public void setId(ID id) {
+    public BaseModel setId(ID id) {
         this.id = id;
+        return this;
     }
 
     @Override
