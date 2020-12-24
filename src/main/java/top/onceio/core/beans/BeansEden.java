@@ -1,6 +1,7 @@
 package top.onceio.core.beans;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.sf.cglib.proxy.Enhancer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,13 @@ public class BeansEden {
         Config cnfAnn = field.getAnnotation(Config.class);
         if (cnfAnn != null) {
             Class<?> fieldType = field.getType();
-            JsonElement je = conf.getConf().get(cnfAnn.value());
+            String[] names = cnfAnn.value().split("\\.");
+            JsonObject je = conf.getConf();
+            for(String name:names) {
+                if(je != null) {
+                    je = je.getAsJsonObject(name);
+                }
+            }
             if (je != null) {
                 String val = je.getAsString();
                 try {
