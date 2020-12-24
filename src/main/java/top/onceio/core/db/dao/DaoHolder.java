@@ -114,7 +114,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
 
     @Api(value = "/", method = {ApiMethod.GET})
     @Override
-    public <M extends BaseMeta<M>> Page<E> find(@Param M cnd, @Param(":page") int page, @Param(":pageSize") int pageSize) {
+    public <M extends BaseMeta<M>> Page<E> find(@Param M cnd, @Param("$page") int page, @Param("$pageSize") int pageSize) {
         return daoHelper.find(tbl, cnd, page, pageSize);
     }
 

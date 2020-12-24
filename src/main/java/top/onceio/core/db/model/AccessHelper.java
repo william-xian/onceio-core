@@ -27,25 +27,24 @@ public class AccessHelper {
         List<Object> args = new ArrayList<>();
         String select = (String) nameToArg.get("$columns");
         if (select == null) {
-            def.select.append(String.format("SELECT *\n"));
+            def.select.append(String.format(" *\n"));
         } else {
-            def.select.append(String.format("SELECT "));
             for (String col : select.split(",")) {
                 for (ColumnMeta cm : tm.getColumnMetas()) {
                     if (cm.getField().getName().equals(col)) {
-                        def.select.append(cm.getName() + ",");
+                        def.select.append(" "+ cm.getName() + ",");
                     }
                 }
             }
             if (def.select.charAt(def.select.length() - 1) == ',') {
                 def.select.setCharAt(def.select.length() - 1, '\n');
             } else {
-                def.select.append("*\n");
+                def.select.append(" *\n");
             }
         }
 
 
-        def.from.append(String.format("FROM %s\n", def.table));
+        def.from.append(String.format(" %s\n", def.table));
         nameToArg.forEach((name, val) -> {
             ColumnMeta cm = tm.getColumnMetaByName(name);
             if (cm != null) {
