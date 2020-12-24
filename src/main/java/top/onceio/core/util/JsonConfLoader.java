@@ -158,57 +158,60 @@ public class JsonConfLoader {
         Map<String, Object> name2Bean = new HashMap<>();
 
         /** 初始分配内存 */
-        beans.entrySet().forEach((t)-> {
-                JsonObject clsFields = t.getValue().getAsJsonObject();
-                JsonElement type = clsFields.get("@TYPE");
-                String clsName = (type != null) ? type.getAsString() : t.getKey();
-                try {
-                    Class<?> cls = OnceIO.getClassLoader().loadClass(clsName);
-                    Object bean = cls.newInstance();
-                    name2Bean.put(t.getKey(), bean);
-                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                    LOGGER.error(e.getMessage());
+        beans.entrySet().forEach((t) -> {
+                    JsonObject clsFields = t.getValue().getAsJsonObject();
+                    JsonElement type = clsFields.get("@TYPE");
+                    String clsName = (type != null) ? type.getAsString() : t.getKey();
+                    try {
+                        Class<?> cls = OnceIO.getClassLoader().loadClass(clsName);
+                        Object bean = cls.newInstance();
+                        name2Bean.put(t.getKey(), bean);
+                    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                        LOGGER.error(e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
-            }
         );
-        beans.entrySet().forEach((Entry<String, JsonElement> t) ->{
-                JsonObject clsFields = t.getValue().getAsJsonObject();
-                Object bean = name2Bean.get(t.getKey());
-                Class<?> cls = bean.getClass();
-                clsFields.entrySet().forEach((Entry<String, JsonElement> fieldType) -> {
-                        if (fieldType.getKey().equals("@TYPE")) {
-                            return;
-                        }
-                        try {
-                            Method method = OReflectUtil.getSetMethod(cls, fieldType.getKey());
-                            if (method != null) {
-                                String strV = fieldType.getValue().getAsString();
-                                if (strV != null) {
-                                    if (strV.startsWith("@")) {
-                                        method.invoke(bean, name2Bean.get(strV.substring(1)));
-                                    } else {
-                                        method.invoke(bean,
-                                                OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
+        beans.entrySet().forEach((Entry<String, JsonElement> t) -> {
+                    JsonObject clsFields = t.getValue().getAsJsonObject();
+                    Object bean = name2Bean.get(t.getKey());
+                    if (bean != null) {
+                        Class<?> cls = bean.getClass();
+                        clsFields.entrySet().forEach((Entry<String, JsonElement> fieldType) -> {
+                                    if (fieldType.getKey().equals("@TYPE")) {
+                                        return;
                                     }
-                                } else {
-                                    method.invoke(bean,
-                                            OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
+                                    try {
+                                        Method method = OReflectUtil.getSetMethod(cls, fieldType.getKey());
+                                        if (method != null) {
+                                            String strV = fieldType.getValue().getAsString();
+                                            if (strV != null) {
+                                                if (strV.startsWith("@")) {
+                                                    method.invoke(bean, name2Bean.get(strV.substring(1)));
+                                                } else {
+                                                    method.invoke(bean,
+                                                            OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
+                                                }
+                                            } else {
+                                                method.invoke(bean,
+                                                        OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
+                                            }
+                                        } else {
+                                            LOGGER.warn("not exist : " + fieldType.getKey());
+                                        }
+                                    } catch (IllegalArgumentException | IllegalAccessException | SecurityException
+                                            | InvocationTargetException e) {
+                                        e.printStackTrace();
+                                        LOGGER.error(e.getMessage());
+                                    }
                                 }
-                            } else {
-                                LOGGER.warn("not exist : " + fieldType.getKey());
-                            }
-                        } catch (IllegalArgumentException | IllegalAccessException | SecurityException
-                                | InvocationTargetException e) {
-                            e.printStackTrace();
-                            LOGGER.error(e.getMessage());
-                        }
+
+                        );
+                    } else {
+                        LOGGER.error("创建Bean: {}失败。",t.getKey());
                     }
 
-                );
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(t.getKey() + " -> " + bean);
                 }
-            }
         );
         return name2Bean;
     }
