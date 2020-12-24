@@ -2,17 +2,15 @@ package top.onceio.core.processor;
 
 
 import com.google.auto.service.AutoService;
-import com.google.common.base.CaseFormat;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Flags;
-import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.jvm.ClassReader;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
-import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.*;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseCol;
@@ -132,7 +130,7 @@ public class ModelProcessor extends AbstractProcessor {
 
                 for (JCTree.JCVariableDecl var : entityTranslator.variables) {
                     String fieldName = var.name.toString();
-                    if(!fieldNames.contains(fieldName)) continue;
+                    if (!fieldNames.contains(fieldName)) continue;
                     if (fieldName.length() > 1) {
                         fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
                     } else {
@@ -361,8 +359,16 @@ public class ModelProcessor extends AbstractProcessor {
         return expr;
     }
 
+
     private Name handleMethodSignature(Name name, String prefix) {
-        return names.fromString(prefix + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, name.toString()));
+        String field = name.toString();
+        if (field.length() > 1) {
+            field = field.substring(0, 1).toUpperCase() + field.substring(1);
+        } else {
+            field = field.toUpperCase();
+        }
+        String methodName = prefix + field;
+        return names.fromString(methodName);
     }
 
     private Name getNameFromString(String s) {
