@@ -89,10 +89,10 @@ public class BeansEden {
         if (cnfAnn != null) {
             Class<?> fieldType = field.getType();
             String[] names = cnfAnn.value().split("\\.");
-            JsonObject je = conf.getConf();
+            JsonElement je = conf.getConf();
             for(String name:names) {
                 if(je != null) {
-                    je = je.getAsJsonObject(name);
+                    je = je.getAsJsonObject().get(name);
                 }
             }
             if (je != null) {
