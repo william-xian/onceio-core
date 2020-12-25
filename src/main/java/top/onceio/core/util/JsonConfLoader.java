@@ -197,7 +197,7 @@ public class JsonConfLoader {
                                                         OReflectUtil.strToBaseType(method.getParameterTypes()[0], strV));
                                             }
                                         } else {
-                                            LOGGER.warn("not exist : " + fieldType.getKey());
+                                            LOGGER.warn("{} has no field: {}", cls.getName(), fieldType.getKey());
                                         }
                                     } catch (IllegalArgumentException | IllegalAccessException | SecurityException
                                             | InvocationTargetException e) {
@@ -208,7 +208,7 @@ public class JsonConfLoader {
 
                         );
                     } else {
-                        LOGGER.error("创建Bean: {}失败。",t.getKey());
+                        LOGGER.error("创建Bean: {}失败。", t.getKey());
                     }
 
                 }
