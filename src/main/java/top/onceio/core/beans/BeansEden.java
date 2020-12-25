@@ -38,7 +38,6 @@ public class BeansEden {
     public final Set<Class<?>> CLASSES = new HashSet<>();
 
     private ConcurrentHashMap<String, Object> nameToBean = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Class<?>, List<Object>> clazzToList = new ConcurrentHashMap<>();
     List<Tuple3<String, Object, Method>> createMethods = new ArrayList<>();
     List<Tuple3<String, Object, Method>> destroyMethods = new ArrayList<>();
     private ApiResover apiResover = new ApiResover();
@@ -481,27 +480,6 @@ public class BeansEden {
         if (beanName == null || beanName.equals("")) {
             beanName = clazz.getName();
         }
-        List<Class<?>> interfaces = new ArrayList<>();
-        Class<?> cur = clazz;
-        do {
-            if (cur.isInterface()) {
-                interfaces.add(clazz);
-            }
-            for (Class<?> iter : cur.getInterfaces()) {
-                interfaces.add(iter);
-            }
-            cur = cur.getSuperclass();
-
-        } while (cur != null && !cur.equals(Object.class) && !cur.isInterface());
-
-        for (Class<?> iter : interfaces) {
-            nameToBean.put(beanName, bean);
-            clazzToList.putIfAbsent(iter, new ArrayList<>());
-            List<Object> list = clazzToList.get(iter);
-            if (!list.contains(bean)) {
-                list.add(bean);
-            }
-        }
         nameToBean.put(beanName, bean);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("store beanName=" + beanName);
@@ -529,10 +507,10 @@ public class BeansEden {
 
     public <T> List<T> loadList(Class<T> clazz) {
         List<T> result = new ArrayList<>();
-        List<Object> list = clazzToList.get(clazz);
-        OAssert.err(list != null, "找不到接口%s的实现者", clazz.getName());
-        for (Object bean : list) {
-            result.add((T) bean);
+        for (Object bean : nameToBean.values()) {
+            if(clazz.isAssignableFrom(bean.getClass())) {
+                result.add((T) bean);
+            }
         }
         return result;
     }
