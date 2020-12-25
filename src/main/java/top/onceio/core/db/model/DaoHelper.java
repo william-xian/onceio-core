@@ -2,6 +2,10 @@ package top.onceio.core.db.model;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.onceio.core.annotation.Def;
+import top.onceio.core.annotation.OnCreate;
+import top.onceio.core.annotation.Using;
+import top.onceio.core.beans.BeansEden;
 import top.onceio.core.db.annotation.DefSQL;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.annotation.Model;
@@ -37,13 +41,17 @@ import java.util.function.Consumer;
  * 查 外连接，内连接，子查询，视图（子查询，With，视图，物化视图，union）
  * 函数
  **/
+@Def
 public class DaoHelper implements DDLDao, TransDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DaoHelper.class);
 
+    @Using
     private JdbcHelper jdbcHelper;
-    private Map<String, TableMeta> nameToMeta;
+    @Using
     private IdGenerator idGenerator;
+
+    private Map<String, TableMeta> nameToMeta;
     private List<Class<? extends BaseModel>> entities;
 
     public DaoHelper() {
@@ -72,7 +80,7 @@ public class DaoHelper implements DDLDao, TransDao {
     private Map<String, TableMeta> findPGTableMeta(Collection<String> tables) {
         Map<String, TableMeta> result = new HashMap<>();
         List<String> schemaTables = new ArrayList<>();
-        if(tables != null) {
+        if (tables != null) {
             if (tables.isEmpty()) {
                 return result;
             }
@@ -119,12 +127,12 @@ public class DaoHelper implements DDLDao, TransDao {
                 "AND a.atttypid = t.oid\n" +
                 "AND c.reltype != 0\n" +
                 "AND ns.oid = c.relnamespace\n";
-                if(tables != null) {
-                    qColumns += "AND concat(ns.nspname,'.',c.relname) IN " + String.format("(%s)\n", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
-                } else {
-                    qColumns += "AND ns.nspname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
-                }
-                qColumns += "ORDER BY ns.nspname,c.relname,a.attnum";
+        if (tables != null) {
+            qColumns += "AND concat(ns.nspname,'.',c.relname) IN " + String.format("(%s)\n", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
+        } else {
+            qColumns += "AND ns.nspname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
+        }
+        qColumns += "ORDER BY ns.nspname,c.relname,a.attnum";
         Map<String, Map<String, ColumnMeta>> tableToColumns = new HashMap<>();
 
         jdbcHelper.query(qColumns, schemaTables.toArray(), (rs) -> {
@@ -185,12 +193,12 @@ public class DaoHelper implements DDLDao, TransDao {
         Map<String, List<IndexMeta>> tableToConstraintMeta = new HashMap<>();
         String qIndexes = "SELECT * FROM pg_indexes i\n" +
                 "WHERE i.indexname LIKE ?\n";
-        if(tables != null) {
-            qIndexes += "AND concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +"\n";
+        if (tables != null) {
+            qIndexes += "AND concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
         } else {
             qIndexes += "AND i.schemaname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
         }
-        qIndexes+="ORDER BY i.schemaname,i.tablename";
+        qIndexes += "ORDER BY i.schemaname,i.tablename";
         List<String> args = new ArrayList<>(schemaTables.size() + 1);
         args.add(IndexMeta.INDEX_NAME_PREFIX_NQ + "%");
         args.addAll(schemaTables);
@@ -241,9 +249,9 @@ public class DaoHelper implements DDLDao, TransDao {
         });
 
         String qViews = "SELECT * FROM pg_views v\n";
-        if(tables != null) {
-            qViews += "WHERE concat(v.schemaname,'.',v.viewname) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) +"\n";
-        }else {
+        if (tables != null) {
+            qViews += "WHERE concat(v.schemaname,'.',v.viewname) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
+        } else {
 
             qViews += "WHERE v.schemaname NOT IN ('information_schema','pg_catalog', 'pg_toast')\n";
         }
@@ -271,7 +279,6 @@ public class DaoHelper implements DDLDao, TransDao {
     }
 
     /**
-     *
      * @param schemaTables 如果schemaTables是null值则不限制
      * @return
      */
@@ -285,8 +292,13 @@ public class DaoHelper implements DDLDao, TransDao {
         return new HashMap<>();
     }
 
+    @OnCreate(order = "D")
+    public void createByOnceIO() {
+        init(BeansEden.get().CLASSES);
+    }
+
     /**
-     * @param classes 有效参数分3种类
+     * param: classes
      * 1. 表，继承BaseModel且标注Model.class注解的
      * 2. 视图，继承BaseModel、标注Model.class注解的并且实现DefView接口的
      * 3. SQL定义，标注DefSQL注解的
@@ -295,11 +307,11 @@ public class DaoHelper implements DDLDao, TransDao {
         this.nameToMeta = new HashMap<>();
         List<Class<? extends BaseModel>> entities = new ArrayList<>();
         Collection<Class<?>> defClasses = new ArrayList<>();
-        for(Class<?> clazz:classes) {
-            if(BaseModel.class.isAssignableFrom(clazz) && clazz.getAnnotation(Model.class)!= null) {
-                entities.add((Class<? extends BaseModel>)clazz);
+        for (Class<?> clazz : classes) {
+            if (BaseModel.class.isAssignableFrom(clazz) && clazz.getAnnotation(Model.class) != null) {
+                entities.add((Class<? extends BaseModel>) clazz);
             }
-            if(clazz.getAnnotation(DefSQL.class) != null) {
+            if (clazz.getAnnotation(DefSQL.class) != null) {
                 defClasses.add(clazz);
             }
         }
@@ -513,7 +525,7 @@ public class DaoHelper implements DDLDao, TransDao {
             try {
                 Field field = tm.getColumnMetaByName(name).getField();
                 Object v = field.get(entity);
-                if(field.getType().isEnum() && v != null) {
+                if (field.getType().isEnum() && v != null) {
                     val[i] = v.toString();
                 } else {
                     val[i] = v;

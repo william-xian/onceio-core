@@ -1,7 +1,6 @@
 package top.onceio.core.beans;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import net.sf.cglib.proxy.Enhancer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BeansEden {
     private final static Logger LOGGER = LoggerFactory.getLogger(BeansEden.class);
     private final static String CLASS_FROM_CG_LIB = "$$EnhancerByCGLIB$$";
-    private Map<String, Object> nameToBean = new ConcurrentHashMap<>();
+    public final Set<Class<?>> CLASSES = new HashSet<>();
+
+    private ConcurrentHashMap<String, Object> nameToBean = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Class<?>, List<Object>> clazzToList = new ConcurrentHashMap<>();
+    List<Tuple3<String, Object, Method>> createMethods = new ArrayList<>();
+    List<Tuple3<String, Object, Method>> destroyMethods = new ArrayList<>();
     private ApiResover apiResover = new ApiResover();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
             Using.class, Model.class, DefSQL.class, I18nMsg.class, I18nCfg.class, Aop.class);
@@ -72,26 +76,14 @@ public class BeansEden {
         };
     }
 
-    private JdbcHelper createJdbcHelper(DataSource ds) {
-        JdbcHelper jdbcHelper = new JdbcHelper();
-        jdbcHelper.setDataSource(ds);
-        return jdbcHelper;
-    }
-
-    private DaoHelper createDaoHelper(JdbcHelper jdbcHelper, IdGenerator idGenerator, Collection<Class<?>> classes) {
-        DaoHelper daoHelper = new DaoHelper(jdbcHelper, idGenerator);
-        daoHelper.init(classes);
-        return daoHelper;
-    }
-
     private void loadConfig(Class<?> clazz, Object bean, Field field) {
         Config cnfAnn = field.getAnnotation(Config.class);
         if (cnfAnn != null) {
             Class<?> fieldType = field.getType();
             String[] names = cnfAnn.value().split("\\.");
             JsonElement je = conf.getConf();
-            for(String name:names) {
-                if(je != null) {
+            for (String name : names) {
+                if (je != null) {
                     je = je.getAsJsonObject().get(name);
                 }
             }
@@ -159,7 +151,6 @@ public class BeansEden {
         for (Class<?> defClazz : definers) {
             try {
                 Object bean = defClazz.newInstance();
-
                 Def defAnn = defClazz.getAnnotation(Def.class);
                 String beanName = defAnn.value();
                 store(defClazz, beanName, bean);
@@ -198,9 +189,30 @@ public class BeansEden {
                     loadConfig(clazz, bean, field);
                     Using usingAnn = field.getAnnotation(Using.class);
                     if (usingAnn != null) {
-                        Class<?> fieldType = field.getType();
+                        Object fieldBean = null;
                         field.setAccessible(true);
-                        Object fieldBean = load(fieldType, usingAnn.value());
+                        Class<?> fieldType = field.getType();
+                        if (usingAnn.value() != null && !usingAnn.value().equals("")) {
+                            fieldBean = load(fieldType, usingAnn.value());
+                        } else {
+                            if (Collection.class.isAssignableFrom(fieldType)) {
+                                List<?> beanList = loadList(fieldType);
+                                fieldBean = beanList;
+                            } else if (fieldType.isInterface()) {
+                                List<?> beanList = loadList(fieldType);
+                                if (beanList != null && beanList.size() == 1) {
+                                    fieldBean = beanList.get(0);
+                                } else {
+                                    if (beanList == null) {
+                                        LOGGER.error(String.format("找不到 %s:%s", fieldType.getName(), usingAnn.value()));
+                                    } else {
+                                        LOGGER.error(String.format("%s接口的Bean实例有多个(%s), 请使用Def(name='xxx')使用唯一的Bean实例", fieldType.getName(), beanList.size()));
+                                    }
+                                }
+                            } else {
+                                fieldBean = load(fieldType);
+                            }
+                        }
                         if (fieldBean != null) {
                             try {
                                 field.set(bean, fieldBean);
@@ -216,25 +228,22 @@ public class BeansEden {
         }
     }
 
-    private void executeOnCreate(Object bean, Method method) {
+    private void checkOnCreateAddTo(Object bean, Method method, List<Tuple3<String, Object, Method>> list) {
         OnCreate onCreateAnn = method.getAnnotation(OnCreate.class);
         if (onCreateAnn != null) {
             if (method.getParameterCount() == 0) {
-                try {
-                    method.invoke(bean);
-                } catch (InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
+                list.add(new Tuple3(onCreateAnn.order(), bean, method));
             } else {
                 LOGGER.error(String.format("初始化函数%s,不应该有参数", method.getName()));
             }
         }
     }
 
-    private void checkOnDestroy(Object bean, Method method) {
+    private void checkOnDestroy(Object bean, Method method, List<Tuple3<String, Object, Method>> list) {
         OnDestroy onDestroyAnn = method.getAnnotation(OnDestroy.class);
         if (onDestroyAnn != null) {
             if (method.getParameterCount() == 0) {
+                list.add(new Tuple3(onDestroyAnn.order(), bean, method));
             } else {
                 LOGGER.error(String.format("初始化函数%s,不应该有参数", method.getName()));
             }
@@ -282,8 +291,8 @@ public class BeansEden {
             AutoApi autoApi = clazz.getAnnotation(AutoApi.class);
             Set<String> ignoreMethods = new HashSet<>();
             for (Method method : clazz.getDeclaredMethods()) {
-                executeOnCreate(bean, method);
-                checkOnDestroy(bean, method);
+                checkOnCreateAddTo(bean, method, createMethods);
+                checkOnDestroy(bean, method, destroyMethods);
                 Api methodApi = method.getAnnotation(Api.class);
                 if (fatherApi != null && methodApi != null) {
                     resolveApi(clazz, fatherApi, methodApi, bean, method);
@@ -312,6 +321,28 @@ public class BeansEden {
                         }
                     }
                 }
+            }
+        }
+
+        Comparator<Tuple3<String, Object, Method>> comparator = (o1, o2) -> {
+            if (o1 == null || o1.a == null || o1.a.equals("")) {
+                return -1;
+            } else if (o2 == null || o2.a == null || o2.a.equals("")) {
+                return -1;
+            } else {
+                return o1.a.compareTo(o2.a);
+            }
+        };
+        Collections.sort(createMethods, comparator);
+        Collections.sort(destroyMethods, comparator);
+
+        for (Tuple3<String, Object, Method> tuple3 : createMethods) {
+            Method method = tuple3.c;
+            Object bean = tuple3.b;
+            try {
+                method.invoke(bean);
+            } catch (InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
+                LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -410,28 +441,22 @@ public class BeansEden {
             idGenerator = createIdGenerator();
             store(IdGenerator.class, null, idGenerator);
         }
-        JdbcHelper jdbcHelper = load(JdbcHelper.class, null);
-        if (jdbcHelper == null) {
-            jdbcHelper = createJdbcHelper(ds);
-            store(JdbcHelper.class, null, jdbcHelper);
-        }
-        DaoHelper daoHelper = load(DaoHelper.class, null);
-        if (daoHelper == null) {
-            daoHelper = createDaoHelper(jdbcHelper, idGenerator,scanner.getClasses(Model.class,DefSQL.class));
-            store(DaoHelper.class, null, daoHelper);
-        } else {
-            if (daoHelper.getEntities() == null) {
-                daoHelper.init(scanner.getClasses(Model.class,DefSQL.class));
-            }
-        }
+        Set<Class<?>> classes = scanner.getClasses(Model.class, DefSQL.class);
+        CLASSES.addAll(classes);
     }
 
     public void resolve(String[] confDir, String[] packages) {
         conf = JsonConfLoader.loadConf(confDir);
         scanner.scanPackages(packages);
+        scanner.putClass(Def.class, JdbcHelper.class);
+        scanner.putClass(Def.class, DaoHelper.class);
         scanner.putClass(Model.class, OI18n.class);
         scanner.putClass(AutoApi.class, OI18nHolder.class);
-        nameToBean.putAll(conf.resolveBeans());
+
+        Map<String, Object> confBeans = conf.resolveBeans();
+        confBeans.forEach((name, bean) -> {
+            store(bean.getClass(), name, bean);
+        });
 
         resolveAop();
 
@@ -454,15 +479,28 @@ public class BeansEden {
     public <T> void store(Class<T> clazz, String beanName, Object bean) {
         OAssert.err(bean != null, "%s:%s can not be null!", clazz.getName(), beanName);
         if (beanName == null || beanName.equals("")) {
-            Def def = clazz.getAnnotation(Def.class);
-            if (def != null && def.nameByInterface()) {
-                for (Class<?> iter : clazz.getInterfaces()) {
-                    beanName = iter.getName();
-                    nameToBean.put(beanName, bean);
-                    break;
-                }
-            }
             beanName = clazz.getName();
+        }
+        List<Class<?>> interfaces = new ArrayList<>();
+        Class<?> cur = clazz;
+        do {
+            if (cur.isInterface()) {
+                interfaces.add(clazz);
+            }
+            for (Class<?> iter : cur.getInterfaces()) {
+                interfaces.add(iter);
+            }
+            cur = cur.getSuperclass();
+
+        } while (cur != null && !cur.equals(Object.class) && !cur.isInterface());
+
+        for (Class<?> iter : interfaces) {
+            nameToBean.put(beanName, bean);
+            clazzToList.putIfAbsent(iter, new ArrayList<>());
+            List<Object> list = clazzToList.get(iter);
+            if (!list.contains(bean)) {
+                list.add(bean);
+            }
         }
         nameToBean.put(beanName, bean);
         if (LOGGER.isDebugEnabled()) {
@@ -489,8 +527,28 @@ public class BeansEden {
         return null;
     }
 
-    public <T> void erase(Class<T> clazz, String beanName) {
-        Object bean = load(clazz, beanName);
+    public <T> List<T> loadList(Class<T> clazz) {
+        List<T> result = new ArrayList<>();
+        List<Object> list = clazzToList.get(clazz);
+        OAssert.err(list != null, "找不到接口%s的实现者", clazz.getName());
+        for (Object bean : list) {
+            result.add((T) bean);
+        }
+        return result;
+    }
+
+    public Set<String> names() {
+        return nameToBean.keySet();
+    }
+
+    public Object get(String beanName) {
+        Object bean = nameToBean.get(beanName);
+        return bean;
+    }
+
+    public void erase(String beanName) {
+        Object bean = nameToBean.remove(beanName);
+        Class<?> clazz = bean.getClass();
         if (bean != null) {
             for (Method method : clazz.getMethods()) {
                 OnDestroy onDestroyAnn = method.getAnnotation(OnDestroy.class);
@@ -506,8 +564,24 @@ public class BeansEden {
                     }
                 }
             }
+
         } else {
             LOGGER.error(String.format("找不到Bean对象：  %s:%s", clazz.getName(), beanName));
+        }
+    }
+
+    /**
+     * 按照顺序销毁Bean对象
+     */
+    public void destroy() {
+        for (Tuple3<String, Object, Method> tuple3 : destroyMethods) {
+            Method method = tuple3.c;
+            Object bean = tuple3.b;
+            try {
+                method.invoke(bean);
+            } catch (InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
         }
     }
 

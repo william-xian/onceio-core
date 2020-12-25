@@ -19,7 +19,6 @@ public class DaoBaseTest {
 
     @Test
     public void createTbl() {
-        initDao();
         System.out.println(OI18n.class);
     }
 

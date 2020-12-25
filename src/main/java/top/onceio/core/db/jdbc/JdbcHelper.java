@@ -17,14 +17,18 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import top.onceio.core.annotation.Def;
+import top.onceio.core.annotation.Using;
 import top.onceio.core.exception.Failed;
 
+@Def
 public class JdbcHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcHelper.class);
 
     private static ThreadLocal<Connection> trans = new ThreadLocal<Connection>();
 
+    @Using
     private DataSource dataSource;
 
 
