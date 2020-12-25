@@ -34,10 +34,11 @@ public class TableMeta {
 
 
     public static final TableMeta getTableMetaBy(Class<?> entity) {
-        return  tableCache.get(entity);
+        return tableCache.get(entity);
     }
+
     public static final Set<Class<?>> getEntities() {
-        return  tableCache.keySet();
+        return tableCache.keySet();
     }
 
     public String name() {
@@ -173,6 +174,7 @@ public class TableMeta {
         tableCache.put(entity, tm);
         return tm;
     }
+
     /**
      * Java类型转换成postgres字段类型
      *
@@ -353,16 +355,38 @@ public class TableMeta {
     }
 
     private List<String> alterColumnSql(List<ColumnMeta> columnMetas) {
-        List<String> sqls = new ArrayList<>();
+        List<String> updateNull = new ArrayList<>();
+        List<String> alter = new ArrayList<>();
         for (ColumnMeta ocm : columnMetas) {
             String sql = String.format("ALTER TABLE %s ALTER COLUMN %s TYPE %s", table, ocm.name, ocm.type);
             if (!ocm.nullable) {
                 sql = sql + String.format(", ALTER COLUMN %s SET NOT NULL", ocm.name);
+
+                String dft = ocm.defaultValue;
+                if (ocm.getJavaBaseType().equals(String.class)) {
+                    if (ocm.defaultValue != null) {
+                        dft = "'" + ocm.defaultValue + "'";
+                    } else {
+                        dft = "''";
+                    }
+                } else if (ocm.getJavaBaseType().equals(Boolean.class) || ocm.getJavaBaseType().equals(boolean.class)) {
+                    if (ocm.defaultValue == null || ocm.defaultValue.equals("")) {
+                        dft = "false";
+                    }
+                } else if (Number.class.isAssignableFrom(ocm.getJavaBaseType())) {
+                    if (ocm.defaultValue == null || ocm.defaultValue.equals("")) {
+                        dft = "0";
+                    }
+                }
+                if(dft != null && !dft.trim().equals("")){
+                    updateNull.add(String.format("UPDATE %s set %s = %s WHERE %s IS NULL;", table, ocm.name, dft, ocm.name));
+                }
             }
             sql = sql + ";";
-            sqls.add(sql);
+            alter.add(sql);
         }
-        return sqls;
+        updateNull.addAll(alter);
+        return updateNull;
     }
 
     private String dftExp(ColumnMeta cm) {
