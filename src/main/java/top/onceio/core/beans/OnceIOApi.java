@@ -272,14 +272,16 @@ public class OnceIOApi {
         if (type.getName().startsWith("java")) {
             model.put(name, type.getName());
         } else {
-            Map<String, TypeModel> result = new HashMap<>();
+            List<TypeModel> result = new ArrayList<>();
+            Set<String> fieldNames = new HashSet<>();
             model.put(name, result);
             for (Class<?> clazz = type; clazz != null
                     && !OReflectUtil.isBaseType(clazz); clazz = clazz.getSuperclass()) {
                 for (Field field : clazz.getDeclaredFields()) {
-                    if (Modifier.isStatic(field.getModifiers())) {
+                    if (Modifier.isStatic(field.getModifiers()) || fieldNames.contains(field.getName())) {
                         continue;
                     }
+                    fieldNames.add(field.getName());
                     TypeModel typeModel = new TypeModel();
                     typeModel.name = field.getName();
                     typeModel.type = field.getGenericType().getTypeName();
@@ -287,7 +289,7 @@ public class OnceIOApi {
                     Validate validate = field.getAnnotation(Validate.class);
                     Col col = field.getAnnotation(Col.class);
                     resolveValidator(typeModel, field.getName(), validate, col);
-                    result.put(typeModel.name, typeModel);
+                    result.add(0, typeModel);
                 }
             }
         }
@@ -295,15 +297,15 @@ public class OnceIOApi {
 
     @Api(value = "/apis")
     public Map<String, Object> apis() {
-        Map<String,Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         List<ApiGroupModel> apiList = new ArrayList<>(api.values());
-        Collections.sort(apiList, (a,b) -> {
-            int c = Objects.compare(a.api, b.api,String::compareToIgnoreCase);
-            if(c != 0) {
+        Collections.sort(apiList, (a, b) -> {
+            int c = Objects.compare(a.api, b.api, String::compareToIgnoreCase);
+            if (c != 0) {
                 return c;
             }
             c = Objects.compare(a.name, b.name, String::compareToIgnoreCase);
-            if(c != 0) {
+            if (c != 0) {
                 return c;
             }
             return 0;
