@@ -17,9 +17,10 @@ public class OnceIOApi {
     /**
      * 特殊字段
      */
+    public final static String API = "api";
     public final static String MODEL = "model";
     private Map<String, Object> model = new HashMap<>();
-    private Map<String, Object> apis = new HashMap<>();
+    private Map<String, ApiGroupModel> api = new HashMap<>();
 
     public static class ApiGroupModel {
         public String name;
@@ -81,8 +82,7 @@ public class OnceIOApi {
     }
 
     private void genericApis() {
-        apis.clear();
-        apis.put(MODEL, model);
+        api.clear();
         Map<String, ApiPair> api = BeansEden.get().getApiResolver().getPatternToApi();
         Map<Object, Set<Method>> beanToMethods = new HashMap<>();
 
@@ -101,12 +101,12 @@ public class OnceIOApi {
             Class<?> beanClass = bean.getClass();
             String name = beanClass.getName().replaceAll("\\$\\$.*$", "");
             @SuppressWarnings("unchecked")
-            ApiGroupModel parent = (ApiGroupModel) apis.get(name);
+            ApiGroupModel parent = this.api.get(name);
             if (parent == null) {
                 parent = new ApiGroupModel();
                 parent.subApi = new ArrayList<>();
                 parent.name = name;
-                apis.put(name, parent);
+                this.api.put(name, parent);
 
                 String prefix = "";
                 Api parentApi = beanClass.getAnnotation(Api.class);
@@ -295,6 +295,21 @@ public class OnceIOApi {
 
     @Api(value = "/apis")
     public Map<String, Object> apis() {
-        return apis;
+        Map<String,Object> result = new HashMap<>();
+        List<ApiGroupModel> apiList = new ArrayList<>(api.values());
+        Collections.sort(apiList, (a,b) -> {
+            int c = Objects.compare(a.api, b.api,String::compareToIgnoreCase);
+            if(c != 0) {
+                return c;
+            }
+            c = Objects.compare(a.name, b.name, String::compareToIgnoreCase);
+            if(c != 0) {
+                return c;
+            }
+            return 0;
+        });
+        result.put(API, apiList);
+        result.put(MODEL, model);
+        return result;
     }
 }
