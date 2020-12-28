@@ -14,25 +14,38 @@ import java.util.*;
 
 @Api("/docs")
 public class OnceIOApi {
-    /** 特殊字段 */
-    public final static String TYPE = ":type";
-    public final static String NULLABLE = ":nullable";
-    public final static String PATTERN = ":pattern";
-    public final static String REF = ":ref";
+    /**
+     * 特殊字段
+     */
     public final static String MODEL = "model";
-    public final static String API = "api";
-    public final static String SUBAPI = "subapi";
-    public final static String STDAPI = "stdapi";
-    public final static String NAME = "name";
-    public final static String SOURCE = "source";
-    public final static String HTTP_METHODS = "methods";
-    public final static String BRIEF = "brief";
-    public final static String RETURNTYPE = "returnType";
-    public final static String METHODNAME = "methodName";
-    public final static String PARAMS = "params";
-
     private Map<String, Object> model = new HashMap<>();
     private Map<String, Object> apis = new HashMap<>();
+
+    public static class ApiGroupModel {
+        public String name;
+        public String api;
+        public String brief;
+        public String entityClass;
+        public List<ApiModel> subApi;
+    }
+
+    public static class ApiModel {
+        public String name;
+        public String api;
+        public String brief;
+        public List<String> httpMethods;
+        public List<TypeModel> params;
+        public TypeModel returnType;
+    }
+
+    public static class TypeModel {
+        public String type;
+        public String name;
+        public boolean nullable;
+        public String pattern;
+        public String ref;
+        public String source;
+    }
 
     @OnCreate
     public void init() {
@@ -83,180 +96,171 @@ public class OnceIOApi {
             }
             methods.add(method);
         }
-        for(Map.Entry<Object, Set<Method>> entry:beanToMethods.entrySet()){
+        for (Map.Entry<Object, Set<Method>> entry : beanToMethods.entrySet()) {
             Object bean = entry.getKey();
             Class<?> beanClass = bean.getClass();
             String name = beanClass.getName().replaceAll("\\$\\$.*$", "");
             @SuppressWarnings("unchecked")
-            Map<String, Object> parent = (Map<String, Object>) apis.get(name);
+            ApiGroupModel parent = (ApiGroupModel) apis.get(name);
             if (parent == null) {
-                parent = new HashMap<>();
-                parent.put(NAME, name);
+                parent = new ApiGroupModel();
+                parent.subApi = new ArrayList<>();
+                parent.name = name;
                 apis.put(name, parent);
+
                 String prefix = "";
                 Api parentApi = beanClass.getAnnotation(Api.class);
                 AutoApi parentAutoApi = beanClass.getAnnotation(AutoApi.class);
                 if (parentApi != null) {
                     prefix = parentApi.value();
-                    parent.put(BRIEF, parentApi.brief());
+                    parent.brief = parentApi.brief();
                 } else if (parentAutoApi != null) {
-                    prefix = "/"+parentAutoApi.value().getSimpleName().toLowerCase();
-                    parent.put(BRIEF, parentAutoApi.brief());
+                    prefix = "/" + parentAutoApi.value().getSimpleName().toLowerCase();
+                    parent.brief = parentAutoApi.brief();
                 }
-                parent.put(API, prefix);
+                parent.api = prefix;
+                if (DaoHolder.class.isAssignableFrom(bean.getClass())) {
+                    Class<?> entity = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), DaoHolder.class.getTypeParameters()[0]);
+                    parent.entityClass = entity.getName();
+                }
             }
-            for(Method method : entry.getValue()) {
-                Map<String, Object> content = new HashMap<>();
-                Api apiAnno = method.getAnnotation(Api.class);
-                if (apiAnno == null) {
+            for (Method method : entry.getValue()) {
+                ApiModel subApi = new ApiModel();
+                Api apiAnn = method.getAnnotation(Api.class);
+                if (apiAnn == null) {
                     continue;
                 }
-                content.put(METHODNAME, method.getName());
-                Map<String, Object> params = resolveParams(bean, method);
-                content.put(PARAMS, params);
-                Map<String, Object> returnType = resolveType(bean, method);
-                content.put(RETURNTYPE, returnType);
+                subApi.name = method.getName();
+                subApi.params = resolveParams(bean, method);
+                subApi.returnType = resolveType(bean, method);
 
                 List<String> methodNames = new ArrayList<>();
-                for (ApiMethod am : apiAnno.method()) {
+                for (ApiMethod am : apiAnn.method()) {
                     methodNames.add(am.name());
                 }
-                content.put(HTTP_METHODS, methodNames);
-                content.put(BRIEF, apiAnno.brief());
+                subApi.httpMethods = methodNames;
+                subApi.brief = apiAnn.brief();
 
-                if(method.getDeclaringClass().equals(DaoHolder.class)) {
-                    content.put(STDAPI, true);
+                if (!apiAnn.value().equals("")) {
+                    subApi.api = apiAnn.value();
+                } else {
+                    subApi.api = ("/" + method.getName()).replaceFirst("//", "/");
                 }
-                if(!apiAnno.value().equals("")) {
-                    content.put(API, apiAnno.value());
-                }else {
-                    content.put(API, "/"+method.getName());
-                }
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> subapi = (List<Map<String, Object>>) parent.get(SUBAPI);
-                if (subapi == null) {
-                    subapi = new ArrayList<>();
-                    parent.put(SUBAPI, subapi);
-                }
-                subapi.add(content);
+                parent.subApi.add(subApi);
             }
 
         }
     }
 
 
-    private Map<String, Object> resolveType(Object bean, Method method) {
+    private TypeModel resolveType(Object bean, Method method) {
         Class<?> genType = null;
         Type t = null;
         if (DaoHolder.class.isAssignableFrom(bean.getClass())) {
             t = DaoHolder.class.getTypeParameters()[0];
             genType = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), t);
         }
-        Map<String, Object> params = new HashMap<>();
+        TypeModel params = new TypeModel();
         if (method.getGenericReturnType().equals(t)) {
-            resolveClass(bean, params, TYPE, genType, method.getGenericReturnType());
+            resolveClass(bean, params, genType, method.getGenericReturnType());
         } else {
-            resolveClass(bean, params, TYPE, method.getReturnType(), method.getGenericReturnType());
+            resolveClass(bean, params, method.getReturnType(), method.getGenericReturnType());
         }
         return params;
     }
 
-    private Map<String, Object> resolveParams(Object bean, Method method) {
-        Map<String, Object> params = new HashMap<>();
+    private List<TypeModel> resolveParams(Object bean, Method method) {
+        List<TypeModel> params = new ArrayList<>();
         for (int i = 0; i < method.getParameterCount(); i++) {
+            TypeModel paramInfo = new TypeModel();
             Parameter param = method.getParameters()[i];
             Validate validate = param.getAnnotation(Validate.class);
             Class<?> paramType = method.getParameterTypes()[i];
             Type genericType = method.getGenericParameterTypes()[i];
-            Map<String, Object> paramInfo = new HashMap<>();
-            String pname = null;
-            String psrc = null;
+            paramInfo.type = paramType.getName();
+            String pName = null;
+            String pSrc = null;
             do {
-                Param pAnno = param.getAnnotation(Param.class);
-                if (pAnno != null) {
-                    pname = pAnno.value();
-                    psrc = "Param";
+                Param pAnn = param.getAnnotation(Param.class);
+                if (pAnn != null) {
+                    pName = pAnn.value();
+                    pSrc = "Param";
                     break;
                 }
-                Header hAnno = param.getAnnotation(Header.class);
+                Header hAnn = param.getAnnotation(Header.class);
 
-                if (hAnno != null) {
-                    pname = hAnno.value();
-                    psrc = "Header";
+                if (hAnn != null) {
+                    pName = hAnn.value();
+                    pSrc = "Header";
                     break;
                 }
-                Cookie cAnno = param.getAnnotation(Cookie.class);
+                Cookie cAnn = param.getAnnotation(Cookie.class);
 
-                if (cAnno != null) {
-                    pname = cAnno.value();
-                    psrc = "Cookie";
+                if (cAnn != null) {
+                    pName = cAnn.value();
+                    pSrc = "Cookie";
                     break;
                 }
-                Attr aAnno = param.getAnnotation(Attr.class);
-                if (aAnno != null) {
-                    pname = aAnno.value();
-                    psrc = "Attr";
+                Attr aAnn = param.getAnnotation(Attr.class);
+                if (aAnn != null) {
+                    pName = aAnn.value();
+                    pSrc = "Attr";
                     break;
                 }
             } while (false);
 
-            if (pname != null) {
-                if (pname.equals("")) {
-                    resolveClass(bean, params, TYPE, paramType, genericType);
-                } else {
-                    params.put(pname, paramInfo);
-                    paramInfo.put(SOURCE, psrc);
-                    resolveValidator(paramInfo,pname,validate,null);
-                    resolveClass(bean, paramInfo, TYPE, paramType, genericType);
+            if (pName != null) {
+                if (!pName.equals("")) {
+                    paramInfo.name = pName;
+                    paramInfo.source = pSrc;
+                    resolveValidator(paramInfo, pName, validate, null);
                 }
+                resolveClass(bean, paramInfo, paramType, genericType);
             } else {
-                params.put(param.getName(), paramInfo);
+                paramInfo.name = param.getName();
             }
+            params.add(paramInfo);
         }
         return params;
     }
 
-    private void resolveValidator(Map<String,Object> result, String name, Validate validate, Col col) {
+    private void resolveValidator(TypeModel colModel, String name, Validate validate, Col col) {
         if (col != null && validate == null) {
             if (col.nullable() == false) {
-                result.put(name + NULLABLE, col.nullable());
+                colModel.nullable = col.nullable();
             }
             if (!col.pattern().equals("")) {
-                result.put(name + PATTERN, col.pattern());
+                colModel.pattern = col.pattern();
             }
             if (!col.ref().equals(void.class)) {
-                result.put(name + REF, col.ref().getName());
+                colModel.ref = col.ref().getName();
             }
         }
         if (validate != null) {
-            if (validate.nullable() == false) {
-                result.put(name + NULLABLE, validate.nullable());
+            if (col.nullable() == false) {
+                colModel.nullable = validate.nullable();
             }
-            if (!validate.pattern().equals("")) {
-                result.put(name + PATTERN, validate.pattern());
+            if (!col.pattern().equals("")) {
+                colModel.pattern = validate.pattern();
             }
-            if (!validate.valRef().equals(void.class)) {
-                result.put(name + REF, validate.valRef().getName());
+            if (!col.ref().equals(void.class)) {
+                colModel.ref = validate.ref().getName();
             }
         }
     }
 
-    public void resolveClass(Object bean, Map<String, Object> result, String name, Class<?> type, Type genericType) {
-        if (!name.equals("")) {
-            Map<String, Object> subType = new HashMap<>();
-            result.put(name, subType);
-        }
+    public void resolveClass(Object bean, TypeModel result, Class<?> type, Type genericType) {
         if (!type.equals(genericType) && bean != null && DaoHolder.class.isAssignableFrom(bean.getClass())) {
             Type t = DaoHolder.class.getTypeParameters()[0];
             Class<?> genType = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), t);
-            if (genericType.getTypeName().equals("T")) {
-                result.put(name, genType.getName());
+            if (genericType.getTypeName().equals("E")) {
+                result.type = genType.getName();
             } else {
-                result.put(name, genericType.getTypeName().replace("<T>", "<" + genType.getName() + ">"));
+                result.type = genericType.getTypeName().replace("<E>", "<" + genType.getName() + ">");
             }
             resolveModel(genType.getTypeName(), genType);
         } else {
-            result.put(name, genericType.getTypeName());
+            result.type = genericType.getTypeName();
         }
         resolveModel(genericType.getTypeName(), type);
     }
@@ -268,7 +272,7 @@ public class OnceIOApi {
         if (type.getName().startsWith("java")) {
             model.put(name, type.getName());
         } else {
-            Map<String, Object> result = new HashMap<>();
+            Map<String, TypeModel> result = new HashMap<>();
             model.put(name, result);
             for (Class<?> clazz = type; clazz != null
                     && !OReflectUtil.isBaseType(clazz); clazz = clazz.getSuperclass()) {
@@ -276,11 +280,14 @@ public class OnceIOApi {
                     if (Modifier.isStatic(field.getModifiers())) {
                         continue;
                     }
-                    result.put(field.getName(), field.getGenericType().getTypeName());
+                    TypeModel typeModel = new TypeModel();
+                    typeModel.name = field.getName();
+                    typeModel.type = field.getGenericType().getTypeName();
                     resolveModel(field.getGenericType().getTypeName(), field.getType());
                     Validate validate = field.getAnnotation(Validate.class);
                     Col col = field.getAnnotation(Col.class);
-                    resolveValidator(result,field.getName(),validate,col);
+                    resolveValidator(typeModel, field.getName(), validate, col);
+                    result.put(typeModel.name, typeModel);
                 }
             }
         }

@@ -5,5 +5,5 @@ public @interface Validate {
 
     String pattern() default "";
 
-    Class<?> valRef() default void.class;
+    Class<?> ref() default void.class;
 }
