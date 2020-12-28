@@ -289,7 +289,7 @@ public class OnceIOApi {
                     Validate validate = field.getAnnotation(Validate.class);
                     Col col = field.getAnnotation(Col.class);
                     resolveValidator(typeModel, field.getName(), validate, col);
-                    result.add(0, typeModel);
+                    result.add(typeModel);
                 }
             }
         }
