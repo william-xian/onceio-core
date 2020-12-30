@@ -653,7 +653,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
 
         Page<E> result = new Page<>();
-        result.setPagesize(pageSize);
+        result.setPageSize(pageSize);
         List<E> data = new ArrayList<>(10);
         result.setData(data);
         if (page <= 0) {
