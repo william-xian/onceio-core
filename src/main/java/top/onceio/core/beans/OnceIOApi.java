@@ -17,12 +17,16 @@ public class OnceIOApi {
     /**
      * 特殊字段
      */
-    public final static String API = "api";
-    public final static String MODEL = "model";
-    private Map<String, Object> model = new HashMap<>();
-    private Map<String, ApiGroupModel> api = new HashMap<>();
+    private Map<String, TypeModel> model = new HashMap<>();
+    private Map<String, ServiceModel> api = new HashMap<>();
 
-    public static class ApiGroupModel {
+    public static class OnceIOApiModel {
+        public List<ServiceModel> api;
+        public Map<String, TypeModel> model;
+    }
+
+
+    public static class ServiceModel {
         public String name;
         public String api;
         public String brief;
@@ -35,11 +39,22 @@ public class OnceIOApi {
         public String api;
         public String brief;
         public List<String> httpMethods;
-        public List<TypeModel> params;
-        public TypeModel returnType;
+        public List<FieldModel> params;
+        public String returnType;
     }
 
     public static class TypeModel {
+        public String type;
+        public List<FieldModel> fields;
+
+        public static TypeModel createBase(String name) {
+            TypeModel model = new TypeModel();
+            model.type = name;
+            return model;
+        }
+    }
+
+    public static class FieldModel {
         public String type;
         public String name;
         public boolean nullable;
@@ -50,34 +65,34 @@ public class OnceIOApi {
 
     @OnCreate
     public void init() {
-        model.put(Object.class.getName(), Object.class.getName());
-        model.put(Class.class.getName(), Class.class.getName());
-        model.put(Type.class.getName(), Type.class.getName());
-        model.put(String.class.getName(), String.class.getName());
-        model.put(Long.class.getName(), Long.class.getName());
-        model.put(Integer.class.getName(), Integer.class.getName());
-        model.put(Short.class.getName(), Short.class.getName());
-        model.put(Double.class.getName(), Double.class.getName());
-        model.put(Float.class.getName(), Float.class.getName());
-        model.put(Boolean.class.getName(), Boolean.class.getName());
-        model.put(Byte.class.getName(), Byte.class.getName());
-        model.put(Character.class.getName(), Character.class.getName());
-        model.put(Void.class.getName(), Void.class.getName());
-        model.put(void.class.getName(), void.class.getName());
-        model.put(long.class.getName(), long.class.getName());
-        model.put(int.class.getName(), int.class.getName());
-        model.put(short.class.getName(), short.class.getName());
-        model.put(double.class.getName(), double.class.getName());
-        model.put(float.class.getName(), float.class.getName());
-        model.put(boolean.class.getName(), boolean.class.getName());
-        model.put(byte.class.getName(), byte.class.getName());
-        model.put(char.class.getName(), char.class.getName());
-        model.put(Date.class.getName(), Date.class.getName());
-        model.put(Timestamp.class.getName(), Timestamp.class.getName());
-        model.put(List.class.getName(), List.class.getName());
-        model.put(Set.class.getName(), Set.class.getName());
-        model.put(Map.class.getName(), Map.class.getName());
-        model.put(Collection.class.getName(), Collection.class.getName());
+        model.put(Object.class.getName(), TypeModel.createBase(Object.class.getName()));
+        model.put(Class.class.getName(), TypeModel.createBase(Class.class.getName()));
+        model.put(Type.class.getName(), TypeModel.createBase(Type.class.getName()));
+        model.put(String.class.getName(), TypeModel.createBase(String.class.getName()));
+        model.put(Long.class.getName(), TypeModel.createBase(Long.class.getName()));
+        model.put(Integer.class.getName(), TypeModel.createBase(Integer.class.getName()));
+        model.put(Short.class.getName(), TypeModel.createBase(Short.class.getName()));
+        model.put(Double.class.getName(), TypeModel.createBase(Double.class.getName()));
+        model.put(Float.class.getName(), TypeModel.createBase(Float.class.getName()));
+        model.put(Boolean.class.getName(), TypeModel.createBase(Boolean.class.getName()));
+        model.put(Byte.class.getName(), TypeModel.createBase(Byte.class.getName()));
+        model.put(Character.class.getName(), TypeModel.createBase(Character.class.getName()));
+        model.put(Void.class.getName(), TypeModel.createBase(Void.class.getName()));
+        model.put(void.class.getName(), TypeModel.createBase(void.class.getName()));
+        model.put(long.class.getName(), TypeModel.createBase(long.class.getName()));
+        model.put(int.class.getName(), TypeModel.createBase(int.class.getName()));
+        model.put(short.class.getName(), TypeModel.createBase(short.class.getName()));
+        model.put(double.class.getName(), TypeModel.createBase(double.class.getName()));
+        model.put(float.class.getName(), TypeModel.createBase(float.class.getName()));
+        model.put(boolean.class.getName(), TypeModel.createBase(boolean.class.getName()));
+        model.put(byte.class.getName(), TypeModel.createBase(byte.class.getName()));
+        model.put(char.class.getName(), TypeModel.createBase(char.class.getName()));
+        model.put(Date.class.getName(), TypeModel.createBase(Date.class.getName()));
+        model.put(Timestamp.class.getName(), TypeModel.createBase(Timestamp.class.getName()));
+        model.put(List.class.getName(), TypeModel.createBase(List.class.getName()));
+        model.put(Set.class.getName(), TypeModel.createBase(Set.class.getName()));
+        model.put(Map.class.getName(), TypeModel.createBase(Map.class.getName()));
+        model.put(Collection.class.getName(), TypeModel.createBase(Collection.class.getName()));
         genericApis();
     }
 
@@ -101,9 +116,9 @@ public class OnceIOApi {
             Class<?> beanClass = bean.getClass();
             String name = beanClass.getName().replaceAll("\\$\\$.*$", "");
             @SuppressWarnings("unchecked")
-            ApiGroupModel parent = this.api.get(name);
+            ServiceModel parent = this.api.get(name);
             if (parent == null) {
-                parent = new ApiGroupModel();
+                parent = new ServiceModel();
                 parent.subApi = new ArrayList<>();
                 parent.name = name;
                 this.api.put(name, parent);
@@ -132,7 +147,7 @@ public class OnceIOApi {
                 }
                 subApi.name = method.getName();
                 subApi.params = resolveParams(bean, method);
-                subApi.returnType = resolveType(bean, method);
+                subApi.returnType = resolveModel(bean.getClass(), method.getGenericReturnType(), method.getReturnType());
 
                 List<String> methodNames = new ArrayList<>();
                 for (ApiMethod am : apiAnn.method()) {
@@ -152,27 +167,10 @@ public class OnceIOApi {
         }
     }
 
-
-    private TypeModel resolveType(Object bean, Method method) {
-        Class<?> genType = null;
-        Type t = null;
-        if (DaoHolder.class.isAssignableFrom(bean.getClass())) {
-            t = DaoHolder.class.getTypeParameters()[0];
-            genType = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), t);
-        }
-        TypeModel params = new TypeModel();
-        if (method.getGenericReturnType().equals(t)) {
-            resolveClass(bean, params, genType, method.getGenericReturnType());
-        } else {
-            resolveClass(bean, params, method.getReturnType(), method.getGenericReturnType());
-        }
-        return params;
-    }
-
-    private List<TypeModel> resolveParams(Object bean, Method method) {
-        List<TypeModel> params = new ArrayList<>();
+    private List<FieldModel> resolveParams(Object bean, Method method) {
+        List<FieldModel> params = new ArrayList<>();
         for (int i = 0; i < method.getParameterCount(); i++) {
-            TypeModel paramInfo = new TypeModel();
+            FieldModel paramInfo = new FieldModel();
             Parameter param = method.getParameters()[i];
             Validate validate = param.getAnnotation(Validate.class);
             Class<?> paramType = method.getParameterTypes()[i];
@@ -213,9 +211,9 @@ public class OnceIOApi {
                 if (!pName.equals("")) {
                     paramInfo.name = pName;
                     paramInfo.source = pSrc;
-                    resolveValidator(paramInfo, pName, validate, null);
+                    resolveValidator(paramInfo, validate, null);
                 }
-                resolveClass(bean, paramInfo, paramType, genericType);
+                paramInfo.type = resolveModel(bean.getClass(), genericType, paramType);
             } else {
                 paramInfo.name = param.getName();
             }
@@ -224,7 +222,7 @@ public class OnceIOApi {
         return params;
     }
 
-    private void resolveValidator(TypeModel colModel, String name, Validate validate, Col col) {
+    private void resolveValidator(FieldModel colModel, Validate validate, Col col) {
         if (col != null && validate == null) {
             if (col.nullable() == false) {
                 colModel.nullable = col.nullable();
@@ -249,32 +247,66 @@ public class OnceIOApi {
         }
     }
 
-    public void resolveClass(Object bean, TypeModel result, Class<?> type, Type genericType) {
-        if (!type.equals(genericType) && bean != null && DaoHolder.class.isAssignableFrom(bean.getClass())) {
-            Type t = DaoHolder.class.getTypeParameters()[0];
-            Class<?> genType = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), t);
-            if (genericType.getTypeName().equals("E")) {
-                result.type = genType.getName();
-            } else {
-                result.type = genericType.getTypeName().replace("<E>", "<" + genType.getName() + ">");
+    public String resolveType(Class<?> beanClass, Type genericType, Class<?> type) {
+        String actualType = type.getName();
+        List<String> actualTypes = new ArrayList<>();
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericType;
+            for (Type t : parameterizedType.getActualTypeArguments()) {
+                if (t instanceof ParameterizedType) {
+                    if (t instanceof Class) {
+                        resolveModel(beanClass, t, (Class<?>) t);
+                    }
+                    actualTypes.add(t.getTypeName());
+                } else if (t instanceof TypeVariable) {
+                    Class<?> fClass = OReflectUtil.searchGenType(Object.class, beanClass, t);
+                    if (fClass != null) {
+                        actualTypes.add(fClass.getTypeName());
+                        resolveModel(beanClass, t, fClass);
+                    } else {
+                        actualTypes.add(t.getTypeName());
+                    }
+                } else {
+                    if (t instanceof Class) {
+                        resolveModel(beanClass, t, (Class<?>) t);
+                    }
+                    actualTypes.add(t.getTypeName());
+                }
             }
-            resolveModel(genType.getTypeName(), genType);
+            actualType = String.format("%s<%s>", type.getName(), String.join(",", actualTypes));
+        } else if (genericType instanceof TypeVariable) {
+            TypeVariable typeVariable = (TypeVariable) genericType;
+            Class<?> fClass = OReflectUtil.searchGenType(Object.class, beanClass, typeVariable);
+            if (fClass != null) {
+                //TODO循环递归 resolveModel(beanClass, typeVariable, fClass);
+                actualType = fClass.getTypeName();
+            } else {
+            }
         } else {
-            result.type = genericType.getTypeName();
         }
-        resolveModel(genericType.getTypeName(), type);
+        return actualType;
     }
 
-    public void resolveModel(String name, Class<?> type) {
+    /**
+     * @param beanClass
+     * @param genericType
+     * @param type
+     * @return actualType
+     */
+    public String resolveModel(Class<?> beanClass, Type genericType, Class<?> type) {
+        String name = type.getName();
+        String actualType = resolveType(beanClass, genericType, type);
         if (model.containsKey(name)) {
-            return;
+            return actualType;
         }
         if (type.getName().startsWith("java")) {
-            model.put(name, type.getName());
+            model.put(name, TypeModel.createBase(type.getName()));
         } else {
-            List<TypeModel> result = new ArrayList<>();
+            TypeModel typeModel = TypeModel.createBase(type.getName());
+            List<FieldModel> result = new ArrayList<>();
+            typeModel.fields = result;
             Set<String> fieldNames = new HashSet<>();
-            model.put(name, result);
+            model.put(name, typeModel);
             for (Class<?> clazz = type; clazz != null
                     && !OReflectUtil.isBaseType(clazz); clazz = clazz.getSuperclass()) {
                 for (Field field : clazz.getDeclaredFields()) {
@@ -282,23 +314,23 @@ public class OnceIOApi {
                         continue;
                     }
                     fieldNames.add(field.getName());
-                    TypeModel typeModel = new TypeModel();
-                    typeModel.name = field.getName();
-                    typeModel.type = field.getGenericType().getTypeName();
-                    resolveModel(field.getGenericType().getTypeName(), field.getType());
+                    FieldModel fieldModel = new FieldModel();
+                    fieldModel.name = field.getName();
+                    fieldModel.type = resolveModel(beanClass, field.getGenericType(), field.getType());
                     Validate validate = field.getAnnotation(Validate.class);
                     Col col = field.getAnnotation(Col.class);
-                    resolveValidator(typeModel, field.getName(), validate, col);
-                    result.add(typeModel);
+                    resolveValidator(fieldModel, validate, col);
+                    result.add(fieldModel);
                 }
             }
         }
+        return actualType;
     }
 
     @Api(value = "/apis")
-    public Map<String, Object> apis() {
-        Map<String, Object> result = new HashMap<>();
-        List<ApiGroupModel> apiList = new ArrayList<>(api.values());
+    public OnceIOApiModel apis() {
+        OnceIOApiModel result = new OnceIOApiModel();
+        List<ServiceModel> apiList = new ArrayList<>(api.values());
         Collections.sort(apiList, (a, b) -> {
             int c = Objects.compare(a.api, b.api, String::compareToIgnoreCase);
             if (c != 0) {
@@ -310,8 +342,8 @@ public class OnceIOApi {
             }
             return 0;
         });
-        result.put(API, apiList);
-        result.put(MODEL, model);
+        result.api = apiList;
+        result.model = model;
         return result;
     }
 }
