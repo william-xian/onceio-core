@@ -3,6 +3,7 @@ package top.onceio.core.db.model;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OAssert;
+import top.onceio.core.util.OUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,9 +47,26 @@ public class AccessHelper {
         def.from.append(String.format(" %s\n", def.table));
         nameToArg.forEach((name, val) -> {
             if (name.equals("$in")) {
-
+                String arr[] = val.toString().split(",");
+                if (arr.length >= 2) {
+                    ColumnMeta cm = tm.getColumnMetaByName(arr[0]);
+                    if (cm != null) {
+                        for (int i = 1; i < arr.length; i++) {
+                            def.args.add(arr[i]);
+                        }
+                        def.where.append(String.format(" %s IN (%s) AND", cm.getName(), OUtils.genStub("?", ",", arr.length - 1)));
+                    }
+                }
             } else if (name.equals("$range")) {
-
+                String arr[] = val.toString().split(",");
+                if (arr.length == 3) {
+                    ColumnMeta cm = tm.getColumnMetaByName(arr[0]);
+                    if (cm != null) {
+                        def.args.add(arr[1]);
+                        def.args.add(arr[2]);
+                        def.where.append(String.format(" (%s >= ? AND %s < ?) AND", cm.getName(), cm.getName()));
+                    }
+                }
             } else {
                 ColumnMeta cm = tm.getColumnMetaByName(name);
                 if (cm != null) {
