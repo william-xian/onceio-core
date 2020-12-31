@@ -46,24 +46,24 @@ public class AccessHelper {
 
         def.from.append(String.format(" %s\n", def.table));
         nameToArg.forEach((name, val) -> {
-            if (name.equals("$in")) {
+            if (name.endsWith("$in")) {
                 String arr[] = val.toString().split(",");
-                if (arr.length >= 2) {
-                    ColumnMeta cm = tm.getColumnMetaByName(arr[0]);
+                if (arr.length >= 1) {
+                    ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 3));
                     if (cm != null) {
-                        for (int i = 1; i < arr.length; i++) {
+                        for (int i = 0; i < arr.length; i++) {
                             def.args.add(arr[i]);
                         }
-                        def.where.append(String.format(" %s IN (%s) AND", cm.getName(), OUtils.genStub("?", ",", arr.length - 1)));
+                        def.where.append(String.format(" %s IN (%s) AND", cm.getName(), OUtils.genStub("?", ",", arr.length)));
                     }
                 }
-            } else if (name.equals("$range")) {
+            } else if (name.endsWith("$range")) {
                 String arr[] = val.toString().split(",");
-                if (arr.length == 3) {
-                    ColumnMeta cm = tm.getColumnMetaByName(arr[0]);
+                if (arr.length == 2) {
+                    ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 6));
                     if (cm != null) {
+                        def.args.add(arr[0]);
                         def.args.add(arr[1]);
-                        def.args.add(arr[2]);
                         def.where.append(String.format(" (%s >= ? AND %s < ?) AND", cm.getName(), cm.getName()));
                     }
                 }
