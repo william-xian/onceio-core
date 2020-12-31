@@ -50,14 +50,14 @@ public class AccessHelper {
             if (cm != null) {
                 args.add(val);
                 if (val instanceof String) {
-                    def.where.append(String.format("%s LIKE ? AND", cm.getName()));
+                    def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
                 } else {
-                    def.where.append(String.format("%s = ? AND", cm.getName()));
+                    def.where.append(String.format(" %s = ? AND", cm.getName()));
                 }
             }
         });
         if (def.where.length() > 0) {
-            def.where.deleteCharAt(def.where.length() - 4);
+            def.where.delete(def.where.length() - 4, def.where.length());
         }
         return def;
     }
