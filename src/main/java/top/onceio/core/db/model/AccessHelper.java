@@ -24,7 +24,6 @@ public class AccessHelper {
         BaseMeta def = new BaseMeta();
         String table = TableMeta.getTableName(entityClass);
         def.bind(table, def, entityClass);
-        List<Object> args = new ArrayList<>();
         String select = (String) nameToArg.get("$columns");
         if (select == null) {
             def.select.append(String.format(" *\n"));
@@ -32,7 +31,7 @@ public class AccessHelper {
             for (String col : select.split(",")) {
                 for (ColumnMeta cm : tm.getColumnMetas()) {
                     if (cm.getField().getName().equals(col)) {
-                        def.select.append(" "+ cm.getName() + ",");
+                        def.select.append(" " + cm.getName() + ",");
                     }
                 }
             }
@@ -46,13 +45,19 @@ public class AccessHelper {
 
         def.from.append(String.format(" %s\n", def.table));
         nameToArg.forEach((name, val) -> {
-            ColumnMeta cm = tm.getColumnMetaByName(name);
-            if (cm != null) {
-                args.add(val);
-                if (val instanceof String) {
-                    def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
-                } else {
-                    def.where.append(String.format(" %s = ? AND", cm.getName()));
+            if (name.equals("$in")) {
+
+            } else if (name.equals("$range")) {
+
+            } else {
+                ColumnMeta cm = tm.getColumnMetaByName(name);
+                if (cm != null) {
+                    def.args.add(val);
+                    if (val instanceof String) {
+                        def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
+                    } else {
+                        def.where.append(String.format(" %s = ? AND", cm.getName()));
+                    }
                 }
             }
         });
