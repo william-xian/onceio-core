@@ -1,8 +1,10 @@
 package top.onceio.core.util;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -106,4 +108,32 @@ public final class OUtils {
         return gson.fromJson(json, clazz);
     }
 
+    public static Object trans(Object val, Class<?> type) {
+        if (val == null) {
+            return null;
+        }
+        if (type.equals(String.class)) {
+            return val.toString();
+        } else if (type.equals(int.class) || type.equals(Integer.class)) {
+            return Integer.valueOf(val.toString());
+        } else if (type.equals(long.class) || type.equals(Long.class)) {
+            return Long.valueOf(val.toString());
+        } else if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+            return Boolean.valueOf(val.toString());
+        } else if (type.equals(byte.class) || type.equals(Byte.class)) {
+            return Byte.valueOf(val.toString());
+        } else if (type.equals(short.class) || type.equals(Short.class)) {
+            return Short.valueOf(val.toString());
+        } else if (type.equals(double.class) || type.equals(Double.class)) {
+            return Double.valueOf(val.toString());
+        } else if (type.equals(float.class) || type.equals(Float.class)) {
+            return Float.valueOf(val.toString());
+        } else if (type.equals(BigDecimal.class)) {
+            return new BigDecimal(val.toString());
+        } else if (type.equals(Date.class)) {
+            return new Date(Long.valueOf(val.toString()));
+        } else {
+            return null;
+        }
+    }
 }

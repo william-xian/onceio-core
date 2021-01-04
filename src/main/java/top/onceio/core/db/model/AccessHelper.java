@@ -1,5 +1,7 @@
 package top.onceio.core.db.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OAssert;
@@ -10,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 public class AccessHelper {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(AccessHelper.class);
 
     public static String getTable(BaseMeta def) {
         return def.table;
@@ -51,10 +55,21 @@ public class AccessHelper {
                 if (arr.length >= 1) {
                     ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 3));
                     if (cm != null) {
+                        List<Object> args = new ArrayList<>();
                         for (int i = 0; i < arr.length; i++) {
-                            def.args.add(arr[i]);
+                            Object arg = OUtils.trans(arr[i], cm.getJavaBaseType());
+                            if (arg != null) {
+                                args.add(arg);
+                            } else {
+                                break;
+                            }
                         }
-                        def.where.append(String.format(" %s IN (%s) AND", cm.getName(), OUtils.genStub("?", ",", arr.length)));
+                        if (args.size() == arr.length) {
+                            def.args.addAll(args);
+                            def.where.append(String.format(" %s IN (%s) AND", cm.getName(), OUtils.genStub("?", ",", arr.length)));
+                        } else {
+                            LOGGER.error("参数不正确：{}", val);
+                        }
                     }
                 }
             } else if (name.endsWith("$range")) {
@@ -62,19 +77,30 @@ public class AccessHelper {
                 if (arr.length == 2) {
                     ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 6));
                     if (cm != null) {
-                        def.args.add(arr[0]);
-                        def.args.add(arr[1]);
-                        def.where.append(String.format(" (%s >= ? AND %s < ?) AND", cm.getName(), cm.getName()));
+                        Object arg1 = OUtils.trans(arr[0], cm.getJavaBaseType());
+                        Object arg2 = OUtils.trans(arr[1], cm.getJavaBaseType());
+                        if (arg1 != null && arg2 != null) {
+                            def.args.add(arg1);
+                            def.args.add(arg2);
+                            def.where.append(String.format(" (%s >= ? AND %s < ?) AND", cm.getName(), cm.getName()));
+                        } else {
+                            LOGGER.error("参数不正确：{}", val);
+                        }
                     }
                 }
             } else {
                 ColumnMeta cm = tm.getColumnMetaByName(name);
                 if (cm != null) {
-                    def.args.add(val);
-                    if (val instanceof String) {
-                        def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
+                    Object arg = OUtils.trans(val, cm.getJavaBaseType());
+                    if (arg != null) {
+                        def.args.add(arg);
+                        if (val instanceof String) {
+                            def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
+                        } else {
+                            def.where.append(String.format(" %s = ? AND", cm.getName()));
+                        }
                     } else {
-                        def.where.append(String.format(" %s = ? AND", cm.getName()));
+                        LOGGER.error("参数不正确：{}", val);
                     }
                 }
             }
