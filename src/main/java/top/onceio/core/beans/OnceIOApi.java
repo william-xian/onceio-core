@@ -307,8 +307,15 @@ public class OnceIOApi {
             typeModel.fields = result;
             Set<String> fieldNames = new HashSet<>();
             model.put(name, typeModel);
+
+
+            List<Class<?>> classes = new ArrayList<>();
+
             for (Class<?> clazz = type; clazz != null
                     && !OReflectUtil.isBaseType(clazz); clazz = clazz.getSuperclass()) {
+                classes.add(0, clazz);
+            }
+            for (Class<?> clazz : classes) {
                 for (Field field : clazz.getDeclaredFields()) {
                     if (Modifier.isStatic(field.getModifiers()) || fieldNames.contains(field.getName())) {
                         continue;
