@@ -91,6 +91,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
     }
 
     @Override
+    @Api(value = "/", method = ApiMethod.DELETE)
     public <M extends BaseMeta<M>> int delete(M cnd) {
         return daoHelper.delete(tbl, cnd);
     }
@@ -101,9 +102,8 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.fetch(tbl, tpl);
     }
 
-    @Api(value = "/byIds", method = {ApiMethod.GET})
     @Override
-    public <ID extends Serializable> List<E> findByIds(@Param("ids") List<ID> ids) {
+    public <ID extends Serializable> List<E> findByIds(List<ID> ids) {
         return daoHelper.findByIds(tbl, ids);
     }
 
