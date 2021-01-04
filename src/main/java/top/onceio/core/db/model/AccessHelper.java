@@ -94,10 +94,10 @@ public class AccessHelper {
                     Object arg = OUtils.trans(val, cm.getJavaBaseType());
                     if (arg != null) {
                         def.args.add(arg);
-                        if (val instanceof String) {
-                            def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
-                        } else {
+                        if (Number.class.isAssignableFrom(cm.getJavaBaseType()) || Boolean.class.isAssignableFrom(cm.getJavaBaseType())) {
                             def.where.append(String.format(" %s = ? AND", cm.getName()));
+                        } else {
+                            def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
                         }
                     } else {
                         LOGGER.error("参数不正确：{}", val);
