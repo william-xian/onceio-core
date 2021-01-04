@@ -594,7 +594,6 @@ public class DaoHelper implements DDLDao, TransDao {
             String sql = String.format("DELETE FROM %s;", tm.getTable());
             return jdbcHelper.update(sql, new Object[0]);
         } else {
-            TableMeta tm = TableMeta.getTableMetaBy(tbl);
             String sql = String.format("DELETE FROM %s AS %s %s;", cnd.getTable(), cnd.alias, cnd.toString());
             return jdbcHelper.update(sql, cnd.getArgs().toArray());
         }

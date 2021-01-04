@@ -23,32 +23,17 @@ public class AccessHelper {
         return def.refs;
     }
 
-    public static BaseMeta createFindBaseMeta(Class<?> entityClass, Map<String, Object> nameToArg) {
+    public static BaseMeta createDeleteBaseMeta(Class<?> entityClass, Map<String, Object> nameToArg) {
         TableMeta tm = TableMeta.getTableMetaBy(entityClass);
         OAssert.err(tm != null, "%s is not a table.", entityClass.getName());
         BaseMeta def = new BaseMeta();
         String table = TableMeta.getTableName(entityClass);
         def.bind(table, def, entityClass);
-        String select = (String) nameToArg.get("$columns");
-        if (select == null) {
-            def.select.append(String.format(" *\n"));
-        } else {
-            for (String col : select.split(",")) {
-                for (ColumnMeta cm : tm.getColumnMetas()) {
-                    if (cm.getField().getName().equals(col)) {
-                        def.select.append(" " + cm.getName() + ",");
-                    }
-                }
-            }
-            if (def.select.charAt(def.select.length() - 1) == ',') {
-                def.select.setCharAt(def.select.length() - 1, '\n');
-            } else {
-                def.select.append(" *\n");
-            }
-        }
+        initWhere(def, tm, nameToArg);
+        return def;
+    }
 
-
-        def.from.append(String.format(" %s\n", def.table));
+    public static void initWhere(BaseMeta def, TableMeta tm, Map<String, Object> nameToArg) {
         nameToArg.forEach((name, val) -> {
             if (name.endsWith("$in")) {
                 String arr[] = val.toString().split(",");
@@ -108,6 +93,36 @@ public class AccessHelper {
         if (def.where.length() > 0) {
             def.where.delete(def.where.length() - 4, def.where.length());
         }
+    }
+
+    public static BaseMeta createFindBaseMeta(Class<?> entityClass, Map<String, Object> nameToArg) {
+        TableMeta tm = TableMeta.getTableMetaBy(entityClass);
+        OAssert.err(tm != null, "%s is not a table.", entityClass.getName());
+        BaseMeta def = new BaseMeta();
+        String table = TableMeta.getTableName(entityClass);
+        def.bind(table, def, entityClass);
+        String select = (String) nameToArg.get("$columns");
+        if (select == null) {
+            def.select.append(String.format(" *\n"));
+        } else {
+            for (String col : select.split(",")) {
+                for (ColumnMeta cm : tm.getColumnMetas()) {
+                    if (cm.getField().getName().equals(col)) {
+                        def.select.append(" " + cm.getName() + ",");
+                    }
+                }
+            }
+            if (def.select.charAt(def.select.length() - 1) == ',') {
+                def.select.setCharAt(def.select.length() - 1, '\n');
+            } else {
+                def.select.append(" *\n");
+            }
+        }
+
+        def.from.append(String.format(" %s\n", def.table));
+
+        initWhere(def, tm, nameToArg);
+
         return def;
     }
 

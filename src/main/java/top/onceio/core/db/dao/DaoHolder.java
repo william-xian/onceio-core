@@ -74,15 +74,14 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.updateIgnoreNull(entity);
     }
 
-    @Api(value = "/by", method = ApiMethod.PATCH)
     @Override
-    public <M extends BaseMeta<M>> int updateBy(@Param M tpl) {
+    public <M extends BaseMeta<M>> int updateBy(M tpl) {
         return daoHelper.updateBy(tbl, tpl);
     }
 
     @Override
     @Api(value = "/", method = ApiMethod.DELETE)
-    public <M extends BaseMeta<M>> int delete(M cnd) {
+    public <M extends BaseMeta<M>> int delete(@Param M cnd) {
         return daoHelper.delete(tbl, cnd);
     }
 
