@@ -53,7 +53,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
     }
 
     @Override
-    public int update(@Param E entity) {
+    public int update(E entity) {
         return daoHelper.update(entity);
     }
 
@@ -76,7 +76,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
 
     @Api(value = "/by", method = ApiMethod.PATCH)
     @Override
-    public <M extends BaseMeta<M>> int updateBy(M tpl) {
+    public <M extends BaseMeta<M>> int updateBy(@Param M tpl) {
         return daoHelper.updateBy(tbl, tpl);
     }
 
@@ -86,9 +86,8 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.delete(tbl, cnd);
     }
 
-    @Api(value = "/fetch", method = {ApiMethod.GET})
     @Override
-    public <M extends BaseMeta<M>> E fetch(@Param M tpl) {
+    public <M extends BaseMeta<M>> E fetch(M tpl) {
         return daoHelper.fetch(tbl, tpl);
     }
 
