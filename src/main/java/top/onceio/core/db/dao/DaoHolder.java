@@ -81,16 +81,6 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
     }
 
     @Override
-    public int deleteById(Serializable id) {
-        return daoHelper.deleteById(tbl, id);
-    }
-
-    @Override
-    public <ID extends Serializable> int deleteByIds(List<ID> ids) {
-        return daoHelper.deleteByIds(tbl, ids);
-    }
-
-    @Override
     @Api(value = "/", method = ApiMethod.DELETE)
     public <M extends BaseMeta<M>> int delete(M cnd) {
         return daoHelper.delete(tbl, cnd);

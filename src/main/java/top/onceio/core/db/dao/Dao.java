@@ -61,16 +61,6 @@ public interface Dao<E> {
      */
     <M extends BaseMeta<M>> int updateBy(M tpl);
 
-    <ID extends Serializable> int deleteById(ID id);
-
-    /**
-     * 根据主键物理删除数据
-     *
-     * @param ids 主键列表
-     * @return 删除的条数
-     */
-    <ID extends Serializable> int deleteByIds(List<ID> ids);
-
     /**
      * 根据条件物理删除数据
      *

@@ -46,9 +46,7 @@ public class DaoHelperViewTest extends DaoBaseTest {
 
     @AfterClass
     public static void cleanup() {
-        List<Long> ids = Arrays.asList(1L, 2L, 3L, 4L, 5L);
         daoHelper.delete(Bill.class, null);
-        daoHelper.deleteByIds(UserInfo.class, ids);
     }
 
     @Test

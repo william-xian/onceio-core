@@ -62,11 +62,12 @@ public class DaoHelperTest extends DaoBaseTest {
         daoHelper.insert(uc);
         Assert.assertEquals(11, daoHelper.count(UserInfo.class));
 
-        int deleteRemoved1 = daoHelper.deleteById(UserInfo.class, uc.getId());
+        int deleteRemoved1 = daoHelper.delete(UserInfo.class, UserInfo.meta().id.eq(uc.getId()));
         Assert.assertEquals(1, deleteRemoved1);
         Assert.assertEquals(10, daoHelper.count(UserInfo.class));
 
-        int deleted10 = daoHelper.deleteByIds(UserInfo.class, ids);
+        int deleted10 = daoHelper.delete(UserInfo.class, UserInfo.meta().id.in(ids));
+
         Assert.assertEquals(10, deleted10);
 
         Assert.assertEquals(0, daoHelper.count(UserInfo.class));
@@ -106,7 +107,7 @@ public class DaoHelperTest extends DaoBaseTest {
         /** 无关数据没有被干扰 */
         UserInfo db3 = daoHelper.get(UserInfo.class, uc3.getId());
         Assert.assertEquals(uc3.toString(), db3.toString());
-        daoHelper.deleteByIds(UserInfo.class, ids);
+        daoHelper.delete(UserInfo.class, UserInfo.meta().id.in(ids));
     }
 
     @Test
@@ -134,7 +135,7 @@ public class DaoHelperTest extends DaoBaseTest {
         Assert.assertEquals(1, db1.getAge());
         UserInfo db2 = daoHelper.get(UserInfo.class, uc2.getId());
         Assert.assertEquals(uc2.toString(), db2.toString());
-        daoHelper.deleteByIds(UserInfo.class, ids);
+        daoHelper.delete(UserInfo.class, UserInfo.meta().id.in(ids));
     }
 
     @Test
@@ -146,9 +147,9 @@ public class DaoHelperTest extends DaoBaseTest {
             uc.setId(IDGenerator.randomID());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i % 4);
-            if(i%2==0) {
+            if (i % 2 == 0) {
                 uc.setGenre(Gender.FEMALE);
-            }else {
+            } else {
                 uc.setGenre(Gender.MALE);
             }
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
@@ -178,7 +179,7 @@ public class DaoHelperTest extends DaoBaseTest {
         Page<UserInfo> page1 = daoHelper.find(UserInfo.class, cnd6, -2, 4);
         Assert.assertEquals(1, page1.getData().size());
         Assert.assertEquals(5, page1.getTotal().longValue());
-        int cnt = daoHelper.deleteByIds(UserInfo.class, ids);
+        int cnt = daoHelper.delete(UserInfo.class, UserInfo.meta().id.in(ids));
         System.out.println("delete - " + cnt);
     }
 
@@ -232,7 +233,7 @@ public class DaoHelperTest extends DaoBaseTest {
         max.select(Func.max(max.age));
 
         UserInfo ucMax = daoHelper.fetch(UserInfo.class, max);
-        Assert.assertEquals(3,ucMax.getAge());
+        Assert.assertEquals(3, ucMax.getAge());
 
         UserInfo.Meta min = UserInfo.meta();
         max.select(Func.min(min.age));
@@ -249,12 +250,12 @@ public class DaoHelperTest extends DaoBaseTest {
         UserInfo ucAvg = daoHelper.fetch(UserInfo.class, avg);
         System.out.println(ucAvg);
 
-        daoHelper.deleteByIds(UserInfo.class, ids);
+        daoHelper.delete(UserInfo.class, UserInfo.meta().id.in(ids));
     }
 
     @Test
     public void findTableMeta() {
-        Map<String, TableMeta> map =  daoHelper.findTableMeta(null);
+        Map<String, TableMeta> map = daoHelper.findTableMeta(null);
         TableMeta m = map.get("o_i18n");
         System.out.println(m);
     }

@@ -588,23 +588,6 @@ public class DaoHelper implements DDLDao, TransDao {
         return jdbcHelper.update(tpl.toString(), tpl.getArgs().toArray());
     }
 
-    public <E, ID extends Serializable> int deleteById(Class<E> tbl, ID id) {
-        if (id == null)
-            return 0;
-        TableMeta tm = TableMeta.getTableMetaBy(tbl);
-        String sql = String.format("DELETE FROM %s WHERE id = ?", tm.getTable());
-        return jdbcHelper.update(sql, new Object[]{id});
-    }
-
-    public <E, ID extends Serializable> int deleteByIds(Class<E> tbl, List<ID> ids) {
-        if (ids == null || ids.isEmpty())
-            return 0;
-        TableMeta tm = TableMeta.getTableMetaBy(tbl);
-        String stub = OUtils.genStub("?", ",", ids.size());
-        String sql = String.format("DELETE FROM %s WHERE id IN (%s) ", tm.getTable(), stub);
-        return jdbcHelper.update(sql, ids.toArray());
-    }
-
     public <E extends BaseModel, M extends BaseMeta> int delete(Class<E> tbl, M cnd) {
         if (cnd == null || cnd.toString().trim().isEmpty()) {
             TableMeta tm = TableMeta.getTableMetaBy(tbl);
@@ -612,7 +595,7 @@ public class DaoHelper implements DDLDao, TransDao {
             return jdbcHelper.update(sql, new Object[0]);
         } else {
             TableMeta tm = TableMeta.getTableMetaBy(tbl);
-            String sql = String.format("DELETE FROM %s %s;", tm.getTable(), cnd.toString());
+            String sql = String.format("DELETE FROM %s AS %s %s;", cnd.getTable(), cnd.alias, cnd.toString());
             return jdbcHelper.update(sql, cnd.getArgs().toArray());
         }
     }

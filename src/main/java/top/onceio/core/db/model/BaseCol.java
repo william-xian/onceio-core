@@ -5,6 +5,9 @@ import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class BaseCol<T extends BaseMeta> implements Queryable {
     T table;
@@ -22,13 +25,13 @@ public class BaseCol<T extends BaseMeta> implements Queryable {
     }
 
     private void addArg(Object val) {
-        if(val != null) {
-            if(OReflectUtil.isBaseType(val.getClass())) {
+        if (val != null) {
+            if (OReflectUtil.isBaseType(val.getClass())) {
                 table.args.add(val);
-            }else  {
+            } else {
                 table.args.add(val.toString());
             }
-        }else {
+        } else {
             table.args.add(null);
         }
     }
@@ -70,9 +73,24 @@ public class BaseCol<T extends BaseMeta> implements Queryable {
         return table;
     }
 
+    private static void resolve(List<Object> result, Object... vals) {
+        for (Object val : vals) {
+            if (val instanceof Collection) {
+                for (Object iVal : (Collection) val) {
+                    resolve(result, iVal);
+                }
+            } else {
+                result.add(val);
+            }
+        }
+    }
+
+
     public T in(Object... vals) {
         table.where.append(" " + name() + " IN (");
-        for (Object val : vals) {
+        List<Object> args = new ArrayList<>();
+        resolve(args, vals);
+        for (Object val : args) {
             table.where.append("?,");
             addArg(val);
         }
@@ -90,6 +108,7 @@ public class BaseCol<T extends BaseMeta> implements Queryable {
         table.refs.add(sub);
         return table;
     }
+
     public T notIn(Object... vals) {
         table.where.append(" " + name() + " NOT IN (");
         for (Object val : vals) {
@@ -112,6 +131,7 @@ public class BaseCol<T extends BaseMeta> implements Queryable {
         table.refs.add(sub);
         return table;
     }
+
     public T set(Object val) {
         table.update.append(" " + name + " = ?,");
         addArg(val);
