@@ -636,9 +636,9 @@ public class DaoHelper implements DDLDao, TransDao {
 
         Page<E> result = new Page<>();
         result.setPageSize(pageSize);
-        List<E> data = new ArrayList<>(10);
+        List<E> data = new ArrayList<>(pageSize);
         result.setData(data);
-        if (page <= 0) {
+        if (page <= 1) {
             result.setTotal(count(tbl, cnd));
         }
         if (page != 0) {
