@@ -6,7 +6,7 @@ public class IDGenerator {
     private static int sequence = 0;
     private static int code = 0;
 
-    public static synchronized long randomID() {
+    public static synchronized long next() {
         long time = System.currentTimeMillis();
         if (time == lastTime) {
             sequence++;
@@ -15,12 +15,13 @@ public class IDGenerator {
                     time = System.currentTimeMillis();
                 }
                 lastTime = time;
-                sequence = 1;
+                sequence = 0;
             }
         } else {
             lastTime = time;
-            sequence = 1;
+            sequence = 0;
         }
+        /** time: 42 bits, sequence: 12 bits, code: 10 bits */
         return (time - zero) << 22 | (sequence) << 10 | (code);
     }
 

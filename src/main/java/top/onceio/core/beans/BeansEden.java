@@ -70,7 +70,7 @@ public class BeansEden {
         return new IdGenerator() {
             @Override
             public Long next(Class<?> entityClass) {
-                return IDGenerator.randomID();
+                return IDGenerator.next();
             }
         };
     }

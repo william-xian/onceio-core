@@ -19,7 +19,7 @@ public class TransTest extends DaoBaseTest {
     @Test
     public void tran() {
         UserInfo uc1 = new UserInfo();
-        uc1.setId(IDGenerator.randomID());
+        uc1.setId(IDGenerator.next());
         uc1.setName("zhang" + System.currentTimeMillis());
         uc1.setAge(1);
 

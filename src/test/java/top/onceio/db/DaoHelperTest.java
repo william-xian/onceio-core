@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import cn.xian.app.model.Gender;
-import com.alibaba.druid.support.json.JSONUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -41,7 +40,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
@@ -54,7 +53,7 @@ public class DaoHelperTest extends DaoBaseTest {
         Assert.assertEquals(10, insertcnt);
         Assert.assertEquals(10, daoHelper.count(UserInfo.class));
         UserInfo uc = new UserInfo();
-        uc.setId(IDGenerator.randomID());
+        uc.setId(IDGenerator.next());
         uc.setName("name-" + System.currentTimeMillis());
         uc.setAge(100);
         uc.setAvatar("avatar");
@@ -79,7 +78,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
@@ -116,7 +115,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i);
             uc.setAge(i);
@@ -144,7 +143,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i % 4);
             if (i % 2 == 0) {
@@ -189,7 +188,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setAge(i % 4);
             uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
@@ -211,7 +210,7 @@ public class DaoHelperTest extends DaoBaseTest {
         List<Long> ids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             UserInfo uc = new UserInfo();
-            uc.setId(IDGenerator.randomID());
+            uc.setId(IDGenerator.next());
             uc.setName("name" + i + "-" + System.currentTimeMillis());
             uc.setGenre(Gender.MALE);
             uc.setAge(i % 4);

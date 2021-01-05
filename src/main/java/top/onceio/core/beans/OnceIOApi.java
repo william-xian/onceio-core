@@ -57,8 +57,10 @@ public class OnceIOApi {
     public static class FieldModel {
         public String type;
         public String name;
+        public String comment;
         public boolean nullable;
         public String pattern;
+        public String defaultValue;
         public String ref;
         public String source;
     }
@@ -232,6 +234,12 @@ public class OnceIOApi {
             }
             if (!col.ref().equals(void.class)) {
                 colModel.ref = col.ref().getName();
+            }
+            if (!col.comment().equals("")) {
+                colModel.comment = col.comment();
+            }
+            if (!col.defaultValue().equals("")) {
+                colModel.defaultValue = col.defaultValue();
             }
         }
         if (validate != null) {
