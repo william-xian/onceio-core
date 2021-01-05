@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +41,9 @@ public final class OUtils {
 
     /**
      * getStub("?",",",5)
-     * @param e 元素
-     * @param s 分割符号
+     *
+     * @param e   元素
+     * @param s   分割符号
      * @param cnt 个数
      * @return 打桩字符串
      */
@@ -130,6 +132,8 @@ public final class OUtils {
             return Float.valueOf(val.toString());
         } else if (type.equals(BigDecimal.class)) {
             return new BigDecimal(val.toString());
+        } else if (type.equals(Timestamp.class)) {
+            return new Timestamp(Long.valueOf(val.toString()));
         } else if (type.equals(Date.class)) {
             return new Date(Long.valueOf(val.toString()));
         } else {

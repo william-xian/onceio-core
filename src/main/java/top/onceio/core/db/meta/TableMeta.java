@@ -270,8 +270,25 @@ public class TableMeta {
         this.indexes = indexes;
     }
 
-    public ColumnMeta getColumnMetaByName(String colName) {
-        return nameToColumnMeta.get(colName);
+    /**
+     * @param columnName
+     * @return
+     */
+    public ColumnMeta getColumnMetaByName(String columnName) {
+        return nameToColumnMeta.get(columnName);
+    }
+
+    /**
+     * @param fieldName
+     * @return
+     */
+    public ColumnMeta getColumnMetaByFieldName(String fieldName) {
+        for (ColumnMeta cm : columnMetas) {
+            if (cm.getField().getName().equals(fieldName)) {
+                return cm;
+            }
+        }
+        return null;
     }
 
     public void setColumnMetas(List<ColumnMeta> columnMetas) {
@@ -378,7 +395,7 @@ public class TableMeta {
                         dft = "0";
                     }
                 }
-                if(dft != null && !dft.trim().equals("")){
+                if (dft != null && !dft.trim().equals("")) {
                     updateNull.add(String.format("UPDATE %s set %s = %s WHERE %s IS NULL;", table, ocm.name, dft, ocm.name));
                 }
             }

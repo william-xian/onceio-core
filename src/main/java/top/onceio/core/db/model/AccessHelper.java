@@ -38,11 +38,11 @@ public class AccessHelper {
             if (name.endsWith("$in")) {
                 String arr[] = val.toString().split(",");
                 if (arr.length >= 1) {
-                    ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 3));
+                    ColumnMeta cm = tm.getColumnMetaByFieldName(name.substring(0, name.length() - 3));
                     if (cm != null) {
                         List<Object> args = new ArrayList<>();
                         for (int i = 0; i < arr.length; i++) {
-                            Object arg = OUtils.trans(arr[i], cm.getJavaBaseType());
+                            Object arg = OUtils.trans(arr[i].trim(), cm.getJavaBaseType());
                             if (arg != null) {
                                 args.add(arg);
                             } else {
@@ -60,10 +60,10 @@ public class AccessHelper {
             } else if (name.endsWith("$range")) {
                 String arr[] = val.toString().split(",");
                 if (arr.length == 2) {
-                    ColumnMeta cm = tm.getColumnMetaByName(name.substring(0, name.length() - 6));
+                    ColumnMeta cm = tm.getColumnMetaByFieldName(name.substring(0, name.length() - 6));
                     if (cm != null) {
-                        Object arg1 = OUtils.trans(arr[0], cm.getJavaBaseType());
-                        Object arg2 = OUtils.trans(arr[1], cm.getJavaBaseType());
+                        Object arg1 = OUtils.trans(arr[0].trim(), cm.getJavaBaseType());
+                        Object arg2 = OUtils.trans(arr[1].trim(), cm.getJavaBaseType());
                         if (arg1 != null && arg2 != null) {
                             def.args.add(arg1);
                             def.args.add(arg2);
@@ -74,7 +74,7 @@ public class AccessHelper {
                     }
                 }
             } else {
-                ColumnMeta cm = tm.getColumnMetaByName(name);
+                ColumnMeta cm = tm.getColumnMetaByFieldName(name);
                 if (cm != null) {
                     Object arg = OUtils.trans(val, cm.getJavaBaseType());
                     if (arg != null) {
