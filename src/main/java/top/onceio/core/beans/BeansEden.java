@@ -256,16 +256,8 @@ public class BeansEden {
         } else {
             api = "/" + fatherApi.value() + methodApi.value();
         }
-        ApiMethod[] apiMethods = methodApi.method();
-        if (apiMethods.length == 0) {
-            apiMethods = fatherApi.method();
-        }
-        if (apiMethods.length == 0) {
-            LOGGER.error("Api的不能为空");
-        }
-        for (ApiMethod apiMethod : apiMethods) {
-            apiResover.push(apiMethod, api, bean, method);
-        }
+        HttpMethod httpMethod = methodApi.method();
+        apiResover.push(httpMethod, api, bean, method);
     }
 
     private void resolveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method, String methodName) {
@@ -273,9 +265,7 @@ public class BeansEden {
         if (methodName != null && !methodName.equals("") && !methodName.equals("/")) {
             api = api + methodName;
         }
-        for (ApiMethod apiMethod : methodApi.method()) {
-            apiResover.push(apiMethod, api, bean, method);
-        }
+        apiResover.push(methodApi.method(), api, bean, method);
     }
 
     private void resolveBeanMethod() {

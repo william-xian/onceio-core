@@ -17,7 +17,7 @@ public class ApiResover {
     private Map<String, ApiPair> patternToApi = new TreeMap<>();
     private List<String> apis = new ArrayList<>();
 
-    public ApiResover push(ApiMethod apiMethod, String api, Object bean, Method method) {
+    public ApiResover push(HttpMethod httpMethod, String api, Object bean, Method method) {
         StringBuilder sb = new StringBuilder();
         String[] ts = api.split("/");
         for (String s : ts) {
@@ -28,7 +28,7 @@ public class ApiResover {
             }
         }
         String pattern = sb.toString();
-        patternToApi.put(apiMethod.name() + ":" + pattern, new ApiPair(apiMethod, api, bean, method));
+        patternToApi.put(httpMethod.name() + ":" + pattern, new ApiPair(httpMethod, api, bean, method));
         return this;
     }
 
@@ -42,7 +42,7 @@ public class ApiResover {
         });
         for (String apiPttern : apis) {
             ApiPair ap = patternToApi.get(apiPttern);
-            LOGGER.info(ap.getApiMethod() + " " + ap.getApi());
+            LOGGER.info(ap.getHttpMethod() + " " + ap.getApi());
         }
         return this;
     }

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import top.onceio.core.annotation.Using;
-import top.onceio.core.beans.ApiMethod;
+import top.onceio.core.beans.HttpMethod;
 import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.model.BaseModel;
@@ -34,19 +34,19 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         this.daoHelper = daoHelper;
     }
 
-    @Api(value = "/{id}", method = ApiMethod.GET)
+    @Api(value = "/{id}", method = HttpMethod.GET)
     @Override
     public E get(@Param("id") Serializable id) {
         return daoHelper.get(tbl, id);
     }
 
-    @Api(value = "/", method = ApiMethod.POST)
+    @Api(value = "/", method = HttpMethod.POST)
     @Override
     public E insert(@Param E entity) {
         return daoHelper.insert(entity);
     }
 
-    @Api(value = "/batch", method = ApiMethod.POST)
+    @Api(value = "/batch", method = HttpMethod.POST)
     @Override
     public int batchInsert(@Param List<E> entities) {
         return daoHelper.batchInsert(entities);
@@ -57,7 +57,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.update(entity);
     }
 
-    @Api(value = "/{id}", method = ApiMethod.PUT)
+    @Api(value = "/{id}", method = HttpMethod.PUT)
     public E save(@Param E entity) {
         E e = this.get(entity.getId());
         if (e == null) {
@@ -68,7 +68,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         }
     }
 
-    @Api(value = "/", method = ApiMethod.PATCH)
+    @Api(value = "/", method = HttpMethod.PATCH)
     @Override
     public int updateIgnoreNull(@Param E entity) {
         return daoHelper.updateIgnoreNull(entity);
@@ -80,7 +80,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
     }
 
     @Override
-    @Api(value = "/", method = ApiMethod.DELETE)
+    @Api(value = "/", method = HttpMethod.DELETE)
     public <M extends BaseMeta<M>> int delete(@Param M cnd) {
         return daoHelper.delete(tbl, cnd);
     }
@@ -100,7 +100,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.find(tbl, cnd);
     }
 
-    @Api(value = "/", method = {ApiMethod.GET})
+    @Api(value = "/", method = HttpMethod.GET)
     @Override
     public <M extends BaseMeta<M>> Page<E> find(@Param M cnd, @Param("$page") int page, @Param("$pageSize") int pageSize) {
         return daoHelper.find(tbl, cnd, page, pageSize);
@@ -116,7 +116,7 @@ public class DaoHolder<E extends BaseModel> implements Dao<E> {
         return daoHelper.count(tbl);
     }
 
-    @Api(value = "/count", method = {ApiMethod.GET})
+    @Api(value = "/count", method = HttpMethod.GET)
     @Override
     public <M extends BaseMeta<M>> long count(@Param M cnd) {
         return daoHelper.count(tbl, cnd);

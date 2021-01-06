@@ -1,6 +1,6 @@
 package top.onceio.core.beans;
 
-public enum ApiMethod {
+public enum HttpMethod {
     GET,
     POST,
     PATCH,

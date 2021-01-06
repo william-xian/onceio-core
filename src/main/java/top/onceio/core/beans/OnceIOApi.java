@@ -38,7 +38,7 @@ public class OnceIOApi {
         public String name;
         public String api;
         public String brief;
-        public List<String> httpMethods;
+        public String httpMethod;
         public List<FieldModel> params;
         public String returnType;
     }
@@ -150,12 +150,7 @@ public class OnceIOApi {
                 subApi.name = method.getName();
                 subApi.params = resolveParams(bean, method);
                 subApi.returnType = resolveModel(bean.getClass(), method.getGenericReturnType(), method.getReturnType());
-
-                List<String> methodNames = new ArrayList<>();
-                for (ApiMethod am : apiAnn.method()) {
-                    methodNames.add(am.name());
-                }
-                subApi.httpMethods = methodNames;
+                subApi.httpMethod = apiAnn.method().name();
                 subApi.brief = apiAnn.brief();
 
                 if (!apiAnn.value().equals("")) {

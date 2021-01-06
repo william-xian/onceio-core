@@ -11,7 +11,7 @@ import top.onceio.core.mvc.annocations.Header;
 import top.onceio.core.mvc.annocations.Param;
 
 public class ApiPair {
-    private ApiMethod apiMethod;
+    private HttpMethod httpMethod;
     private String api;
     private Object bean;
     private Method method;
@@ -24,12 +24,12 @@ public class ApiPair {
     private Map<Integer, String> headerNameArgIndex;
     private Map<Class<?>, Integer> typeIndex;
 
-    public ApiMethod getApiMethod() {
-        return apiMethod;
+    public HttpMethod getHttpMethod() {
+        return httpMethod;
     }
 
-    public void setApiMethod(ApiMethod apiMethod) {
-        this.apiMethod = apiMethod;
+    public void setHttpMethod(HttpMethod httpMethod) {
+        this.httpMethod = httpMethod;
     }
 
     public String getApi() {
@@ -112,9 +112,9 @@ public class ApiPair {
         this.headerNameArgIndex = headerNameArgIndex;
     }
 
-    public ApiPair(ApiMethod apiMethod, String api, Object bean, Method method) {
+    public ApiPair(HttpMethod httpMethod, String api, Object bean, Method method) {
         super();
-        this.apiMethod = apiMethod;
+        this.httpMethod = httpMethod;
         this.api = api;
         this.bean = bean;
         this.method = method;

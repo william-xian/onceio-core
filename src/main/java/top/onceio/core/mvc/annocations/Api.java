@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import top.onceio.core.beans.ApiMethod;
+import top.onceio.core.beans.HttpMethod;
 
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -16,5 +16,5 @@ public @interface Api {
 
     String brief() default "";
 
-    ApiMethod[] method() default {ApiMethod.GET};
+    HttpMethod method() default HttpMethod.GET;
 }
