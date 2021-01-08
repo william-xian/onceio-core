@@ -330,7 +330,11 @@ public class BeansEden {
             Object bean = tuple3.b;
             try {
                 method.invoke(bean);
-            } catch (InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+                LOGGER.error(e.getMessage(), e.getTargetException());
+            } catch (IllegalAccessException | IllegalArgumentException e) {
+                e.printStackTrace();
                 LOGGER.error(e.getMessage(), e);
             }
         }
@@ -498,7 +502,7 @@ public class BeansEden {
     public <T> List<T> loadList(Class<T> clazz) {
         List<T> result = new ArrayList<>();
         for (Object bean : nameToBean.values()) {
-            if(clazz.isAssignableFrom(bean.getClass())) {
+            if (clazz.isAssignableFrom(bean.getClass())) {
                 result.add((T) bean);
             }
         }
