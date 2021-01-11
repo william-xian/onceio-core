@@ -195,7 +195,7 @@ public class OnceIOApi {
                     break;
                 }
                 if (pAnn != null) {
-                    pName = pAnn.value();
+                    pName = !pAnn.value().equals("") ? pAnn.value() : pAnn.name();
                     pSrc = "Param";
                     break;
                 }

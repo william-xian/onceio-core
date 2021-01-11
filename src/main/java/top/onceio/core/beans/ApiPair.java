@@ -144,8 +144,9 @@ public class ApiPair {
                 Cookie cookieAnn = param.getAnnotation(Cookie.class);
                 Header headerAnn = param.getAnnotation(Header.class);
                 if (paramAnn != null) {
-                    paramNameArgIndex.put(i, paramAnn.value());
-                    nameType.put(paramAnn.value(), param.getType());
+                    String name = !paramAnn.value().equals("") ? paramAnn.value() : paramAnn.name();
+                    paramNameArgIndex.put(i, name);
+                    nameType.put(name, param.getType());
                 } else if (attrAnn != null) {
                     attrNameArgIndex.put(i, attrAnn.value());
                     nameType.put(attrAnn.value(), param.getType());

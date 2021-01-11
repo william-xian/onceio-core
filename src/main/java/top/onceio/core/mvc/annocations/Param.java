@@ -10,8 +10,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Param {
-
+    /**
+     * name
+     */
     String value() default "";
+    
+    String name() default "";
 
     boolean nullable() default true;
 
