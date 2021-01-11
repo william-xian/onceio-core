@@ -1,7 +1,6 @@
 package top.onceio.core.beans;
 
 import top.onceio.core.annotation.OnCreate;
-import top.onceio.core.mvc.annocations.Validate;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.mvc.annocations.*;
@@ -169,21 +168,14 @@ public class OnceIOApi {
         for (int i = 0; i < method.getParameterCount(); i++) {
             FieldModel paramInfo = new FieldModel();
             Parameter param = method.getParameters()[i];
-            Validate validate = param.getAnnotation(Validate.class);
+            Param pAnn = param.getAnnotation(Param.class);
             Class<?> paramType = method.getParameterTypes()[i];
             Type genericType = method.getGenericParameterTypes()[i];
             paramInfo.type = paramType.getName();
             String pName = null;
             String pSrc = null;
             do {
-                Param pAnn = param.getAnnotation(Param.class);
-                if (pAnn != null) {
-                    pName = pAnn.value();
-                    pSrc = "Param";
-                    break;
-                }
                 Header hAnn = param.getAnnotation(Header.class);
-
                 if (hAnn != null) {
                     pName = hAnn.value();
                     pSrc = "Header";
@@ -202,13 +194,18 @@ public class OnceIOApi {
                     pSrc = "Attr";
                     break;
                 }
+                if (pAnn != null) {
+                    pName = pAnn.value();
+                    pSrc = "Param";
+                    break;
+                }
             } while (false);
 
             if (pName != null) {
                 if (!pName.equals("")) {
                     paramInfo.name = pName;
                     paramInfo.source = pSrc;
-                    resolveValidator(paramInfo, validate, null);
+                    resolveValidator(paramInfo, pAnn, null);
                 }
                 paramInfo.type = resolveModel(bean.getClass(), genericType, paramType);
             } else {
@@ -219,8 +216,8 @@ public class OnceIOApi {
         return params;
     }
 
-    private void resolveValidator(FieldModel colModel, Validate validate, Col col) {
-        if (col != null && validate == null) {
+    private void resolveValidator(FieldModel colModel, Param param, Col col) {
+        if (col != null) {
             if (col.nullable() == false) {
                 colModel.nullable = col.nullable();
             }
@@ -237,15 +234,12 @@ public class OnceIOApi {
                 colModel.defaultValue = col.defaultValue();
             }
         }
-        if (validate != null) {
-            if (col.nullable() == false) {
-                colModel.nullable = validate.nullable();
+        if (param != null) {
+            if (param.nullable() == false) {
+                colModel.nullable = param.nullable();
             }
-            if (!col.pattern().equals("")) {
-                colModel.pattern = validate.pattern();
-            }
-            if (!col.ref().equals(void.class)) {
-                colModel.ref = validate.ref().getName();
+            if (!param.pattern().equals("")) {
+                colModel.pattern = param.pattern();
             }
         }
     }
@@ -327,9 +321,9 @@ public class OnceIOApi {
                     FieldModel fieldModel = new FieldModel();
                     fieldModel.name = field.getName();
                     fieldModel.type = resolveModel(beanClass, field.getGenericType(), field.getType());
-                    Validate validate = field.getAnnotation(Validate.class);
                     Col col = field.getAnnotation(Col.class);
-                    resolveValidator(fieldModel, validate, col);
+                    Param param = field.getAnnotation(Param.class);
+                    resolveValidator(fieldModel, param, col);
                     result.add(fieldModel);
                 }
             }
