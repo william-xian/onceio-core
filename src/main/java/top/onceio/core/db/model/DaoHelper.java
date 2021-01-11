@@ -477,7 +477,11 @@ public class DaoHelper implements DDLDao, TransDao {
                 rows.add(row);
             }
         });
-        return rows.get(0);
+        if (!rows.isEmpty()) {
+            return rows.get(0);
+        } else {
+            return null;
+        }
     }
 
     public <E extends BaseModel, M extends BaseMeta> E insert(E entity) {
