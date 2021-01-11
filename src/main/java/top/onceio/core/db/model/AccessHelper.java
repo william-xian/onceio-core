@@ -7,13 +7,18 @@ import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class AccessHelper {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(AccessHelper.class);
+
+    private static final List<Class<?>> VALUE_CLASSES = Arrays.asList(boolean.class, byte.class, short.class, int.class, long.class, float.class, double.class,
+            Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, BigDecimal.class);
 
     public static String getTable(BaseMeta def) {
         return def.table;
@@ -22,6 +27,7 @@ public class AccessHelper {
     public static List<BaseMeta<?>> getRefs(BaseMeta def) {
         return def.refs;
     }
+
 
     public static BaseMeta createDeleteBaseMeta(Class<?> entityClass, Map<String, Object> nameToArg) {
         TableMeta tm = TableMeta.getTableMetaBy(entityClass);
@@ -79,7 +85,7 @@ public class AccessHelper {
                     Object arg = OUtils.trans(val, cm.getJavaBaseType());
                     if (arg != null) {
                         def.args.add(arg);
-                        if (Number.class.isAssignableFrom(cm.getJavaBaseType()) || Boolean.class.isAssignableFrom(cm.getJavaBaseType())) {
+                        if (VALUE_CLASSES.contains(cm.getJavaBaseType())) {
                             def.where.append(String.format(" %s = ? AND", cm.getName()));
                         } else {
                             def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
