@@ -1,7 +1,7 @@
 package top.onceio.core.beans;
 
 import top.onceio.core.annotation.OnCreate;
-import top.onceio.core.annotation.Validate;
+import top.onceio.core.mvc.annocations.Validate;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.mvc.annocations.*;

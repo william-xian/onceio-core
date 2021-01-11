@@ -11,4 +11,8 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface Param {
     String value() default "";
+
+    boolean nullable() default true;
+
+    String pattern() default "";
 }

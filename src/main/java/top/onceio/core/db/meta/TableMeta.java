@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import top.onceio.core.db.annotation.*;
 import top.onceio.core.db.model.BaseMeta;
 import top.onceio.core.db.model.DefView;
-import top.onceio.core.exception.VolidateFailed;
+import top.onceio.core.exception.ValidateFailed;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OReflectUtil;
 import top.onceio.core.util.OUtils;
@@ -671,13 +670,13 @@ public class TableMeta {
             } catch (IllegalArgumentException | IllegalAccessException e) {
             }
             if (!cm.isNullable() && val == null && !ignoreNull) {
-                VolidateFailed vf = VolidateFailed.createError("%s cannot be null", cm.getName());
+                ValidateFailed vf = ValidateFailed.createError("%s cannot be null", cm.getName());
                 vf.put(cm.getName(), "cannot be null");
                 vf.throwSelf();
             } else if (val != null) {
                 if (!cm.getPattern().equals("")) {
                     if (val.toString().matches(cm.getPattern())) {
-                        VolidateFailed vf = VolidateFailed.createError("%s does not matches %s", cm.getName(),
+                        ValidateFailed vf = ValidateFailed.createError("%s does not matches %s", cm.getName(),
                                 cm.getPattern());
                         vf.put(cm.getName(), cm.getPattern());
                         vf.throwSelf();
