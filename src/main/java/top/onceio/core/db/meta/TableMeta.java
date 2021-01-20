@@ -357,7 +357,7 @@ public class TableMeta {
                     cols.add(cm.getName());
                     cnsMeta.setColumns(new ArrayList<String>(cols));
                     cnsMeta.setTable(this.getTable());
-                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_UN + IndexMeta.indexName(cnsMeta.table) + "_" + cm.name);
+                    cnsMeta.setName(IndexMeta.INDEX_NAME_PREFIX_UF + IndexMeta.indexName(cnsMeta.table) + "_" + cm.name);
                     cnsMeta.setUsing(cm.using);
                     cnsMeta.setType(IndexType.UNIQUE_FIELD);
                     fieldConstraint.add(cnsMeta);

@@ -192,7 +192,7 @@ public class DaoHelper implements DDLDao, TransDao {
 
         Map<String, List<IndexMeta>> tableToConstraintMeta = new HashMap<>();
         String qIndexes = "SELECT * FROM pg_indexes i\n" +
-                "WHERE i.indexname LIKE ?\n";
+                "WHERE i.indexname LIKE ? or i.indexname LIKE ?\n";
         if (tables != null) {
             qIndexes += "AND concat(i.schemaname,'.',i.tablename) IN " + String.format("(%s)", OUtils.genStub("?", ",", schemaTables.size()), String.join("','")) + "\n";
         } else {
@@ -200,7 +200,8 @@ public class DaoHelper implements DDLDao, TransDao {
         }
         qIndexes += "ORDER BY i.schemaname,i.tablename";
         List<String> args = new ArrayList<>(schemaTables.size() + 1);
-        args.add(IndexMeta.INDEX_NAME_PREFIX_NQ + "%");
+        args.add(IndexMeta.INDEX_NAME_PREFIX_IX + "%");
+        args.add(IndexMeta.INDEX_NAME_PREFIX_UI + "%");
         args.addAll(schemaTables);
         jdbcHelper.query(qIndexes, args.toArray(), (rs) -> {
             try {
@@ -211,7 +212,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 String schemaTable = (schema + "." + table).toLowerCase().replace("public.", "");
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
                 String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
-                if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_NQ)) {
+                if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_IX)) {
                     IndexMeta constraintMeta = new IndexMeta();
                     List<String> columns = new ArrayList<>();
                     for (String c : col.split(",")) {

@@ -1,14 +1,19 @@
 package top.onceio.core.db.model;
 
+import org.checkerframework.checker.units.qual.A;
+import top.onceio.core.db.annotation.Index;
+import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.meta.ColumnMeta;
+import top.onceio.core.db.meta.IndexMeta;
 import top.onceio.core.db.meta.TableMeta;
+import top.onceio.core.util.OAssert;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 public class ModelEntityHelper {
 
@@ -35,27 +40,23 @@ public class ModelEntityHelper {
         return className.toString();
     }
 
-    public static String toJavaFieldName(String simpleName) {
-        int index = simpleName.indexOf('.');
-        if (index >= 0) {
-            simpleName = simpleName.substring(index);
-        }
-        StringBuilder className = new StringBuilder();
+    public static String toJavaFieldName(String columnName) {
+        StringBuilder fieldName = new StringBuilder();
         boolean last = false;
-        for (int i = 0; i < simpleName.length(); i++) {
-            char c = simpleName.charAt(i);
+        for (int i = 0; i < columnName.length(); i++) {
+            char c = columnName.charAt(i);
             if (c == '_') {
                 last = true;
             } else {
                 if (last) {
-                    className.append(Character.toUpperCase(c));
+                    fieldName.append(Character.toUpperCase(c));
                 } else {
-                    className.append(c);
+                    fieldName.append(c);
                 }
                 last = false;
             }
         }
-        return className.toString();
+        return fieldName.toString();
     }
 
     public static String genericJavaFileContent(String packageName, TableMeta tm) {
@@ -64,12 +65,13 @@ public class ModelEntityHelper {
                 "import top.onceio.core.db.annotation.Col;\n" +
                 "import top.onceio.core.db.annotation.Model;\n" +
                 "import top.onceio.core.db.model.BaseModel;\n" +
-                "\n" +
+                "%s\n" +
                 "@Model%s\n" +
                 "public class %s extends BaseModel<%s> {\n";
         String fieldFormat = "\n    @Col%s\n" +
                 "    protected %s %s;\n";
         String idType = "Long";
+        Set<String> imports = new HashSet<>();
         StringBuilder sb = new StringBuilder();
         for (ColumnMeta cm : tm.getColumnMetas()) {
             final StringBuilder col = new StringBuilder();
@@ -90,6 +92,10 @@ public class ModelEntityHelper {
                 javaType = "String";
                 col.append(String.format("size = %s, ", cm.getType().replaceAll("char\\(([0-9]+)\\)", "$1")));
                 col.append("type = \"char\", ");
+            } else if (cm.getType().startsWith("timestamp")) {
+                javaType = "Timestamp";
+                col.append(String.format("type = \"%s\", ", cm.getType()));
+                imports.add("java.sql.Timestamp;");
             } else {
                 javaType = "String";
                 col.append(String.format("type = \"%s\", ", cm.getType()));
@@ -106,11 +112,11 @@ public class ModelEntityHelper {
             if (!cm.getUsing().equals("") && !cm.getUsing().equals("BTREE")) {
                 col.append(String.format("using = \"%s\", ", cm.getUsing()));
             }
-            if (!cm.getComment().equals("")) {
-                col.append(String.format("comment = \"%s\", ", cm.getComment()));
-            }
             if (!cm.getDefaultValue().equals("")) {
                 col.append(String.format("defaultValue = \"%s\", ", cm.getDefaultValue()));
+            }
+            if (!cm.getComment().equals("")) {
+                col.append(String.format("comment = \"%s\", ", cm.getComment()));
             }
             if (col.length() > 0) {
                 col.delete(col.length() - 2, col.length());
@@ -120,12 +126,48 @@ public class ModelEntityHelper {
             sb.append(String.format(fieldFormat, col.toString(), javaType, name));
         }
 
-        String model = "";
+
+        StringBuilder indexes = new StringBuilder();
+        for (IndexMeta index : tm.getIndexes()) {
+            StringBuilder indexBuf = new StringBuilder();
+            List<String> columns = new ArrayList<>();
+            for (String col : index.getColumns()) {
+                columns.add(toJavaFieldName(col));
+            }
+            if (!index.getUsing().equals("BTREE")) {
+                indexBuf.append(String.format("using = \"%s\", ", index.getUsing()));
+            }
+            if (index.getName().startsWith(IndexMeta.INDEX_NAME_PREFIX_UI)) {
+                indexBuf.append("unique = true, ");
+            }
+            if (!columns.isEmpty()) {
+                indexBuf.append(String.format("columns = {\"%s\"}, ", String.join("\", \"", columns)));
+            }
+            if (indexBuf.length() > 0) {
+                indexBuf.delete(indexBuf.length() - 2, indexBuf.length());
+            }
+            indexes.append(String.format("@Index(%s), ", indexBuf.toString()));
+        }
+        if (indexes.length() > 0) {
+            indexes.delete(indexes.length() - 2, indexes.length());
+            indexes.insert(0, "indexes = {%s}");
+        }
+        final String model;
         if (tm.getTable().contains(".")) {
-            model = tm.getTable();
+            if (indexes.length() == 0) {
+                model = String.format("(\"%s\")", tm.getTable());
+            } else {
+                model = String.format("(value = \"%s\", %s)", tm.getTable(), indexes);
+            }
+        } else {
+            if (indexes.length() >= 0) {
+                model = String.format("(%s)", tm.getTable(), indexes);
+            }else {
+                model = "";
+            }
         }
         String className = toJavaClassName(tm.getTable());
-        sb.insert(0, String.format(classFormat, packageName, model, className, idType));
+        sb.insert(0, String.format(classFormat, packageName, String.join("\n", imports), model, className, idType));
         sb.append("}");
 
         return sb.toString();

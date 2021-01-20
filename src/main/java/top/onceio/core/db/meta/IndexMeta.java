@@ -14,8 +14,9 @@ public class IndexMeta {
     public static final String INDEX = "INDEX";
     public static final String INDEX_NAME_PREFIX_PK = "pk_";
     public static final String INDEX_NAME_PREFIX_FK = "fk_";
-    public static final String INDEX_NAME_PREFIX_UN = "un_";
-    public static final String INDEX_NAME_PREFIX_NQ = "nq_";
+    public static final String INDEX_NAME_PREFIX_UI = "ui_";
+    public static final String INDEX_NAME_PREFIX_IX = "ix_";
+    public static final String INDEX_NAME_PREFIX_UF = "uf_";
 
     String name;
     IndexType type;
@@ -86,11 +87,13 @@ public class IndexMeta {
                 cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_FK, indexName(table), String.join("_", columns));
                 break;
             case UNIQUE_INDEX:
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_UI, indexName(table), String.join("_", columns));
+                break;
             case INDEX:
-                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_NQ, indexName(table), String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_IX, indexName(table), String.join("_", columns));
                 break;
             case UNIQUE_FIELD:
-                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_UN, indexName(table), String.join("_", columns));
+                cName = String.format("%s%s_%s", INDEX_NAME_PREFIX_UF, indexName(table), String.join("_", columns));
                 break;
             default:
                 OAssert.fatal("不存在：%s", OUtils.toJson(this));
