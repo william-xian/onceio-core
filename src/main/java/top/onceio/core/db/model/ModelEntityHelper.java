@@ -65,7 +65,7 @@ public class ModelEntityHelper {
                 "import top.onceio.core.db.annotation.Col;\n" +
                 "import top.onceio.core.db.annotation.Model;\n" +
                 "import top.onceio.core.db.model.BaseModel;\n" +
-                "%s\n" +
+                "%s\n\n" +
                 "@Model%s\n" +
                 "public class %s extends BaseModel<%s> {\n";
         String fieldFormat = "\n    @Col%s\n" +
@@ -102,6 +102,7 @@ public class ModelEntityHelper {
             }
             if (cm.isPrimaryKey()) {
                 idType = javaType;
+                continue;
             }
             if (!cm.isPrimaryKey() && cm.isUnique()) {
                 col.append(String.format("unique = %s, ", cm.isUnique()));
