@@ -77,7 +77,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
     }
 
-    private Map<String, TableMeta> findPGTableMeta(Collection<String> tables) {
+    protected Map<String, TableMeta> findPGTableMeta(Collection<String> tables) {
         Map<String, TableMeta> result = new HashMap<>();
         List<String> schemaTables = new ArrayList<>();
         if (tables != null) {
@@ -282,7 +282,7 @@ public class DaoHelper implements DDLDao, TransDao {
      * @param schemaTables 如果schemaTables是null值则不限制
      * @return
      */
-    public Map<String, TableMeta> findTableMeta(Collection<String> schemaTables) {
+    Map<String, TableMeta> findTableMeta(Collection<String> schemaTables) {
         switch (jdbcHelper.getDBType()) {
             case POSTGRESQL:
                 return findPGTableMeta(schemaTables);

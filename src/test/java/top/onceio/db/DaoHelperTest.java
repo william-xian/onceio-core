@@ -1,6 +1,7 @@
 package top.onceio.db;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import cn.xian.app.model.entity.UserInfo;
 import top.onceio.core.db.dao.Page;
 import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.model.Func;
+import top.onceio.core.db.model.ModelEntityHelper;
 import top.onceio.core.util.IDGenerator;
 import top.onceio.core.util.OUtils;
 
@@ -254,8 +256,9 @@ public class DaoHelperTest extends DaoBaseTest {
 
     @Test
     public void findTableMeta() {
-        Map<String, TableMeta> map = daoHelper.findTableMeta(null);
+        Map<String, TableMeta> map = ModelEntityHelper.findTableMeta(daoHelper, null);
         TableMeta m = map.get("o_i18n");
         System.out.println(m);
+        ModelEntityHelper.genericJavaFile(daoHelper,"target/", "cn.mx", Arrays.asList("o_i18n"));
     }
 }

@@ -5,7 +5,7 @@ import top.onceio.core.db.annotation.Index;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseModel;
 
-@Model(indexes = {@Index(columns = {"user_id", "merchant_id"})})
+@Model(indexes = {@Index(columns = {"userId", "merchantId"})})
 public class Bill extends BaseModel<Long> {
     @Col
     protected Long userId;

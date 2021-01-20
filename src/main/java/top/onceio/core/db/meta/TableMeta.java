@@ -73,31 +73,6 @@ public class TableMeta {
         Model model = entity.getAnnotation(Model.class);
         tm.table = getTableName(entity);
         tm.type = model.type();
-        if (model.type().equals(ModelType.TABLE)) {
-            List<IndexMeta> constraints = new ArrayList<>();
-            for (Index c : model.indexes()) {
-                IndexMeta cm = new IndexMeta();
-                constraints.add(cm);
-                cm.setColumns(Arrays.asList(c.columns()));
-                cm.setTable(tm.getTable());
-                if (c.unique()) {
-                    cm.setType(IndexType.UNIQUE_INDEX);
-                } else {
-                    cm.setType(IndexType.INDEX);
-                }
-                cm.setUsing(c.using());
-            }
-            tm.setIndexes(constraints);
-        } else if (DefView.class.isAssignableFrom(entity)) {
-            try {
-                DefView view = (DefView) (entity.newInstance());
-                tm.viewDef = view.def();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
         List<Class<?>> classes = new ArrayList<>();
         for (Class<?> clazz = entity; !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             classes.add(0, clazz);
@@ -161,8 +136,41 @@ public class TableMeta {
             }
         }
         tm.setColumnMetas(columnMetas);
+
         tm.freshNameToField(entity);
         tm.freshConstraintMetaTable();
+
+        if (model.type().equals(ModelType.TABLE)) {
+            List<IndexMeta> constraints = new ArrayList<>();
+            for (Index i : model.indexes()) {
+                IndexMeta im = new IndexMeta();
+                constraints.add(im);
+                List<String> columns = new ArrayList<>();
+                for (String field : i.columns()) {
+                    ColumnMeta cm = tm.getColumnMetaByFieldName(field);
+                    OAssert.err(cm != null, "配置字段不存在");
+                    columns.add(cm.getName());
+                }
+                im.setColumns(columns);
+                im.setTable(tm.getTable());
+                if (i.unique()) {
+                    im.setType(IndexType.UNIQUE_INDEX);
+                } else {
+                    im.setType(IndexType.INDEX);
+                }
+                im.setUsing(i.using());
+            }
+            tm.setIndexes(constraints);
+        } else if (DefView.class.isAssignableFrom(entity)) {
+            try {
+                DefView view = (DefView) (entity.newInstance());
+                tm.viewDef = view.def();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
         return tm;
     }
 
