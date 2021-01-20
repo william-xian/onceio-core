@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 @Target({})
 @Retention(RUNTIME)
 public @interface Index {
-    String using() default "BTREE";
+    String using() default "btree";
 
     boolean unique() default false;
 

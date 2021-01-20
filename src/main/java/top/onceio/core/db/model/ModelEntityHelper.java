@@ -109,7 +109,7 @@ public class ModelEntityHelper {
             if (cm.isNullable()) {
                 col.append(String.format("nullable = %s, ", cm.isNullable()));
             }
-            if (!cm.getUsing().equals("") && !cm.getUsing().equals("BTREE")) {
+            if (!cm.getUsing().equals("") && !cm.getUsing().equalsIgnoreCase("btree")) {
                 col.append(String.format("using = \"%s\", ", cm.getUsing()));
             }
             if (!cm.getDefaultValue().equals("")) {
@@ -134,10 +134,10 @@ public class ModelEntityHelper {
             for (String col : index.getColumns()) {
                 columns.add(toJavaFieldName(col));
             }
-            if (!index.getUsing().equals("BTREE")) {
+            if (!index.getUsing().equalsIgnoreCase("btree")) {
                 indexBuf.append(String.format("using = \"%s\", ", index.getUsing()));
             }
-            if (index.getName().startsWith(IndexMeta.INDEX_NAME_PREFIX_UI)) {
+            if (index.getType().equals(IndexType.UNIQUE_INDEX)) {
                 indexBuf.append("unique = true, ");
             }
             if (!columns.isEmpty()) {
@@ -150,7 +150,8 @@ public class ModelEntityHelper {
         }
         if (indexes.length() > 0) {
             indexes.delete(indexes.length() - 2, indexes.length());
-            indexes.insert(0, "indexes = {%s}");
+            indexes.insert(0, "indexes = {");
+            indexes.append("}");
         }
         final String model;
         if (tm.getTable().contains(".")) {
@@ -158,11 +159,13 @@ public class ModelEntityHelper {
                 model = String.format("(\"%s\")", tm.getTable());
             } else {
                 model = String.format("(value = \"%s\", %s)", tm.getTable(), indexes);
+                imports.add("import top.onceio.core.db.annotation.Index;");
             }
         } else {
             if (indexes.length() >= 0) {
-                model = String.format("(%s)", tm.getTable(), indexes);
-            }else {
+                model = String.format("(%s)", indexes);
+                imports.add("import top.onceio.core.db.annotation.Index;");
+            } else {
                 model = "";
             }
         }

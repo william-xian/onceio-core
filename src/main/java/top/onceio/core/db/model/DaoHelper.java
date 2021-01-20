@@ -212,8 +212,9 @@ public class DaoHelper implements DDLDao, TransDao {
                 String schemaTable = (schema + "." + table).toLowerCase().replace("public.", "");
                 Map<String, ColumnMeta> nameToColumnMeta = tableToColumns.get(schemaTable);
                 String col = indexDef.substring(indexDef.lastIndexOf('(') + 1, indexDef.lastIndexOf(')'));
-                if (col.contains(",") && indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_IX)) {
+                if (col.contains(",") && (indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_IX) || indexname.startsWith(IndexMeta.INDEX_NAME_PREFIX_UI))) {
                     IndexMeta constraintMeta = new IndexMeta();
+                    constraintMeta.setName(indexname);
                     List<String> columns = new ArrayList<>();
                     for (String c : col.split(",")) {
                         columns.add(c.trim());
