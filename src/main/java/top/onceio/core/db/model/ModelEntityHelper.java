@@ -1,18 +1,14 @@
 package top.onceio.core.db.model;
 
-import org.checkerframework.checker.units.qual.A;
-import top.onceio.core.db.annotation.Index;
 import top.onceio.core.db.annotation.IndexType;
 import top.onceio.core.db.meta.ColumnMeta;
 import top.onceio.core.db.meta.IndexMeta;
 import top.onceio.core.db.meta.TableMeta;
-import top.onceio.core.util.OAssert;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class ModelEntityHelper {
@@ -20,7 +16,7 @@ public class ModelEntityHelper {
     public static String toJavaClassName(String simpleName) {
         int index = simpleName.indexOf('.');
         if (index >= 0) {
-            simpleName = simpleName.substring(index);
+            simpleName = simpleName.substring(index + 1);
         }
         StringBuilder className = new StringBuilder();
         boolean last = true;
@@ -94,8 +90,7 @@ public class ModelEntityHelper {
                 col.append("type = \"char\", ");
             } else if (cm.getType().startsWith("timestamp")) {
                 javaType = "Timestamp";
-                col.append(String.format("type = \"%s\", ", cm.getType()));
-                imports.add("java.sql.Timestamp;");
+                imports.add("import java.sql.Timestamp;");
             } else {
                 javaType = "String";
                 col.append(String.format("type = \"%s\", ", cm.getType()));
@@ -157,13 +152,13 @@ public class ModelEntityHelper {
         final String model;
         if (tm.getTable().contains(".")) {
             if (indexes.length() == 0) {
-                model = String.format("(\"%s\")", tm.getTable());
+                model = String.format("(name = \"%s\")", tm.getTable());
             } else {
-                model = String.format("(value = \"%s\", %s)", tm.getTable(), indexes);
+                model = String.format("(name = \"%s\", %s)", tm.getTable(), indexes);
                 imports.add("import top.onceio.core.db.annotation.Index;");
             }
         } else {
-            if (indexes.length() >= 0) {
+            if (indexes.length() > 0) {
                 model = String.format("(%s)", indexes);
                 imports.add("import top.onceio.core.db.annotation.Index;");
             } else {
