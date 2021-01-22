@@ -159,7 +159,7 @@ public class ModelEntityHelper {
             indexes.append("}");
         }
         final String model;
-        if (tm.getTable().contains(".")) {
+        if (tm.getTable().contains(".") || (prefix != null && !prefix.equalsIgnoreCase(""))) {
             if (indexes.length() == 0) {
                 model = String.format("(name = \"%s\")", tm.getTable());
             } else {
@@ -192,7 +192,8 @@ public class ModelEntityHelper {
             if (tm == null) continue;
             FileOutputStream fos = null;
             try {
-                File file = new File(dir + "/" + packageName.replace(".", "/") + "/" + toJavaClassName(tm.getTable(), prefix) + ".java");
+                String className = toJavaClassName(tm.getTable(), prefix);
+                File file = new File(dir + "/" + packageName.replace(".", "/") + "/" + className + ".java");
                 File p = file.getParentFile();
                 if (!p.exists()) {
                     p.mkdirs();
