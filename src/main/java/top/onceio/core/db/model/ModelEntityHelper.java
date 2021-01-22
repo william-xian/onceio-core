@@ -109,7 +109,13 @@ public class ModelEntityHelper {
                 col.append(String.format("using = \"%s\", ", cm.getUsing()));
             }
             if (!cm.getDefaultValue().equals("")) {
-                col.append(String.format("defaultValue = \"%s\", ", cm.getDefaultValue()));
+                if (cm.getDefaultValue().equalsIgnoreCase("0") && cm.getType().startsWith("int")) {
+
+                } else if (cm.getDefaultValue().equalsIgnoreCase("false") && cm.getType().equalsIgnoreCase("bool")) {
+
+                } else {
+                    col.append(String.format("defaultValue = \"%s\", ", cm.getDefaultValue()));
+                }
             }
             if (!cm.getComment().equals("")) {
                 col.append(String.format("comment = \"%s\", ", cm.getComment()));
