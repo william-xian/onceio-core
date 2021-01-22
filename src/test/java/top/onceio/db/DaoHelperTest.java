@@ -258,6 +258,6 @@ public class DaoHelperTest extends DaoBaseTest {
     public void findTableMeta() {
         Map<String, TableMeta> map = ModelEntityHelper.findTableMeta(daoHelper, null);
         System.out.println(map.keySet());
-        ModelEntityHelper.genericJavaFile(daoHelper, "target/", "cn.mx", Arrays.asList("bill"));
+        ModelEntityHelper.genericJavaFile(daoHelper, "target/", "cn.mx", "", Arrays.asList("bill"));
     }
 }

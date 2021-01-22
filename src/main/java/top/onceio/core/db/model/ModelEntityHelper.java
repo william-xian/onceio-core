@@ -13,15 +13,18 @@ import java.util.*;
 
 public class ModelEntityHelper {
 
-    public static String toJavaClassName(String simpleName) {
-        int index = simpleName.indexOf('.');
+    public static String toJavaClassName(String tableName, String prefix) {
+        int index = tableName.indexOf('.');
         if (index >= 0) {
-            simpleName = simpleName.substring(index + 1);
+            tableName = tableName.substring(index + 1);
+        }
+        if (prefix != null && tableName.startsWith(prefix)) {
+            tableName = tableName.substring(prefix.length());
         }
         StringBuilder className = new StringBuilder();
         boolean last = true;
-        for (int i = 0; i < simpleName.length(); i++) {
-            char c = simpleName.charAt(i);
+        for (int i = 0; i < tableName.length(); i++) {
+            char c = tableName.charAt(i);
             if (c == '_') {
                 last = true;
             } else {
@@ -55,7 +58,7 @@ public class ModelEntityHelper {
         return fieldName.toString();
     }
 
-    public static String genericJavaFileContent(String packageName, TableMeta tm) {
+    public static String genericJavaFileContent(String packageName, String prefix, TableMeta tm) {
         String classFormat = "package %s;\n" +
                 "\n" +
                 "import top.onceio.core.db.annotation.Col;\n" +
@@ -171,7 +174,7 @@ public class ModelEntityHelper {
                 model = "";
             }
         }
-        String className = toJavaClassName(tm.getTable());
+        String className = toJavaClassName(tm.getTable(), prefix);
         sb.insert(0, String.format(classFormat, packageName, String.join("\n", imports), model, className, idType));
         sb.append("}");
 
@@ -182,20 +185,20 @@ public class ModelEntityHelper {
         return daoHelper.findTableMeta(schemaTables);
     }
 
-    public static void genericJavaFile(DaoHelper daoHelper, String dir, String packageName, Collection<String> schemaTables) {
+    public static void genericJavaFile(DaoHelper daoHelper, String dir, String packageName, String prefix, Collection<String> schemaTables) {
         Map<String, TableMeta> nameToTableMeta = daoHelper.findTableMeta(schemaTables);
         for (String tableName : schemaTables) {
             TableMeta tm = nameToTableMeta.get(tableName);
             if (tm == null) continue;
             FileOutputStream fos = null;
             try {
-                File file = new File(dir + "/" + packageName.replace(".", "/") + "/" + toJavaClassName(tm.getTable()) + ".java");
+                File file = new File(dir + "/" + packageName.replace(".", "/") + "/" + toJavaClassName(tm.getTable(), prefix) + ".java");
                 File p = file.getParentFile();
                 if (!p.exists()) {
                     p.mkdirs();
                 }
                 fos = new FileOutputStream(file);
-                String content = genericJavaFileContent(packageName, tm);
+                String content = genericJavaFileContent(packageName, prefix, tm);
                 fos.write(content.getBytes());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
