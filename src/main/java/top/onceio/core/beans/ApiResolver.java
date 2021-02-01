@@ -11,13 +11,13 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ApiResover {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiResover.class);
+public class ApiResolver {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApiResolver.class);
 
     private Map<String, ApiPair> patternToApi = new TreeMap<>();
     private List<String> apis = new ArrayList<>();
 
-    public ApiResover push(HttpMethod httpMethod, String api, Object bean, Method method) {
+    public ApiResolver push(HttpMethod httpMethod, String api, Object bean, Method method) {
         StringBuilder sb = new StringBuilder();
         String[] ts = api.split("/");
         for (String s : ts) {
@@ -32,7 +32,7 @@ public class ApiResover {
         return this;
     }
 
-    public ApiResover build() {
+    public ApiResolver build() {
         apis.addAll(patternToApi.keySet());
         Collections.sort(apis, new Comparator<String>() {
             @Override

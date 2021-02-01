@@ -13,17 +13,11 @@ import java.util.*;
 
 @Api("/docs")
 public class OnceIOApi {
-    /**
-     * 特殊字段
-     */
-    private Map<String, TypeModel> model = new HashMap<>();
-    private Map<String, ServiceModel> api = new HashMap<>();
 
     public static class OnceIOApiModel {
         public List<ServiceModel> api;
         public Map<String, TypeModel> model;
     }
-
 
     public static class ServiceModel {
         public String name;
@@ -64,6 +58,10 @@ public class OnceIOApi {
         public String source;
     }
 
+
+    private Map<String, TypeModel> model = new HashMap<>();
+    private Map<String, ServiceModel> api = new HashMap<>();
+
     @OnCreate
     public void init() {
         model.put(Object.class.getName(), TypeModel.createBase(Object.class.getName()));
@@ -97,6 +95,54 @@ public class OnceIOApi {
         genericApis();
     }
 
+    protected ServiceModel createServiceModel(Object bean) {
+        Class<?> beanClass = bean.getClass();
+        String name = beanClass.getName().replaceAll("\\$\\$.*$", "");
+        ServiceModel parent = new ServiceModel();
+        parent.subApi = new ArrayList<>();
+        parent.name = name;
+
+        this.api.put(name, parent);
+
+        String prefix = "";
+        Api parentApi = beanClass.getAnnotation(Api.class);
+        AutoApi parentAutoApi = beanClass.getAnnotation(AutoApi.class);
+        if (parentApi != null) {
+            prefix = parentApi.value();
+            parent.brief = parentApi.brief();
+        } else if (parentAutoApi != null) {
+            prefix = "/" + parentAutoApi.value().getSimpleName().toLowerCase();
+            parent.brief = parentAutoApi.brief();
+        }
+        parent.api = prefix;
+        if (DaoHolder.class.isAssignableFrom(bean.getClass())) {
+            Class<?> entity = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), DaoHolder.class.getTypeParameters()[0]);
+            parent.entityClass = entity.getName();
+        }
+        return parent;
+    }
+
+
+    protected ApiModel createApiModel(Object bean, Method method) {
+        ApiModel subApi = new ApiModel();
+        Api apiAnn = method.getAnnotation(Api.class);
+        if (apiAnn == null) {
+            return null;
+        }
+        subApi.name = method.getName();
+        subApi.params = resolveParams(bean, method);
+        subApi.returnType = resolveModel(bean.getClass(), method.getGenericReturnType(), method.getReturnType());
+        subApi.httpMethod = apiAnn.method().name();
+        subApi.brief = apiAnn.brief();
+
+        if (!apiAnn.value().equals("")) {
+            subApi.api = apiAnn.value();
+        } else {
+            subApi.api = ("/" + method.getName()).replaceFirst("//", "/");
+        }
+        return subApi;
+    }
+
     private void genericApis() {
         api.clear();
         Map<String, ApiPair> api = BeansEden.get().getApiResolver().getPatternToApi();
@@ -116,50 +162,16 @@ public class OnceIOApi {
             Object bean = entry.getKey();
             Class<?> beanClass = bean.getClass();
             String name = beanClass.getName().replaceAll("\\$\\$.*$", "");
-            @SuppressWarnings("unchecked")
             ServiceModel parent = this.api.get(name);
             if (parent == null) {
-                parent = new ServiceModel();
-                parent.subApi = new ArrayList<>();
-                parent.name = name;
-                this.api.put(name, parent);
-
-                String prefix = "";
-                Api parentApi = beanClass.getAnnotation(Api.class);
-                AutoApi parentAutoApi = beanClass.getAnnotation(AutoApi.class);
-                if (parentApi != null) {
-                    prefix = parentApi.value();
-                    parent.brief = parentApi.brief();
-                } else if (parentAutoApi != null) {
-                    prefix = "/" + parentAutoApi.value().getSimpleName().toLowerCase();
-                    parent.brief = parentAutoApi.brief();
-                }
-                parent.api = prefix;
-                if (DaoHolder.class.isAssignableFrom(bean.getClass())) {
-                    Class<?> entity = OReflectUtil.searchGenType(DaoHolder.class, bean.getClass(), DaoHolder.class.getTypeParameters()[0]);
-                    parent.entityClass = entity.getName();
-                }
+                parent = createServiceModel(bean);
             }
             for (Method method : entry.getValue()) {
-                ApiModel subApi = new ApiModel();
-                Api apiAnn = method.getAnnotation(Api.class);
-                if (apiAnn == null) {
-                    continue;
+                ApiModel subApi = createApiModel(bean, method);
+                if (subApi != null) {
+                    parent.subApi.add(subApi);
                 }
-                subApi.name = method.getName();
-                subApi.params = resolveParams(bean, method);
-                subApi.returnType = resolveModel(bean.getClass(), method.getGenericReturnType(), method.getReturnType());
-                subApi.httpMethod = apiAnn.method().name();
-                subApi.brief = apiAnn.brief();
-
-                if (!apiAnn.value().equals("")) {
-                    subApi.api = apiAnn.value();
-                } else {
-                    subApi.api = ("/" + method.getName()).replaceFirst("//", "/");
-                }
-                parent.subApi.add(subApi);
             }
-
         }
     }
 
@@ -350,4 +362,5 @@ public class OnceIOApi {
         result.model = model;
         return result;
     }
+
 }

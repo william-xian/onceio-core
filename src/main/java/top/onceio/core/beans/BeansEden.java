@@ -40,7 +40,7 @@ public class BeansEden {
     private ConcurrentHashMap<String, Object> nameToBean = new ConcurrentHashMap<>();
     List<Tuple3<String, Object, Method>> createMethods = new ArrayList<>();
     List<Tuple3<String, Object, Method>> destroyMethods = new ArrayList<>();
-    private ApiResover apiResover = new ApiResover();
+    private ApiResolver apiResolver = new ApiResolver();
     private AnnotationScanner scanner = new AnnotationScanner(Api.class, AutoApi.class, Definer.class, Def.class,
             Using.class, Model.class, DefSQL.class, I18nMsg.class, I18nCfg.class, Aop.class);
     private static BeansEden instance = null;
@@ -257,7 +257,7 @@ public class BeansEden {
             api = "/" + fatherApi.value() + methodApi.value();
         }
         HttpMethod httpMethod = methodApi.method();
-        apiResover.push(httpMethod, api, bean, method);
+        apiResolver.push(httpMethod, api, bean, method);
     }
 
     private void resolveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method, String methodName) {
@@ -265,7 +265,7 @@ public class BeansEden {
         if (methodName != null && !methodName.equals("") && !methodName.equals("/")) {
             api = api + methodName;
         }
-        apiResover.push(methodApi.method(), api, bean, method);
+        apiResolver.push(methodApi.method(), api, bean, method);
     }
 
     private void resolveBeanMethod() {
@@ -339,7 +339,7 @@ public class BeansEden {
             }
         }
 
-        apiResover.build();
+        apiResolver.build();
     }
 
     private Map<String, List<Class<?>>> patternToAopClass = new HashMap<>();
@@ -646,7 +646,7 @@ public class BeansEden {
         dao.batchInsert(i18ns);
     }
 
-    public ApiResover getApiResolver() {
-        return apiResover;
+    public ApiResolver getApiResolver() {
+        return apiResolver;
     }
 }
