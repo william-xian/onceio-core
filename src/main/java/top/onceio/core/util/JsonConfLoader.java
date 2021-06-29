@@ -21,7 +21,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class JsonConfLoader {
-
     private final static Logger LOGGER = LoggerFactory.getLogger(JsonConfLoader.class);
 
     private JsonObject conf = new JsonObject();
@@ -35,12 +34,10 @@ public class JsonConfLoader {
         return beans;
     }
 
-    public static JsonConfLoader loadConf(String... dirs) {
-        JsonConfLoader conf = new JsonConfLoader();
+    public void loadConf(String... dirs) {
         for (String dir : dirs) {
-            conf.load(dir);
+            load(dir);
         }
-        return conf;
     }
 
     private void loadJar(URL url) {

@@ -1,0 +1,28 @@
+{
+  "port": 8080,
+  "beans": {
+    "javax.sql.DataSource": {
+      "@TYPE": "com.alibaba.druid.pool.DruidDataSource",
+      "driver": "org.postgresql.Driver",
+      "url": "jdbc:postgresql://www.onceio.top:5432/testdb2",
+      "username": "postgres",
+      "password": "testdb.pwd",
+      "initialSize": "5",
+      "minIdle": "5",
+      "maxIdle": "6",
+      "maxActive": "10",
+      "maxWait": "60000",
+      "timeBetweenEvictionRunsMillis": "60000",
+      "minEvictableIdleTimeMillis": "300000",
+      "validationQuery": "SELECT 1",
+      "testWhileIdle": "true",
+      "testOnBorrow": "false",
+      "testOnReturn": "false",
+      "poolPreparedStatements": "true",
+      "maxPoolPreparedStatementPerConnectionSize": "20",
+      "filters": "stat,wall,log4j",
+      "connectionProperties": "druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000",
+      "useGlobalDataSourceStat": "true"
+    }
+  }
+}
