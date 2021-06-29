@@ -1,9 +1,9 @@
 package cn.xian.app;
 
-import top.onceio.core.annotation.BeansIn;
+import top.onceio.core.annotation.BeanScan;
 import top.onceio.core.beans.BeansEden;
 
-@BeansIn("cn.xian.app")
+@BeanScan("cn.xian.app")
 public class Launcher {
 
     public static void main(String[] args) {

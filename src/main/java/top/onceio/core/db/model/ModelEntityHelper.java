@@ -58,8 +58,8 @@ public class ModelEntityHelper {
         return fieldName.toString();
     }
 
-    public static String genericJavaFileContent(String packageName, String prefix, TableMeta tm) {
-        String classFormat = "package %s;\n" +
+    public static String genericModelFileContent(String packageName, String prefix, TableMeta tm) {
+        String classFormat = "package %s.model;\n" +
                 "\n" +
                 "import top.onceio.core.db.annotation.Col;\n" +
                 "import top.onceio.core.db.annotation.Model;\n" +
@@ -181,6 +181,24 @@ public class ModelEntityHelper {
         return sb.toString();
     }
 
+    public static String genericHolderFileContent(String packageName, String prefix, TableMeta tm) {
+        String classFormat = "package %s.holder;\n" +
+                "\n" +
+                "import top.onceio.core.db.dao.DaoHolder;\n" +
+                "import top.onceio.core.mvc.annocations.AutoApi;\n" +
+                "import %s.model.%s;\n" +
+                "@AutoApi(%s.class)\n" +
+                "public class %sHolder extends DaoHolder<%s> {\n";
+
+        StringBuilder sb = new StringBuilder();
+        String className = toJavaClassName(tm.getTable(), prefix);
+        sb.append(String.format(classFormat, packageName, packageName, className, className, className,className));
+        sb.append("}");
+
+        return sb.toString();
+    }
+
+
     public static Map<String, TableMeta> findTableMeta(DaoHelper daoHelper, Collection<String> schemaTables) {
         return daoHelper.findTableMeta(schemaTables);
     }
@@ -193,13 +211,36 @@ public class ModelEntityHelper {
             FileOutputStream fos = null;
             try {
                 String className = toJavaClassName(tm.getTable(), prefix);
-                File file = new File(dir + "/" + packageName.replace(".", "/") + "/" + className + ".java");
+                File file = new File(dir + "/" + packageName.replace(".", "/") + "/model/" + className + ".java");
                 File p = file.getParentFile();
                 if (!p.exists()) {
                     p.mkdirs();
                 }
                 fos = new FileOutputStream(file);
-                String content = genericJavaFileContent(packageName, prefix, tm);
+                String content = genericModelFileContent(packageName, prefix, tm);
+                fos.write(content.getBytes());
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (fos != null) {
+                    try {
+                        fos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            try {
+                String className = toJavaClassName(tm.getTable(), prefix);
+                File file = new File(dir + "/" + packageName.replace(".", "/") + "/holder/" + className + "Holder.java");
+                File p = file.getParentFile();
+                if (!p.exists()) {
+                    p.mkdirs();
+                }
+                fos = new FileOutputStream(file);
+                String content = genericHolderFileContent(packageName, prefix, tm);
                 fos.write(content.getBytes());
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

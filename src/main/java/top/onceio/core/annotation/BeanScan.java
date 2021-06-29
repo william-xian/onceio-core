@@ -9,8 +9,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-public @interface BeansIn {
+public @interface BeanScan {
     String[] value() default {};
-
-    String[] conf() default {"conf"};
 }
