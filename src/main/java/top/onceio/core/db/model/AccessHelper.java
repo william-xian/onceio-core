@@ -96,6 +96,22 @@ public class AccessHelper {
                             case "like":
                                 def.where.append(String.format(" %s like ? AND", cm.getName()));
                                 break;
+                            case "match":
+                                def.where.append(String.format(" %s @@ ? AND", cm.getName()));
+                                break;
+                            case "regexp":
+                                def.where.append(String.format(" %s ~ ? AND", cm.getName()));
+                                break;
+                            case "i_regexp":
+                                def.where.append(String.format(" %s ~* ? AND", cm.getName()));
+                                break;
+                            case "regexp_not":
+                                def.where.append(String.format(" %s !~ ? AND", cm.getName()));
+                                break;
+                            case "i_regexp_not":
+                                def.where.append(String.format(" %s !~* ? AND", cm.getName()));
+                                break;
+
                         }
                     } else {
                         LOGGER.error("参数不正确：{}", val);
