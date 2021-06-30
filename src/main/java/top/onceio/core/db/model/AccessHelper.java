@@ -7,9 +7,7 @@ import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.util.OAssert;
 import top.onceio.core.util.OUtils;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +15,6 @@ public class AccessHelper {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(AccessHelper.class);
 
-    private static final List<Class<?>> VALUE_CLASSES = Arrays.asList(boolean.class, byte.class, short.class, int.class, long.class, float.class, double.class,
-            Boolean.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, BigDecimal.class);
 
     public static String getTable(BaseMeta def) {
         return def.table;
@@ -41,11 +37,26 @@ public class AccessHelper {
 
     public static void initWhere(BaseMeta def, TableMeta tm, Map<String, Object> nameToArg) {
         nameToArg.forEach((name, val) -> {
-            if (name.endsWith("$in")) {
-                String arr[] = val.toString().split(",");
-                if (arr.length >= 1) {
-                    ColumnMeta cm = tm.getColumnMetaByFieldName(name.substring(0, name.length() - 3));
-                    if (cm != null) {
+            String[] nameOpt = name.split("\\$");
+            String fieldName = nameOpt[0];
+            ColumnMeta cm = tm.getColumnMetaByFieldName(fieldName);
+            if (cm == null) {
+                return;
+            }
+            if (nameOpt.length == 1) {
+                Object arg = OUtils.trans(val, cm.getJavaBaseType());
+                if (arg != null) {
+                    def.args.add(arg);
+                    def.where.append(String.format(" %s = ? AND", cm.getName()));
+                } else {
+                    LOGGER.error("参数不正确：{}", val);
+                }
+            }
+            if (nameOpt.length == 2) {
+                String opt = nameOpt[1];
+                if (opt.equals("in")) {
+                    String arr[] = val.toString().split(",");
+                    if (arr.length >= 1) {
                         List<Object> args = new ArrayList<>();
                         for (int i = 0; i < arr.length; i++) {
                             Object arg = OUtils.trans(arr[i].trim(), cm.getJavaBaseType());
@@ -62,33 +73,29 @@ public class AccessHelper {
                             LOGGER.error("参数不正确：{}", val);
                         }
                     }
-                }
-            } else if (name.endsWith("$range")) {
-                String arr[] = val.toString().split(",");
-                if (arr.length == 2) {
-                    ColumnMeta cm = tm.getColumnMetaByFieldName(name.substring(0, name.length() - 6));
-                    if (cm != null) {
-                        Object arg1 = OUtils.trans(arr[0].trim(), cm.getJavaBaseType());
-                        Object arg2 = OUtils.trans(arr[1].trim(), cm.getJavaBaseType());
-                        if (arg1 != null && arg2 != null) {
-                            def.args.add(arg1);
-                            def.args.add(arg2);
-                            def.where.append(String.format(" (%s >= ? AND %s < ?) AND", cm.getName(), cm.getName()));
-                        } else {
-                            LOGGER.error("参数不正确：{}", val);
-                        }
-                    }
-                }
-            } else {
-                ColumnMeta cm = tm.getColumnMetaByFieldName(name);
-                if (cm != null) {
+                } else {
                     Object arg = OUtils.trans(val, cm.getJavaBaseType());
                     if (arg != null) {
                         def.args.add(arg);
-                        if (VALUE_CLASSES.contains(cm.getJavaBaseType())) {
-                            def.where.append(String.format(" %s = ? AND", cm.getName()));
-                        } else {
-                            def.where.append(String.format(" %s LIKE ? AND", cm.getName()));
+                        switch (opt) {
+                            case "eq":
+                                def.where.append(String.format(" %s = ? AND", cm.getName()));
+                                break;
+                            case "gt":
+                                def.where.append(String.format(" %s > ? AND", cm.getName()));
+                                break;
+                            case "ge":
+                                def.where.append(String.format(" %s >= ? AND", cm.getName()));
+                                break;
+                            case "lt":
+                                def.where.append(String.format(" %s < ? AND", cm.getName()));
+                                break;
+                            case "le":
+                                def.where.append(String.format(" %s <= ? AND", cm.getName()));
+                                break;
+                            case "like":
+                                def.where.append(String.format(" %s like ? AND", cm.getName()));
+                                break;
                         }
                     } else {
                         LOGGER.error("参数不正确：{}", val);
