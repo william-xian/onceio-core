@@ -702,7 +702,7 @@ public class DaoHelper implements DDLDao, TransDao {
         }
         TableMeta tm = TableMeta.getTableMetaBy(tbl);
         OAssert.fatal(tm != null, "无法找到表：%s", TableMeta.getTableName(tbl));
-        String sql = String.format("SELECT * FROM %s WHERE id IN ()", tm.getTable(), OUtils.genStub("?", ",", ids.size()));
+        String sql = String.format("SELECT * FROM %s WHERE id IN (%s)", tm.getTable(), OUtils.genStub("?", ",", ids.size()));
         final List<E> rows = new ArrayList<>(ids.size());
         jdbcHelper.query(sql, ids.toArray(), rs -> {
             try {
