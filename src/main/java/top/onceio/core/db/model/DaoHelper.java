@@ -686,9 +686,8 @@ public class DaoHelper implements DDLDao, TransDao {
             sql = String.format("WITH %s AS (%s) %s ", tm.getTable(), tm.getViewDef().toSql(), cnd.toString());
         }
         jdbcHelper.query(sql, cnd.getArgs().toArray(new Object[0]), rs -> {
-            E row = null;
             try {
-                row = createBy(tbl, tm, rs);
+                E row = createBy(tbl, tm, rs);
                 consumer.accept(row);
             } catch (SQLException e) {
                 Failed.fail(e.getMessage());
@@ -706,11 +705,8 @@ public class DaoHelper implements DDLDao, TransDao {
         final List<E> rows = new ArrayList<>(ids.size());
         jdbcHelper.query(sql, ids.toArray(), rs -> {
             try {
-                E row = null;
-                while (rs.next()) {
-                    row = createBy(tbl, tm, rs);
-                    rows.add(row);
-                }
+                E row = createBy(tbl, tm, rs);
+                rows.add(row);
             } catch (SQLException e) {
                 Failed.fail(e.getMessage());
             }
