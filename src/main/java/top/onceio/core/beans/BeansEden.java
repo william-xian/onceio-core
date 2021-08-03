@@ -584,7 +584,7 @@ public class BeansEden {
                         i18ns.add(i18n);
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }
@@ -640,7 +640,7 @@ public class BeansEden {
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                     e.printStackTrace();
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }

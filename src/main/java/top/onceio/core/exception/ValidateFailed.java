@@ -10,8 +10,8 @@ public class ValidateFailed extends Failed {
     private static final long serialVersionUID = 1L;
     private Map<String, Object> data = new HashMap<>();
 
-    protected ValidateFailed(int level, String format, Object[] args) {
-        super(level, format, args);
+    protected ValidateFailed(int code, String format, Object[] args) {
+        super(code, format, args);
         super.setData(data);
     }
 
@@ -24,8 +24,8 @@ public class ValidateFailed extends Failed {
         return this;
     }
 
-    public static ValidateFailed createError(String format, Object... args) {
-        ValidateFailed vf = new ValidateFailed(Failed.ERROR, format, args);
+    public static ValidateFailed create(String format, Object... args) {
+        ValidateFailed vf = new ValidateFailed(400, format, args);
         return vf;
     }
 }

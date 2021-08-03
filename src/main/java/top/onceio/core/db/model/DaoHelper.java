@@ -474,7 +474,7 @@ public class DaoHelper implements DDLDao, TransDao {
             try {
                 row = createBy(tbl, tm, rs);
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             } finally {
                 rows.add(row);
             }
@@ -691,7 +691,7 @@ public class DaoHelper implements DDLDao, TransDao {
                 row = createBy(tbl, tm, rs);
                 consumer.accept(row);
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             }
         });
     }
@@ -712,7 +712,7 @@ public class DaoHelper implements DDLDao, TransDao {
                     rows.add(row);
                 }
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             }
         });
         return rows;

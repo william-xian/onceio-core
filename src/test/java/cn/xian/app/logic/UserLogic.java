@@ -31,7 +31,7 @@ public class UserLogic {
     public boolean signin(String account, String passwd) {
         UserInfo uc = userHolder.fetchByName(account);
         if (uc == null) {
-            Failed.throwMsg("用户%s不存在", account);
+            Failed.fail("用户%s不存在", account);
         }
         if (uc.getPasswd() != null && uc.getPasswd().equals(passwd)) {
             return true;

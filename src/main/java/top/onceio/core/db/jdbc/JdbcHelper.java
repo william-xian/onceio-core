@@ -81,7 +81,7 @@ public class JdbcHelper {
                 }
             }
         } catch (SQLException e) {
-            Failed.throwError(e.getMessage());
+            Failed.fail(e.getMessage());
         }
         return created;
     }
@@ -92,7 +92,7 @@ public class JdbcHelper {
         try {
             sp = conn.setSavepoint();
         } catch (SQLException e) {
-            Failed.throwError(e.getMessage());
+            Failed.fail(e.getMessage());
         }
         return sp;
     }
@@ -104,7 +104,7 @@ public class JdbcHelper {
                 conn.rollback(sp);
                 conn.releaseSavepoint(sp);
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             }
         }
     }
@@ -116,7 +116,7 @@ public class JdbcHelper {
                 conn.rollback();
                 trans.remove();
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             }
         }
     }
@@ -128,7 +128,7 @@ public class JdbcHelper {
                 conn.commit();
                 trans.remove();
             } catch (SQLException e) {
-                Failed.throwError(e.getMessage());
+                Failed.fail(e.getMessage());
             } finally {
                 try {
                     if (conn != null && !conn.isClosed()) {
@@ -159,7 +159,7 @@ public class JdbcHelper {
                 try {
                     conn = dataSource.getConnection();
                 } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         } else {
@@ -189,13 +189,13 @@ public class JdbcHelper {
                 }
                 rs.close();
             } catch (SQLException e) {
-                Failed.throwMsg(e.getMessage());
+                Failed.fail(e.getMessage());
             } finally {
                 if (stat != null) {
                     try {
                         stat.close();
                     } catch (SQLException e) {
-                        Failed.throwMsg(e.getMessage());
+                        Failed.fail(e.getMessage());
                     }
                 }
                 if (conn != null && !usingTrans) {
@@ -203,7 +203,7 @@ public class JdbcHelper {
                         conn.close();
                     } catch (SQLException e) {
                         e.printStackTrace();
-                        Failed.throwMsg(e.getMessage());
+                        Failed.fail(e.getMessage());
                     }
                 }
             }
@@ -221,7 +221,7 @@ public class JdbcHelper {
                 try {
                     conn = dataSource.getConnection();
                 } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         } else {
@@ -236,13 +236,13 @@ public class JdbcHelper {
             result = stat.executeBatch();
         } catch (SQLException e) {
             e.printStackTrace();
-            Failed.throwMsg(e.getMessage());
+            Failed.fail(e.getMessage());
         } finally {
             if (stat != null) {
                 try {
                     stat.close();
                 } catch (SQLException e) {
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
             if (conn != null && !usingTrans) {
@@ -250,7 +250,7 @@ public class JdbcHelper {
                     conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }
@@ -270,7 +270,7 @@ public class JdbcHelper {
                 try {
                     conn = dataSource.getConnection();
                 } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         } else {
@@ -288,13 +288,13 @@ public class JdbcHelper {
             result = stat.executeBatch();
         } catch (SQLException e) {
             e.printStackTrace();
-            Failed.throwMsg(e.getMessage());
+            Failed.fail(e.getMessage());
         } finally {
             if (stat != null) {
                 try {
                     stat.close();
                 } catch (SQLException e) {
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
             if (conn != null && !usingTrans) {
@@ -302,7 +302,7 @@ public class JdbcHelper {
                     conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }
@@ -319,7 +319,7 @@ public class JdbcHelper {
                 try {
                     conn = dataSource.getConnection();
                 } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         } else {
@@ -338,14 +338,14 @@ public class JdbcHelper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            Failed.throwMsg(e.getMessage());
+            Failed.fail(e.getMessage());
         } finally {
 
             if (stat != null) {
                 try {
                     stat.close();
                 } catch (SQLException e) {
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
 
@@ -354,7 +354,7 @@ public class JdbcHelper {
                     conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }
@@ -390,7 +390,7 @@ public class JdbcHelper {
                 try {
                     conn = dataSource.getConnection();
                 } catch (SQLException e) {
-                    Failed.throwError(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         } else {
@@ -409,13 +409,13 @@ public class JdbcHelper {
             cnt = stat.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            Failed.throwMsg(e.getMessage());
+            Failed.fail(e.getMessage());
         } finally {
             if (stat != null) {
                 try {
                     stat.close();
                 } catch (SQLException e) {
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
             if (conn != null && !usingTrans) {
@@ -423,7 +423,7 @@ public class JdbcHelper {
                     conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    Failed.throwMsg(e.getMessage());
+                    Failed.fail(e.getMessage());
                 }
             }
         }

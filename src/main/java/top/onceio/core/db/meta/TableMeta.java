@@ -678,13 +678,13 @@ public class TableMeta {
             } catch (IllegalArgumentException | IllegalAccessException e) {
             }
             if (!cm.isNullable() && val == null && !ignoreNull) {
-                ValidateFailed vf = ValidateFailed.createError("%s cannot be null", cm.getName());
+                ValidateFailed vf = ValidateFailed.create("%s cannot be null", cm.getName());
                 vf.put(cm.getName(), "cannot be null");
                 vf.throwSelf();
             } else if (val != null) {
                 if (!cm.getPattern().equals("")) {
                     if (val.toString().matches(cm.getPattern())) {
-                        ValidateFailed vf = ValidateFailed.createError("%s does not matches %s", cm.getName(),
+                        ValidateFailed vf = ValidateFailed.create("%s does not matches %s", cm.getName(),
                                 cm.getPattern());
                         vf.put(cm.getName(), cm.getPattern());
                         vf.throwSelf();

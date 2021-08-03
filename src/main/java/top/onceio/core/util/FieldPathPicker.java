@@ -52,12 +52,12 @@ public class FieldPathPicker {
                         fields.add(new Tuple3<Field, String, Integer>(field, null, null));
                     }
                 } else {
-                    Failed.throwError("%s 不合法", path);
+                    Failed.fail("%s 不合法", path);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Failed.throwError(e.getMessage());
+            Failed.fail(e.getMessage());
         }
     }
 
