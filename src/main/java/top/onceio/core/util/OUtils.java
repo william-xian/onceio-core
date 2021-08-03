@@ -1,6 +1,5 @@
 package top.onceio.core.util;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -19,8 +18,9 @@ import com.google.gson.*;
 
 public final class OUtils {
 
-    public final static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).registerTypeAdapter(Long.TYPE, new DateDeserializer()).disableHtmlEscaping().create();
-    private final static Gson prettyGson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).registerTypeAdapter(Long.TYPE, new DateDeserializer()).disableHtmlEscaping().setPrettyPrinting().create();
+    public final static Gson parser = new GsonBuilder().registerTypeAdapter(Long.TYPE, new LongDeserializer()).create();
+    public final static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().create();
+    private final static Gson prettyGson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().setPrettyPrinting().create();
 
     public static String encodeMD5(String str) {
         try {
@@ -106,7 +106,7 @@ public final class OUtils {
     }
 
     public static <T> T createFromJson(String json, Class<T> clazz) throws RuntimeException {
-        return gson.fromJson(json, clazz);
+        return parser.fromJson(json, clazz);
     }
 
     public static Object trans(Object val, Class<?> type) {
@@ -140,7 +140,7 @@ public final class OUtils {
         }
     }
 }
-class DateDeserializer implements JsonDeserializer<Long> {
+class LongDeserializer implements JsonDeserializer<Long> {
     public Long deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         return json.getAsJsonPrimitive().getAsLong();
     }
