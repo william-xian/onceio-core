@@ -89,13 +89,16 @@ public class BeansEden {
                 }
             }
             if (je != null) {
-                String val = je.getAsString();
                 try {
                     if (OReflectUtil.isBaseType(fieldType)) {
                         field.setAccessible(true);
+                        String val = je.getAsString();
                         field.set(bean, OReflectUtil.strToBaseType(fieldType, val));
-                    } else {
-                        LOGGER.error(String.format("属性不支持该类型：%s", fieldType.getName()));
+                    } else if(je.getClass().equals(fieldType)){
+                        field.set(bean, je);
+                    } else if(je.isJsonObject()){
+                        Object val = OUtils.createFromJson(OUtils.toJson(je), fieldType);
+                        field.set(bean, val);
                     }
                 } catch (IllegalArgumentException | IllegalAccessException e) {
                     LOGGER.error(e.getMessage(), e);
@@ -258,6 +261,7 @@ public class BeansEden {
         } else {
             api = "/" + fatherApi.value() + methodApi.value();
         }
+        api = api.replace("//","/");
         HttpMethod httpMethod = methodApi.method();
         apiResolver.push(httpMethod, api, bean, method);
     }

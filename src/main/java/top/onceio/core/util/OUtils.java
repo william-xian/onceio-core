@@ -1,6 +1,7 @@
 package top.onceio.core.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -14,14 +15,12 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.LongSerializationPolicy;
+import com.google.gson.*;
 
 public final class OUtils {
 
-    public final static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).disableHtmlEscaping().create();
-    private final static Gson prettyGson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().disableHtmlEscaping().setPrettyPrinting().create();
+    public final static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).registerTypeAdapter(Long.TYPE, new DateDeserializer()).disableHtmlEscaping().create();
+    private final static Gson prettyGson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setLongSerializationPolicy(LongSerializationPolicy.STRING).registerTypeAdapter(Long.TYPE, new DateDeserializer()).disableHtmlEscaping().setPrettyPrinting().create();
 
     public static String encodeMD5(String str) {
         try {
@@ -139,5 +138,10 @@ public final class OUtils {
         } else {
             return null;
         }
+    }
+}
+class DateDeserializer implements JsonDeserializer<Long> {
+    public Long deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        return json.getAsJsonPrimitive().getAsLong();
     }
 }
