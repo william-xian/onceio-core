@@ -41,6 +41,7 @@ public class JsonConfLoader {
     }
 
     private void loadJar(URL url) {
+        LOGGER.debug("loading: .jar!"+ url);
         String path = url.getFile();
         int sp = path.indexOf(".jar!");
         String jarpath = path.substring(0, sp) + ".jar";
@@ -55,6 +56,7 @@ public class JsonConfLoader {
                 String innerPath = jarEntry.getName();
                 if (innerPath.startsWith(dir) && innerPath.endsWith(".json")) {
                     InputStream inputStream = OnceIO.getClassLoader().getResourceAsStream(innerPath);
+                    LOGGER.debug("loading innerPath:"+ innerPath);
                     loadJson(inputStream);
                     inputStream.close();
                 }
@@ -94,18 +96,8 @@ public class JsonConfLoader {
     }
 
     public void load(String dir) {
+        LOGGER.debug("loading: "+ dir);
         URL url = OnceIO.getClassLoader().getResource(dir);
-        try {
-            Enumeration<URL> files = OnceIO.getClassLoader().getResources(dir);
-            while (files.hasMoreElements()) {
-                URL u = files.nextElement();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(u.toString());
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         if (url != null) {
             if (url.getPath().contains(".jar!")) {
                 loadJar(url);
@@ -113,41 +105,52 @@ public class JsonConfLoader {
                 File file = new File(url.getFile());
                 if (file.exists() && file.isDirectory()) {
                     loadDir(file);
+                }else  {
+                    loadJSONFile(file);
                 }
             }
         } else {
             File file = new File(dir);
             if (file.exists() && file.isDirectory()) {
                 loadDir(file);
+            } else  {
+                loadJSONFile(file);
             }
         }
 
+        LOGGER.debug("loaded: "+ dir);
     }
 
     private void loadDir(File dir) {
+        LOGGER.debug("loading: dir:"+ dir.getName());
         try {
             Files.walk(dir.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
                 File cnf = path.toFile();
-                if (cnf.getName().endsWith(".json")) {
-                    FileInputStream fis = null;
-                    try {
-                        fis = new FileInputStream(cnf);
-                        loadJson(fis);
-                    } catch (FileNotFoundException e) {
-                        LOGGER.warn(e.getMessage());
-                    } finally {
-                        if (fis != null) {
-                            try {
-                                fis.close();
-                            } catch (IOException e) {
-                                LOGGER.warn(e.getMessage());
-                            }
-                        }
-                    }
-                }
+                loadJSONFile(cnf);
             });
         } catch (IOException e) {
             LOGGER.warn(e.getMessage());
+        }
+    }
+
+    private void loadJSONFile(File cnf) {
+        LOGGER.debug("loadingJSONFile: "+ cnf.getName());
+        if (cnf.getName().endsWith(".json")) {
+            FileInputStream fis = null;
+            try {
+                fis = new FileInputStream(cnf);
+                loadJson(fis);
+            } catch (FileNotFoundException e) {
+                LOGGER.warn(e.getMessage());
+            } finally {
+                if (fis != null) {
+                    try {
+                        fis.close();
+                    } catch (IOException e) {
+                        LOGGER.warn(e.getMessage());
+                    }
+                }
+            }
         }
     }
 
