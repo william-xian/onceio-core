@@ -18,6 +18,7 @@ import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.jdbc.JdbcHelper;
+import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.tables.OI18n;
 import top.onceio.core.exception.Failed;
@@ -94,9 +95,9 @@ public class BeansEden {
                         field.setAccessible(true);
                         String val = je.getAsString();
                         field.set(bean, OReflectUtil.strToBaseType(fieldType, val));
-                    } else if(je.getClass().equals(fieldType)){
+                    } else if (je.getClass().equals(fieldType)) {
                         field.set(bean, je);
-                    } else if(je.isJsonObject()){
+                    } else if (je.isJsonObject()) {
                         Object val = OUtils.createFromJson(OUtils.toJson(je), fieldType);
                         field.set(bean, val);
                     }
@@ -261,15 +262,23 @@ public class BeansEden {
         } else {
             api = "/" + fatherApi.value() + methodApi.value();
         }
-        api = api.replace("//","/");
+        api = api.replace("//", "/");
         HttpMethod httpMethod = methodApi.method();
         apiResolver.push(httpMethod, api, bean, method);
     }
 
-    private void resolveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method, String methodName) {
-        String api = "/" + autoApi.value().getSimpleName().toLowerCase();
-        if (methodName != null && !methodName.equals("") && !methodName.equals("/")) {
-            api = api + methodName;
+    private void resolveAutoApi(Class<?> clazz, AutoApi autoApi, Api methodApi, Object bean, Method method) {
+        String api = autoApi.value().getSimpleName().replaceAll("([A-Z])", "-$1").toLowerCase();
+        if (api.startsWith("-")) {
+            api = api.substring(1);
+        }
+        String methodName = methodApi.value().replaceAll("([A-Z])", "-$1").toLowerCase();
+        if (!methodName.equals("")) {
+            if (methodName.startsWith("/")) {
+                api = api + methodName;
+            } else {
+                api = api + "/" + methodName;
+            }
         }
         apiResolver.push(methodApi.method(), api, bean, method);
     }
@@ -294,11 +303,7 @@ public class BeansEden {
                 }
                 if (autoApi != null && methodApi != null) {
                     ignoreMethods.add(method.getName() + method.getParameterTypes().hashCode());
-                    if (!methodApi.value().equals("")) {
-                        resolveAutoApi(clazz, autoApi, methodApi, bean, method, methodApi.value());
-                    } else {
-                        resolveAutoApi(clazz, autoApi, methodApi, bean, method, "/" + method.getName());
-                    }
+                    resolveAutoApi(clazz, autoApi, methodApi, bean, method);
                 }
                 resolveMethodAop(clazz, method);
             }
@@ -308,11 +313,7 @@ public class BeansEden {
                         Api methodApi = method.getAnnotation(Api.class);
                         if (methodApi != null
                                 && !ignoreMethods.contains(method.getName() + method.getParameterTypes().hashCode())) {
-                            if (!methodApi.value().equals("")) {
-                                resolveAutoApi(clazz, autoApi, methodApi, bean, method, methodApi.value());
-                            } else {
-                                resolveAutoApi(clazz, autoApi, methodApi, bean, method, "/" + method.getName());
-                            }
+                            resolveAutoApi(clazz, autoApi, methodApi, bean, method);
                         }
                     }
                 }
