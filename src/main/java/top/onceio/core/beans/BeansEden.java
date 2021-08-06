@@ -263,6 +263,10 @@ public class BeansEden {
             api = "/" + fatherApi.value() + methodApi.value();
         }
         api = api.replace("//", "/");
+
+        if(api.endsWith("/")) {
+            api = api.substring(0, api.length()-1);
+        }
         HttpMethod httpMethod = methodApi.method();
         apiResolver.push(httpMethod, api, bean, method);
     }
@@ -272,6 +276,7 @@ public class BeansEden {
         if (api.startsWith("-")) {
             api = api.substring(1);
         }
+        api = "/" + api;
         String methodName = methodApi.value().replaceAll("([A-Z])", "-$1").toLowerCase();
         if (!methodName.equals("")) {
             if (methodName.startsWith("/")) {
@@ -279,6 +284,10 @@ public class BeansEden {
             } else {
                 api = api + "/" + methodName;
             }
+        }
+        api = api.replace("//", "/");
+        if(api.endsWith("/")) {
+            api = api.substring(0, api.length()-1);
         }
         apiResolver.push(methodApi.method(), api, bean, method);
     }
