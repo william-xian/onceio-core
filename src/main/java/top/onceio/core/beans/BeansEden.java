@@ -18,7 +18,6 @@ import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.dao.DaoHolder;
 import top.onceio.core.db.dao.IdGenerator;
 import top.onceio.core.db.jdbc.JdbcHelper;
-import top.onceio.core.db.meta.TableMeta;
 import top.onceio.core.db.model.DaoHelper;
 import top.onceio.core.db.tables.OI18n;
 import top.onceio.core.exception.Failed;

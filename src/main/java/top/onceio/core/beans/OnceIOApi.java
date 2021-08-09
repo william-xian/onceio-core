@@ -111,7 +111,11 @@ public class OnceIOApi {
             prefix = parentApi.value();
             parent.brief = parentApi.brief();
         } else if (parentAutoApi != null) {
-            prefix = "/" + parentAutoApi.value().getSimpleName().toLowerCase();
+            prefix = parentAutoApi.value().getSimpleName().replaceAll("([A-Z])", "-$1").toLowerCase();
+            if (prefix.startsWith("-")) {
+                prefix = prefix.substring(1);
+            }
+            prefix = "/" + prefix;
             parent.brief = parentAutoApi.brief();
         }
         parent.api = prefix;
@@ -138,7 +142,7 @@ public class OnceIOApi {
         if (!apiAnn.value().equals("")) {
             subApi.api = apiAnn.value();
         } else {
-            subApi.api = ("/" + method.getName()).replaceFirst("//", "/");
+            subApi.api = ("/" + method.getName()).replaceAll("([A-Z])","-$1").replaceFirst("//", "/");
         }
         return subApi;
     }
