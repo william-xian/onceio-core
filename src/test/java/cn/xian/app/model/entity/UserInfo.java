@@ -1,6 +1,7 @@
 package cn.xian.app.model.entity;
 
 import cn.xian.app.model.Gender;
+import org.checkerframework.checker.units.qual.C;
 import top.onceio.core.db.annotation.Col;
 import top.onceio.core.db.annotation.Model;
 import top.onceio.core.db.model.BaseModel;
@@ -17,6 +18,8 @@ public class UserInfo extends BaseModel<Long> {
     private Gender genre;
     @Col
     private int age;
+    @Col(defaultValue = "false")
+    private boolean removed;
 
     public String getName() {
         return name;

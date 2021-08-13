@@ -2,6 +2,7 @@ package top.onceio.core.processor;
 
 
 import com.google.auto.service.AutoService;
+import com.sun.source.tree.Tree;
 import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.jvm.ClassReader;
@@ -167,6 +168,10 @@ public class ModelProcessor extends AbstractProcessor {
         JCTree.JCModifiers jcModifiers = treeMaker.Modifiers(Flags.PUBLIC);
 
         Name methodName = handleMethodSignature(jcVariable.getName(), "get");
+
+        if(jcVariable.vartype.toString().equalsIgnoreCase(TypeKind.BOOLEAN.name())) {
+            methodName = handleMethodSignature(jcVariable.getName(), "is");
+        }
 
         ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
         jcStatements.append(

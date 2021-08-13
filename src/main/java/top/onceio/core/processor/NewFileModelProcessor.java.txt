@@ -1,0 +1,130 @@
+package top.onceio.core.processor;
+
+import com.google.auto.service.AutoService;
+
+
+import top.onceio.core.db.annotation.Col;
+import top.onceio.core.db.annotation.Model;
+
+import javax.annotation.processing.*;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+
+import javax.tools.JavaFileObject;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@SupportedAnnotationTypes({"top.onceio.core.db.annotation.Model"})
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@AutoService(Processor.class)
+public class NewFileModelProcessor extends AbstractProcessor {
+
+    private Types types;
+    private Filer filer;
+    private Elements elementsUtils;
+    private Messager messager;
+
+    @Override
+    public synchronized void init(ProcessingEnvironment processingEnvironment) {
+        messager = processingEnvironment.getMessager();
+        super.init(processingEnvironment);
+        elementsUtils = processingEnvironment.getElementUtils();
+        filer = processingEnvironment.getFiler();
+        types = processingEnvironment.getTypeUtils();
+    }
+
+    @Override
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        for (Element e : roundEnv.getElementsAnnotatedWith(Model.class)) {
+            Model model = e.getAnnotation(Model.class);
+            try {
+                String entityName = e.getSimpleName().toString();
+                String pkg = e.asType().toString();
+                String tableName = model.name();
+                if(tableName.equals("")) {
+                    tableName = entityName.replaceAll("([A-Z])","_$1").toLowerCase();
+                    if(tableName.startsWith("_")) {
+                        tableName = tableName.substring(1);
+                    }
+                }
+                int li = pkg.lastIndexOf(".");
+                if (li > 0) {
+                    pkg = pkg.substring(0, li);
+                } else {
+                    pkg = null;
+                }
+                if (!(e instanceof TypeElement)) {
+                    continue;
+                }
+
+                List<? extends Element> members = elementsUtils.getAllMembers((TypeElement) e);
+
+                boolean hasBase = false;
+                boolean hasString = false;
+                List<Element> fieldElements = new ArrayList<>();
+                Set<String> fields = new HashSet<>();
+                for (Element m : members) {
+                    if (m.getKind().isField() && m.getAnnotation(Col.class) != null) {
+                        if (m.asType().toString().equals(String.class.getName())) {
+                            hasString = true;
+                        } else {
+                            hasBase = true;
+                        }
+                        if(fields.add(m.getSimpleName().toString())) {
+                            fieldElements.add(m);
+                        }
+                    }
+                }
+
+
+                JavaFileObject fileObject = filer.createSourceFile(String.format("%sMeta", ((TypeElement) e).getQualifiedName().toString()));
+
+                Writer writer = fileObject.openWriter();
+
+                if (pkg != null) {
+                    writer.append(String.format("package %s;\n\n", pkg));
+                }
+
+                writer.append(String.format("import top.onceio.core.util.OReflectUtil;\n"));
+                if (hasBase) {
+                    writer.append(String.format("import top.onceio.core.db.model.BaseCol;\n"));
+                }
+                if (hasString) {
+                    writer.append(String.format("import top.onceio.core.db.model.StringCol;\n"));
+                }
+
+                writer.write(String.format("\npublic class %sMeta extends top.onceio.core.db.model.BaseMeta<%sMeta> {\n", entityName, entityName));
+                for (Element m : fieldElements) {
+                    String fieldName = m.getSimpleName().toString();
+                    if (m.asType().toString().equals(String.class.getName())) {
+                        writer.append(String.format("    public StringCol<%sMeta> %s = new StringCol(this, OReflectUtil.getField(%s.class, \"%s\"));\n",entityName, fieldName,entityName, fieldName));
+                    } else {
+                        writer.append(String.format("    public BaseCol<%sMeta> %s = new BaseCol(this, OReflectUtil.getField(%s.class, \"%s\"));\n",entityName,fieldName, entityName,fieldName));
+                    }
+                }
+
+                writer.append(String.format("\n    private %sMeta() {}\n",entityName));
+                writer.append(String.format("\n    public static %sMeta meta() {\n",entityName));
+                writer.append(String.format("        %sMeta meta = new %sMeta();\n",entityName,entityName));
+                writer.append(String.format("        meta.bind(\"%s\",meta, %s.class);\n", tableName, entityName));
+                writer.append(String.format("        return meta;\n"));
+                writer.append(String.format("    }\n"));
+
+
+                writer.append(String.format("}\n"));
+                writer.close();
+
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        }
+        return false;
+    }
+}
