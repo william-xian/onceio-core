@@ -137,8 +137,15 @@ public class ModelProcessor extends AbstractProcessor {
                     } else {
                         fieldName = fieldName.toUpperCase();
                     }
-                    if (!methodNames.contains("get" + fieldName) && !methodNames.contains("is" + fieldName)) {
-                        JCTree.JCMethodDecl get = generateGetterMethod(var);
+
+                    Name getter = handleMethodSignature(var.name, "get");
+
+                    if(var.vartype.toString().equalsIgnoreCase(TypeKind.BOOLEAN.name())) {
+                        getter = handleMethodSignature(var.name, "is");
+                    }
+
+                    if (!methodNames.contains(getter.toString())) {
+                        JCTree.JCMethodDecl get = generateGetterMethod(var, getter);
                         jcClass.defs = jcClass.defs.append(get);
                     }
 
@@ -163,15 +170,9 @@ public class ModelProcessor extends AbstractProcessor {
         return true;
     }
 
-    private JCTree.JCMethodDecl generateGetterMethod(JCTree.JCVariableDecl jcVariable) {
+    private JCTree.JCMethodDecl generateGetterMethod(JCTree.JCVariableDecl jcVariable,Name getter) {
 
         JCTree.JCModifiers jcModifiers = treeMaker.Modifiers(Flags.PUBLIC);
-
-        Name methodName = handleMethodSignature(jcVariable.getName(), "get");
-
-        if(jcVariable.vartype.toString().equalsIgnoreCase(TypeKind.BOOLEAN.name())) {
-            methodName = handleMethodSignature(jcVariable.getName(), "is");
-        }
 
         ListBuffer<JCTree.JCStatement> jcStatements = new ListBuffer<>();
         jcStatements.append(
@@ -186,7 +187,7 @@ public class ModelProcessor extends AbstractProcessor {
 
         List<JCTree.JCExpression> throwsClauses = List.nil();
         return treeMaker
-                .MethodDef(jcModifiers, methodName, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
+                .MethodDef(jcModifiers, getter, returnType, typeParameters, parameters, throwsClauses, jcBlock, null);
     }
 
     private JCTree.JCMethodDecl generateSetterMethod(JCTree.JCVariableDecl jcVariable, JCTree.JCClassDecl jcClass) throws ReflectiveOperationException {
